@@ -1,0 +1,97 @@
+Hello! This guide will walk you through how to add new data to your application's database.
+
+## Why is this guide needed?
+
+Your application uses a database that runs inside a Docker container. This is separate from any MongoDB database you might have running locally on your computer. To add data that your application can see, you need to connect to the database inside the Docker container.
+
+## Prerequisites
+
+Before you start, you'll need a tool to interact with a MongoDB database. Here are two popular options:
+
+*   **MongoDB Compass:** A graphical tool that lets you see and edit your data visually.
+*   **mongosh:** The official command-line tool for MongoDB.
+
+## Step 1: Connect to the Database
+
+No matter which tool you use, you will need to provide a "connection string" to connect to the database.
+
+**Your connection string is: `mongodb://localhost:27017`**
+
+Use this connection string in your chosen tool. This will connect you to the MongoDB database running inside the Docker container.
+
+## Step 2: Select Your Database and Collection
+
+Once you are connected, you need to tell the tool which database and collection you want to work with.
+
+*   **Database:** The database your application uses is named `careerconnect`.
+*   **Collection:** A collection is a group of documents (data entries). The name of the collection usually matches the name of the data you want to add. For example, to add a new job, you would use the `jobs` collection.
+
+## Step 3: Find the Right Structure for Your Data
+
+Every piece of data you add must have the correct "fields" (the structure). The easiest way to find the correct structure is to look at the application's "model" files.
+
+You can find all the model files in this directory:
+`SomethingX/backend/src/main/java/com/careerconnect/model/`
+
+Here are some of the available models:
+*   Blueprint.java
+*   Course.java
+*   IndustryPosting.java
+*   Institute.java
+*   Interview.java
+*   Job.java
+*   Resume.java
+*   ResumeTemplate.java
+*   ReviewRequest.java
+
+For example, if you open the `Job.java` file, you will see that a "Job" has the following fields: `title`, `company`, `description`, `location`, and `applicants`.
+
+## Step 4: Add Your Data
+
+Now you are ready to add your data. Here are some examples using the `mongosh` command-line tool.
+
+### Example 1: Adding a New Job
+
+To add a new job to the `jobs` collection, you would use a command like this:
+
+```javascript
+// First, tell mongosh to use the correct database
+use careerconnect
+
+// Now, insert a new job into the "jobs" collection
+db.jobs.insertOne({
+  "title": "Software Engineer",
+  "company": "Google",
+  "description": "An exciting role for a software engineer.",
+  "location": "Mountain View, CA",
+  "applicants": []
+})
+```
+
+### Example 2: Adding a New Career Blueprint
+
+To add a new blueprint to the `blueprints` collection, you would use a command like this. Blueprints have a more complex structure.
+
+```javascript
+// First, tell mongosh to use the correct database
+use careerconnect
+
+// Now, insert a new blueprint into the "blueprints" collection
+db.blueprints.insertOne({
+  "type": "role",
+  "name": "Data Scientist",
+  "roles": ["Data Analyst", "Machine Learning Engineer"],
+  "specializations": ["Natural Language Processing", "Computer Vision"],
+  "educations": ["Master's in Computer Science"],
+  "jobDescription": {
+    "summary": "A data scientist uses data to solve complex problems."
+  },
+  "skills": {
+    "technical": ["Python", "R", "SQL"],
+    "soft": ["Communication", "Problem Solving"]
+  },
+  "plan": {}
+})
+```
+
+That's it! By following these steps, you can add any type of data to your application's database. Just remember to always check the model file to find the correct structure for your data.

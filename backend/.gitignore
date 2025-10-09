@@ -1,0 +1,41 @@
+# Compiled class file
+*.class
+
+# Log file
+*.log
+
+# BlueJ files
+*.ctxt
+
+# Mobile Tools for Java (J2ME)
+.mtj.tmp/
+
+# Package Files #
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# virtual machine crash logs
+hs_err_pid*
+
+# IDE files
+.idea/
+*.iml
+.vscode/
+
+# Gradle
+.gradle/
+build/
+
+# Application properties with sensitive data
+src/main/resources/application.properties
+src/main/resources/application-*.properties
+!src/main/resources/application.properties.template
+
+# Environment files
+.env
+.env.*

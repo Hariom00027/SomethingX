@@ -1,0 +1,62 @@
+import React, { useEffect, useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
+import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
+import axios from 'axios';
+
+const EducationSelection = () => {
+  const { industryName } = useParams();
+  const [educationPaths, setEducationPaths] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    // Reset error and loading when industryName changes
+    setError(null);
+    setLoading(true);
+
+    axios.get(`http://localhost:8080/api/blueprint/industry/${industryName}/education`)
+      .then(response => {
+        setEducationPaths(response.data);
+        setLoading(false);
+      })
+      .catch(error => {
+        setError('Error fetching education paths. Please try again later.');
+        setLoading(false);
+        console.error('Error fetching education paths:', error);
+      });
+  }, [industryName]);
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (error) {
+    return <div>{error}</div>;
+  }
+
+  if (educationPaths.length === 0) {
+    return <div>No education paths available for {industryName}.</div>;
+  }
+
+  return (
+    <div className="container mx-auto p-4">
+      <h1 className="text-3xl font-bold mb-6 text-center">Select an Education Path for {industryName}</h1>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {educationPaths.map(edu => (
+          <Link to={`/students/career-blueprint/education/${edu}`} key={edu}>
+            <Card className="cursor-pointer hover:shadow-lg transition-shadow duration-300">
+              <CardHeader>
+                <CardTitle>{edu}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p>Explore specializations and roles related to {edu}.</p>
+              </CardContent>
+            </Card>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+export default EducationSelection;

@@ -20,6 +20,7 @@ import ResumeBuilder from "./pages/students/ResumeBuilder";
 import CareerCounselling from "./pages/students/CareerCounselling";
 import ApplyJobs from "./pages/students/ApplyJobs";
 import Courses from "./pages/students/Courses";
+import RoleReadyTraining from "./pages/students/RoleReadyTraining";
 import InternshipManagement from "./pages/institutes/InternshipManagement";
 import ExpertSessions from "./pages/institutes/ExpertSessions";
 import Workshops from "./pages/institutes/Workshops";
@@ -120,6 +121,11 @@ function App() {
           <Route path="/students/courses" element={
             <ProtectedRoute requiredUserType="STUDENT">
               <Courses />
+            </ProtectedRoute>
+          } />
+          <Route path="/students/role-ready-training" element={
+            <ProtectedRoute requiredUserType="STUDENT">
+              <RoleReadyTraining />
             </ProtectedRoute>
           } />
           

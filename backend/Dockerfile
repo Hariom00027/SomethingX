@@ -3,11 +3,14 @@ FROM gradle:8.3-jdk17-alpine AS build
 WORKDIR /app
 
 COPY build.gradle ./
+COPY gradle ./gradle
+COPY gradlew ./
+COPY gradlew.bat ./
 COPY src ./src
 
 RUN gradle build --no-daemon
 
-FROM openjdk:17-jdk-slim
+FROM eclipse-temurin:17-jdk-alpine
 
 WORKDIR /app
 

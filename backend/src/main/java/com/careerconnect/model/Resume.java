@@ -28,6 +28,15 @@ public class Resume {
     private List<String> hobbies;
     private List<Language> languages;
     private List<String> links;
+    private List<String> sectionOrder;
+    private Colors colors;
+
+    @Data
+    public static class Colors {
+        private String primary;
+        private String secondary;
+        private String accent;
+    }
 
     @Data
     public static class PersonalInfo {

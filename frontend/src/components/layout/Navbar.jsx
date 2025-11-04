@@ -31,6 +31,7 @@ const Navbar = () => {
               <DropdownMenuItem asChild><Link to="/students/career-counselling">Career Counselling</Link></DropdownMenuItem>
               <DropdownMenuItem asChild><Link to="/students/apply-jobs">Apply to Jobs</Link></DropdownMenuItem>
               <DropdownMenuItem asChild><Link to="/students/courses">Courses</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild><Link to="/students/role-ready-training">Role Ready Training</Link></DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
           

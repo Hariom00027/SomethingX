@@ -40,6 +40,11 @@ public class BlueprintController {
         return blueprintService.getEducations();
     }
 
+    @GetMapping("/specializations")
+    public List<String> getSpecializations() {
+        return blueprintService.getSpecializations();
+    }
+
     @GetMapping("/industry/{industryName}/roles")
     public List<String> getRolesByIndustry(@PathVariable String industryName) {
         return blueprintService.getRolesByIndustry(industryName);
@@ -93,13 +98,31 @@ public class BlueprintController {
         return ResponseEntity.badRequest().body("Failed to map role to education");
     }
 
-    @PostMapping("/industry/{industryName}/map-institute")
-    public ResponseEntity<String> mapIndustryToInstitute(@PathVariable String industryName, @RequestParam String instituteName) {
-        boolean success = blueprintService.mapIndustryToInstitute(industryName, instituteName);
+    @PostMapping("/industry/{industryName}/map-education")
+    public ResponseEntity<String> mapIndustryToEducation(@PathVariable String industryName, @RequestParam String educationName) {
+        boolean success = blueprintService.mapIndustryToEducation(industryName, educationName);
         if (success) {
-            return ResponseEntity.ok("Industry mapped to institute successfully");
+            return ResponseEntity.ok("Industry mapped to education successfully");
         }
-        return ResponseEntity.badRequest().body("Failed to map industry to institute");
+        return ResponseEntity.badRequest().body("Failed to map industry to education");
+    }
+
+    @PostMapping("/specialization/{specializationName}/map-education")
+    public ResponseEntity<String> mapSpecializationToEducation(@PathVariable String specializationName, @RequestParam String educationName) {
+        boolean success = blueprintService.mapSpecializationToEducation(specializationName, educationName);
+        if (success) {
+            return ResponseEntity.ok("Specialization mapped to education successfully");
+        }
+        return ResponseEntity.badRequest().body("Failed to map specialization to education");
+    }
+
+    @PostMapping("/role/{roleName}/map-specialization")
+    public ResponseEntity<String> mapRoleToSpecialization(@PathVariable String roleName, @RequestParam String specializationName) {
+        boolean success = blueprintService.mapRoleToSpecialization(roleName, specializationName);
+        if (success) {
+            return ResponseEntity.ok("Role mapped to specialization successfully");
+        }
+        return ResponseEntity.badRequest().body("Failed to map role to specialization");
     }
 
     @GetMapping("/role/{roleName}/mappings")

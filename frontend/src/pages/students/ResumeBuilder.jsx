@@ -445,9 +445,40 @@ const ResumeBuilder = () => {
   };
 
   const requestReview = async (type) => {
-    if (!resume?.id) return;
-    const { data } = await axios.post(`${api.baseURL}/reviews`, { resumeId: resume.id, type });
-    setFeedback(`Review requested (${type}). Status: ${data.status}`);
+    if (!resume?.id) {
+      alert('Please save your resume first before requesting a review.');
+      return;
+    }
+    
+    try {
+      const apiPrefix = api.baseURL ? '' : '/api';
+      const { data } = await axios.post(
+        `${api.baseURL}${apiPrefix}/reviews`,
+        { 
+          resumeId: resume.id, 
+          studentId: resume.studentId || studentId,
+          type 
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      
+      if (data && data.id) {
+        alert(`Mentor review requested successfully! Your request has been submitted and will be reviewed by a mentor.`);
+        setFeedback(`Review requested (${type}). Status: ${data.status}`);
+      } else {
+        alert('Review request submitted, but did not receive confirmation. Please check your requests.');
+        setFeedback(`Review requested (${type})`);
+      }
+    } catch (error) {
+      console.error('Error requesting review:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to request review';
+      alert(`Failed to request review: ${errorMessage}`);
+      setFeedback('Error requesting review. Please try again.');
+    }
   };
 
   const handleDragEnd = (event) => {

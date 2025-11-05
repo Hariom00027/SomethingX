@@ -4,9 +4,11 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Textarea } from '../components/ui/textarea';
 import RoleMappingManager from '../components/admin/RoleMappingManager';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 const AdminDashboard = () => {
+  const [activeSection, setActiveSection] = useState('blueprint'); // 'blueprint' or 'resume-review'
   const [blueprints, setBlueprints] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [showMappingManager, setShowMappingManager] = useState(false);
@@ -19,10 +21,13 @@ const AdminDashboard = () => {
     skillRequirements: []
   });
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    fetchBlueprints();
-  }, []);
+    if (activeSection === 'blueprint') {
+      fetchBlueprints();
+    }
+  }, [activeSection]);
 
   const fetchBlueprints = async () => {
     try {
@@ -135,16 +140,40 @@ const AdminDashboard = () => {
   return (
     <div className="container mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Admin Dashboard - Blueprint Management</h1>
-        <div className="flex gap-2">
-          <Button onClick={() => setShowMappingManager(true)} variant="outline">
-            Manage Mappings
-          </Button>
-          <Button onClick={() => setShowForm(true)}>
-            Create New Blueprint
-          </Button>
-        </div>
+        <h1 className="text-3xl font-bold">Admin Dashboard</h1>
       </div>
+
+      {/* Section Selection Buttons */}
+      <div className="flex gap-4 mb-6">
+        <Button
+          onClick={() => setActiveSection('blueprint')}
+          variant={activeSection === 'blueprint' ? 'default' : 'outline'}
+          className="text-lg px-6 py-3"
+        >
+          Blueprint Settings
+        </Button>
+        <Button
+          onClick={() => navigate('/admin/resume-review')}
+          variant={activeSection === 'resume-review' ? 'default' : 'outline'}
+          className="text-lg px-6 py-3"
+        >
+          Resume Review
+        </Button>
+      </div>
+
+      {activeSection === 'blueprint' && (
+        <>
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-semibold">Blueprint Management</h2>
+            <div className="flex gap-2">
+              <Button onClick={() => setShowMappingManager(true)} variant="outline">
+                Manage Mappings
+              </Button>
+              <Button onClick={() => setShowForm(true)}>
+                Create New Blueprint
+              </Button>
+            </div>
+          </div>
 
       {showForm && (
         <Card className="mb-6">
@@ -175,6 +204,7 @@ const AdminDashboard = () => {
                     <option value="role">Role</option>
                     <option value="industry">Industry</option>
                     <option value="education">Education</option>
+                    <option value="specialization">Specialization</option>
                   </select>
                 </div>
               </div>
@@ -345,6 +375,8 @@ const AdminDashboard = () => {
           </Card>
         ))}
       </div>
+      </>
+      )}
     </div>
   );
 };

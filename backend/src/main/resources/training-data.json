@@ -1,0 +1,147 @@
+[
+  {
+    "roleName": "BMS Engineer",
+    "roleDescription": "A Building Management System (BMS) Engineer manages and maintains automation systems that control and monitor building facilities such as HVAC, lighting, and security. The role involves programming, troubleshooting, and ensuring energy-efficient operations.",
+    "industry": "Engineering & Facilities Management",
+    "educationQualification": "B.E/B.Tech in Electrical, Electronics, or Mechanical Engineering",
+    "trainingDuration": "6 months",
+    "trainingFees": 25000,
+    "stipendIncluded": true,
+    "stipendAmount": 8000,
+    "accommodationProvided": false,
+    "location": "Pune, Maharashtra",
+    "packageAfterTraining": "4 - 5 LPA",
+    "skillsCovered": [
+      "BMS hardware and software configuration",
+      "PLC & SCADA basics",
+      "HVAC system automation",
+      "Networking and energy monitoring systems"
+    ],
+    "trainingMode": "Offline",
+    "certificationProvided": true,
+    "certificationName": "Certified BMS Engineer",
+    "eligibilityCriteria": "Final year or graduated students from Electrical or Mechanical background",
+    "trainingProvider": "TechInfra Automation Pvt. Ltd."
+  },
+  {
+    "roleName": "Data Analyst Intern",
+    "roleDescription": "The Data Analyst Intern training focuses on helping students understand data collection, cleaning, analysis, and visualization techniques used in the business and tech industry.",
+    "industry": "Information Technology",
+    "educationQualification": "Any graduate with basic computer and math skills",
+    "trainingDuration": "4 months",
+    "trainingFees": 18000,
+    "stipendIncluded": true,
+    "stipendAmount": 5000,
+    "accommodationProvided": false,
+    "location": "Bangalore, Karnataka",
+    "packageAfterTraining": "5 - 6 LPA",
+    "skillsCovered": [
+      "Python for data analysis",
+      "Excel & SQL for data management",
+      "Power BI & Tableau visualization",
+      "Basic statistics and business insights"
+    ],
+    "trainingMode": "Hybrid",
+    "certificationProvided": true,
+    "certificationName": "Certified Data Analyst",
+    "eligibilityCriteria": "Undergraduate students or graduates from any stream",
+    "trainingProvider": "DataMinds Analytics Academy"
+  },
+  {
+    "roleName": "Full Stack Developer Trainee",
+    "roleDescription": "The Full Stack Developer Trainee program trains candidates in both frontend and backend development using modern frameworks and tools to build scalable web applications.",
+    "industry": "Software Development",
+    "educationQualification": "B.Tech/BCA/MCA or equivalent in Computer Science or IT",
+    "trainingDuration": "6 months",
+    "trainingFees": 30000,
+    "stipendIncluded": false,
+    "stipendAmount": 0,
+    "accommodationProvided": true,
+    "location": "Noida, Uttar Pradesh",
+    "packageAfterTraining": "6 - 8 LPA",
+    "skillsCovered": [
+      "HTML, CSS, JavaScript",
+      "React.js and Node.js",
+      "MongoDB and REST APIs",
+      "Version control (Git & GitHub)"
+    ],
+    "trainingMode": "Offline",
+    "certificationProvided": true,
+    "certificationName": "Full Stack Developer Certificate",
+    "eligibilityCriteria": "Candidates with programming knowledge preferred",
+    "trainingProvider": "CodeX Technologies"
+  },
+  {
+    "roleName": "Finance Executive Trainee",
+    "roleDescription": "This program helps students gain hands-on experience in financial analysis, budgeting, and accounting principles commonly used in the corporate sector.",
+    "industry": "Finance & Banking",
+    "educationQualification": "B.Com, M.Com, BBA, MBA (Finance)",
+    "trainingDuration": "3 months",
+    "trainingFees": 15000,
+    "stipendIncluded": true,
+    "stipendAmount": 7000,
+    "accommodationProvided": false,
+    "location": "Mumbai, Maharashtra",
+    "packageAfterTraining": "4 - 5.5 LPA",
+    "skillsCovered": [
+      "Financial statement analysis",
+      "Excel for finance",
+      "Budgeting and forecasting",
+      "Corporate accounting tools"
+    ],
+    "trainingMode": "Online",
+    "certificationProvided": true,
+    "certificationName": "Finance Executive Certification",
+    "eligibilityCriteria": "Graduates from commerce or business backgrounds",
+    "trainingProvider": "FinEdge Learning Institute"
+  },
+  {
+    "roleName": "Medical Coding Trainee",
+    "roleDescription": "This training prepares candidates to translate medical reports into standardized codes used in healthcare billing and data management.",
+    "industry": "Healthcare & Medical",
+    "educationQualification": "B.Sc in Life Sciences or Pharmacy",
+    "trainingDuration": "4 months",
+    "trainingFees": 20000,
+    "stipendIncluded": false,
+    "stipendAmount": 0,
+    "accommodationProvided": true,
+    "location": "Chennai, Tamil Nadu",
+    "packageAfterTraining": "3.5 - 4.5 LPA",
+    "skillsCovered": [
+      "ICD-10 & CPT coding standards",
+      "Healthcare billing processes",
+      "HIPAA compliance basics",
+      "Medical terminology"
+    ],
+    "trainingMode": "Offline",
+    "certificationProvided": true,
+    "certificationName": "Certified Medical Coder (CMC)",
+    "eligibilityCriteria": "Graduates from Life Sciences or Paramedical streams",
+    "trainingProvider": "MediTrain Solutions"
+  },
+  {
+    "roleName": "Digital Marketing Trainee",
+    "roleDescription": "This training focuses on digital marketing concepts like SEO, social media marketing, content strategy, and analytics to prepare students for marketing roles.",
+    "industry": "Marketing & Media",
+    "educationQualification": "Any graduate or undergraduate",
+    "trainingDuration": "3 months",
+    "trainingFees": 12000,
+    "stipendIncluded": true,
+    "stipendAmount": 4000,
+    "accommodationProvided": false,
+    "location": "Remote (Online)",
+    "packageAfterTraining": "3.5 - 4.5 LPA",
+    "skillsCovered": [
+      "SEO & SEM",
+      "Google Ads and Analytics",
+      "Social Media Marketing",
+      "Email Campaigns and Automation"
+    ],
+    "trainingMode": "Online",
+    "certificationProvided": true,
+    "certificationName": "Certified Digital Marketing Professional",
+    "eligibilityCriteria": "Anyone with interest in marketing and communication",
+    "trainingProvider": "AdGrowth Academy"
+  }
+]
+

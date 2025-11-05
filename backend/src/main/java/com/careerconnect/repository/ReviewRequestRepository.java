@@ -7,6 +7,9 @@ import java.util.List;
 
 public interface ReviewRequestRepository extends MongoRepository<ReviewRequest, String> {
     List<ReviewRequest> findByResumeId(String resumeId);
+    List<ReviewRequest> findByStudentId(String studentId);
+    List<ReviewRequest> findByTypeAndStatus(String type, String status);
+    List<ReviewRequest> findByMentorId(String mentorId);
 }
 
 

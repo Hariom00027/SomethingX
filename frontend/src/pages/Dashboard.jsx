@@ -1,6 +1,7 @@
 import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Link } from 'react-router-dom';
+import ReviewNotifications from '../components/notifications/ReviewNotifications';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -92,14 +93,19 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Welcome back, {user?.name}!</h1>
-          <p className="mt-2 text-gray-600">
-            {user?.userType === 'STUDENT' && 'Explore your career development tools'}
-            {user?.userType === 'INSTITUTE' && 'Manage your educational programs'}
-            {user?.userType === 'INDUSTRY' && 'Connect with talented students'}
-            {!user?.userType && 'Complete your profile to get started'}
-          </p>
+        <div className="mb-8 flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Welcome back, {user?.name}!</h1>
+            <p className="mt-2 text-gray-600">
+              {user?.userType === 'STUDENT' && 'Explore your career development tools'}
+              {user?.userType === 'INSTITUTE' && 'Manage your educational programs'}
+              {user?.userType === 'INDUSTRY' && 'Connect with talented students'}
+              {!user?.userType && 'Complete your profile to get started'}
+            </p>
+          </div>
+          {user?.userType === 'STUDENT' && (
+            <ReviewNotifications />
+          )}
         </div>
 
         <div className="mb-8">

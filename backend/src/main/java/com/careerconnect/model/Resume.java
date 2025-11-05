@@ -30,6 +30,7 @@ public class Resume {
     private List<String> links;
     private List<String> sectionOrder;
     private Colors colors;
+    private Boolean mentorReviewRequested = false;
 
     @Data
     public static class Colors {

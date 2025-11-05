@@ -42,6 +42,11 @@ public class ResumeController {
         return resumeRepository.findByStudentId(studentId);
     }
 
+    @GetMapping("/mentor-review-requests")
+    public List<Resume> getMentorReviewRequests() {
+        return resumeRepository.findByMentorReviewRequestedTrue();
+    }
+
     @GetMapping(value = "/{id}/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
     public byte[] downloadPdf(@PathVariable String id) {
         var resume = resumeRepository.findById(id).orElse(null);

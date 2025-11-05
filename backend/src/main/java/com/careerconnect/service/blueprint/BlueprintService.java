@@ -37,6 +37,12 @@ public class BlueprintService {
                 .collect(Collectors.toList());
     }
 
+    public List<String> getSpecializations() {
+        return blueprintRepository.findByType("specialization").stream()
+                .map(Blueprint::getName)
+                .collect(Collectors.toList());
+    }
+
     public List<String> getRolesByIndustry(String industryName) {
         Optional<Blueprint> industry = blueprintRepository.findByNameAndType(industryName, "industry");
         return industry.map(Blueprint::getRoles).orElse(List.of());
@@ -286,7 +292,7 @@ public class BlueprintService {
         }
     }
 
-    public boolean mapIndustryToInstitute(String industryName, String instituteName) {
+    public boolean mapIndustryToEducation(String industryName, String educationName) {
         try {
             // Find the industry
             Optional<Blueprint> industryOpt = blueprintRepository.findByNameAndType(industryName, "industry");
@@ -294,29 +300,83 @@ public class BlueprintService {
                 return false;
             }
 
-            // Find or create institute
-            Optional<Blueprint> instituteOpt = blueprintRepository.findByNameAndType(instituteName, "institute");
-            Blueprint institute;
-            
-            if (instituteOpt.isEmpty()) {
-                // Create new institute
-                institute = new Blueprint();
-                institute.setType("institute");
-                institute.setName(instituteName);
-                institute.setActive(true);
-                institute.setCreatedBy("admin");
-                institute.setLastModifiedBy("admin");
-            } else {
-                institute = instituteOpt.get();
+            // Find the education
+            Optional<Blueprint> educationOpt = blueprintRepository.findByNameAndType(educationName, "education");
+            if (educationOpt.isEmpty()) {
+                return false;
             }
+
+            Blueprint industry = industryOpt.get();
             
-            // Add industry to institute's industries list if not already present
-            if (institute.getIndustries() == null) {
-                institute.setIndustries(new ArrayList<>());
+            // Add education to industry's educations list if not already present
+            if (industry.getEducations() == null) {
+                industry.setEducations(new ArrayList<>());
             }
-            if (!institute.getIndustries().contains(industryName)) {
-                institute.getIndustries().add(industryName);
-                blueprintRepository.save(institute);
+            if (!industry.getEducations().contains(educationName)) {
+                industry.getEducations().add(educationName);
+                blueprintRepository.save(industry);
+            }
+
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public boolean mapSpecializationToEducation(String specializationName, String educationName) {
+        try {
+            // Find the specialization
+            Optional<Blueprint> specializationOpt = blueprintRepository.findByNameAndType(specializationName, "specialization");
+            if (specializationOpt.isEmpty()) {
+                return false;
+            }
+
+            // Find the education
+            Optional<Blueprint> educationOpt = blueprintRepository.findByNameAndType(educationName, "education");
+            if (educationOpt.isEmpty()) {
+                return false;
+            }
+
+            Blueprint education = educationOpt.get();
+            
+            // Add specialization to education's specializations list if not already present
+            if (education.getSpecializations() == null) {
+                education.setSpecializations(new ArrayList<>());
+            }
+            if (!education.getSpecializations().contains(specializationName)) {
+                education.getSpecializations().add(specializationName);
+                blueprintRepository.save(education);
+            }
+
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public boolean mapRoleToSpecialization(String roleName, String specializationName) {
+        try {
+            // Find the role
+            Optional<Blueprint> roleOpt = blueprintRepository.findByNameAndType(roleName, "role");
+            if (roleOpt.isEmpty()) {
+                return false;
+            }
+
+            // Find the specialization
+            Optional<Blueprint> specializationOpt = blueprintRepository.findByNameAndType(specializationName, "specialization");
+            if (specializationOpt.isEmpty()) {
+                return false;
+            }
+
+            Blueprint specialization = specializationOpt.get();
+            
+            // Add role to specialization's roles list if not already present
+            if (specialization.getRoles() == null) {
+                specialization.setRoles(new ArrayList<>());
+            }
+            if (!specialization.getRoles().contains(roleName)) {
+                specialization.getRoles().add(roleName);
+                blueprintRepository.save(specialization);
             }
 
             return true;

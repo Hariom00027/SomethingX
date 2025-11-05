@@ -8,11 +8,12 @@ const RoleMappingManager = () => {
   const [roles, setRoles] = useState([]);
   const [industries, setIndustries] = useState([]);
   const [educations, setEducations] = useState([]);
-  const [institutes, setInstitutes] = useState([]);
+  const [specializations, setSpecializations] = useState([]);
   const [selectedRole, setSelectedRole] = useState('');
   const [selectedIndustry, setSelectedIndustry] = useState('');
   const [selectedEducation, setSelectedEducation] = useState('');
-  const [selectedInstitute, setSelectedInstitute] = useState('');
+  const [selectedSpecialization, setSelectedSpecialization] = useState('');
+  const [educationSpecializations, setEducationSpecializations] = useState([]);
   const [roleMappings, setRoleMappings] = useState({});
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -23,19 +24,33 @@ const RoleMappingManager = () => {
 
   const fetchData = async () => {
     try {
-      const [rolesRes, industriesRes, educationsRes, institutesRes] = await Promise.all([
+      const [rolesRes, industriesRes, educationsRes, specializationsRes] = await Promise.all([
         axios.get('http://localhost:8080/api/blueprint/roles'),
         axios.get('http://localhost:8080/api/blueprint/industries'),
         axios.get('http://localhost:8080/api/blueprint/educations'),
-        axios.get('http://localhost:8080/api/admin/blueprints/type/institute')
+        axios.get('http://localhost:8080/api/blueprint/specializations')
       ]);
       
       setRoles(rolesRes.data);
       setIndustries(industriesRes.data);
       setEducations(educationsRes.data);
-      setInstitutes(institutesRes.data.map(inst => inst.name));
+      setSpecializations(specializationsRes.data);
     } catch (error) {
       console.error('Error fetching data:', error);
+    }
+  };
+
+  const fetchEducationSpecializations = async (educationName) => {
+    if (!educationName) {
+      setEducationSpecializations([]);
+      return;
+    }
+    try {
+      const response = await axios.get(`http://localhost:8080/api/blueprint/education/${educationName}/specializations`);
+      setEducationSpecializations(response.data);
+    } catch (error) {
+      console.error('Error fetching education specializations:', error);
+      setEducationSpecializations([]);
     }
   };
 
@@ -77,18 +92,55 @@ const RoleMappingManager = () => {
     }
   };
 
-  const handleMapIndustryToInstitute = async () => {
-    if (!selectedIndustry || !selectedInstitute) {
-      setMessage('Please select both industry and institute');
+  const handleMapIndustryToEducation = async () => {
+    if (!selectedIndustry || !selectedEducation) {
+      setMessage('Please select both industry and education');
       return;
     }
 
     setLoading(true);
     try {
-      await axios.post(`http://localhost:8080/api/blueprint/industry/${selectedIndustry}/map-institute?instituteName=${selectedInstitute}`);
-      setMessage(`Successfully mapped ${selectedIndustry} to ${selectedInstitute}`);
+      await axios.post(`http://localhost:8080/api/blueprint/industry/${selectedIndustry}/map-education?educationName=${selectedEducation}`);
+      setMessage(`Successfully mapped ${selectedIndustry} to ${selectedEducation}`);
     } catch (error) {
-      setMessage('Error mapping industry to institute');
+      setMessage('Error mapping industry to education');
+      console.error('Error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleMapSpecializationToEducation = async () => {
+    if (!selectedSpecialization || !selectedEducation) {
+      setMessage('Please select both specialization and education');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await axios.post(`http://localhost:8080/api/blueprint/specialization/${selectedSpecialization}/map-education?educationName=${selectedEducation}`);
+      setMessage(`Successfully mapped ${selectedSpecialization} to ${selectedEducation}`);
+    } catch (error) {
+      setMessage('Error mapping specialization to education');
+      console.error('Error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleMapRoleToSpecialization = async () => {
+    if (!selectedRole || !selectedSpecialization) {
+      setMessage('Please select both role and specialization');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await axios.post(`http://localhost:8080/api/blueprint/role/${selectedRole}/map-specialization?specializationName=${selectedSpecialization}`);
+      setMessage(`Successfully mapped ${selectedRole} to ${selectedSpecialization}`);
+      fetchRoleMappings();
+    } catch (error) {
+      setMessage('Error mapping role to specialization');
       console.error('Error:', error);
     } finally {
       setLoading(false);
@@ -180,7 +232,11 @@ const RoleMappingManager = () => {
                 <label className="block text-sm font-medium mb-1">Select Education</label>
                 <select
                   value={selectedEducation}
-                  onChange={(e) => setSelectedEducation(e.target.value)}
+                  onChange={(e) => {
+                    setSelectedEducation(e.target.value);
+                    setSelectedSpecialization(''); // Reset specialization when education changes
+                    fetchEducationSpecializations(e.target.value);
+                  }}
                   className="w-full p-2 border border-gray-300 rounded-md"
                 >
                   <option value="">Choose an education</option>
@@ -190,14 +246,36 @@ const RoleMappingManager = () => {
                 </select>
               </div>
             </div>
-            <Button onClick={handleMapRoleToEducation} disabled={loading}>
-              {loading ? 'Mapping...' : 'Map Role to Education'}
-            </Button>
+            {educationSpecializations.length > 0 && (
+              <div className="mb-3">
+                <label className="block text-sm font-medium mb-1">Select Specialization (Optional)</label>
+                <select
+                  value={selectedSpecialization}
+                  onChange={(e) => setSelectedSpecialization(e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded-md"
+                >
+                  <option value="">Choose a specialization (optional)</option>
+                  {educationSpecializations.map(spec => (
+                    <option key={spec} value={spec}>{spec}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+            <div className="flex gap-2">
+              <Button onClick={handleMapRoleToEducation} disabled={loading}>
+                {loading ? 'Mapping...' : 'Map Role to Education'}
+              </Button>
+              {selectedSpecialization && (
+                <Button onClick={handleMapRoleToSpecialization} disabled={loading} variant="outline">
+                  {loading ? 'Mapping...' : 'Map Role to Specialization'}
+                </Button>
+              )}
+            </div>
           </div>
 
-          {/* Industry to Institute Mapping */}
+          {/* Industry to Education Mapping */}
           <div className="border p-4 rounded-lg">
-            <h3 className="text-lg font-semibold mb-3">Map Industry to Institute</h3>
+            <h3 className="text-lg font-semibold mb-3">Map Industry to Education</h3>
             <div className="grid grid-cols-2 gap-4 mb-3">
               <div>
                 <label className="block text-sm font-medium mb-1">Select Industry</label>
@@ -213,21 +291,65 @@ const RoleMappingManager = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Select Institute</label>
+                <label className="block text-sm font-medium mb-1">Select Education</label>
                 <select
-                  value={selectedInstitute}
-                  onChange={(e) => setSelectedInstitute(e.target.value)}
+                  value={selectedEducation}
+                  onChange={(e) => {
+                    setSelectedEducation(e.target.value);
+                    setSelectedSpecialization(''); // Reset specialization when education changes
+                    fetchEducationSpecializations(e.target.value);
+                  }}
                   className="w-full p-2 border border-gray-300 rounded-md"
                 >
-                  <option value="">Choose an institute</option>
-                  {institutes.map(institute => (
-                    <option key={institute} value={institute}>{institute}</option>
+                  <option value="">Choose an education</option>
+                  {educations.map(education => (
+                    <option key={education} value={education}>{education}</option>
                   ))}
                 </select>
               </div>
             </div>
-            <Button onClick={handleMapIndustryToInstitute} disabled={loading}>
-              {loading ? 'Mapping...' : 'Map Industry to Institute'}
+            <Button onClick={handleMapIndustryToEducation} disabled={loading}>
+              {loading ? 'Mapping...' : 'Map Industry to Education'}
+            </Button>
+          </div>
+
+          {/* Specialization to Education Mapping */}
+          <div className="border p-4 rounded-lg">
+            <h3 className="text-lg font-semibold mb-3">Map Specialization to Education</h3>
+            <div className="grid grid-cols-2 gap-4 mb-3">
+              <div>
+                <label className="block text-sm font-medium mb-1">Select Specialization</label>
+                <select
+                  value={selectedSpecialization}
+                  onChange={(e) => setSelectedSpecialization(e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded-md"
+                >
+                  <option value="">Choose a specialization</option>
+                  {specializations.map(spec => (
+                    <option key={spec} value={spec}>{spec}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Select Education</label>
+                <select
+                  value={selectedEducation}
+                  onChange={(e) => {
+                    setSelectedEducation(e.target.value);
+                    setSelectedSpecialization(''); // Reset specialization when education changes
+                    fetchEducationSpecializations(e.target.value);
+                  }}
+                  className="w-full p-2 border border-gray-300 rounded-md"
+                >
+                  <option value="">Choose an education</option>
+                  {educations.map(education => (
+                    <option key={education} value={education}>{education}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <Button onClick={handleMapSpecializationToEducation} disabled={loading}>
+              {loading ? 'Mapping...' : 'Map Specialization to Education'}
             </Button>
           </div>
 

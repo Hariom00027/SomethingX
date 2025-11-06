@@ -17,6 +17,13 @@ public class TrainingEnrollment {
     private String trainingId;
     private String trainingRoleName;
 
+    // Institute details
+    private String instituteName;
+    private String instituteContactPerson;
+    private String instituteEmail;
+    private String institutePhone;
+    private String instituteNotes;
+
     // Student personal info
     private String fullName;
     private String email;

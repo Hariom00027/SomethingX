@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,15 @@ import { Textarea } from "@/components/ui/textarea";
 import apiClient from "@/lib/apiClient";
 import { X } from "lucide-react";
 
-const createEmptyStudent = () => ({
+const EMPTY_INSTITUTE = {
+  instituteName: "",
+  instituteContactPerson: "",
+  instituteEmail: "",
+  institutePhone: "",
+  instituteNotes: "",
+};
+
+const EMPTY_STUDENT = {
   fullName: "",
   email: "",
   phone: "",
@@ -27,25 +35,65 @@ const createEmptyStudent = () => ({
   knownSkills: "",
   resumeUrl: "",
   additionalNotes: "",
+};
+
+const REQUIRED_INSTITUTE_FIELDS = [
+  { name: "instituteName", label: "Institute Name" },
+  { name: "instituteContactPerson", label: "Primary Contact Person" },
+  { name: "instituteEmail", label: "Contact Email" },
+  { name: "institutePhone", label: "Contact Phone" },
+];
+
+const REQUIRED_STUDENT_FIELDS = [
+  { name: "fullName", label: "Full Name" },
+  { name: "email", label: "Email" },
+  { name: "phone", label: "Phone" },
+  { name: "gender", label: "Gender" },
+  { name: "dateOfBirth", label: "Date of Birth" },
+  { name: "addressLine1", label: "Address Line 1" },
+  { name: "city", label: "City" },
+  { name: "state", label: "State" },
+  { name: "pincode", label: "Pincode" },
+  { name: "highestQualification", label: "Highest Qualification" },
+  { name: "collegeName", label: "College Name" },
+];
+
+const buildDefaultFlowState = () => ({
+  visible: false,
+  step: "INSTITUTE",
+  training: null,
+  institute: { ...EMPTY_INSTITUTE },
+  student: { ...EMPTY_STUDENT },
+  status: "",
+  error: "",
+  submitting: false,
 });
 
 const StudentTrainingRoleReady = () => {
   const [trainings, setTrainings] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedTraining, setSelectedTraining] = useState(null);
-  const [showEnrollmentForm, setShowEnrollmentForm] = useState(false);
-  const [formData, setFormData] = useState(createEmptyStudent);
-  const [submitting, setSubmitting] = useState(false);
-  const [statusMessage, setStatusMessage] = useState("");
+  const [fetchError, setFetchError] = useState("");
+  const [flow, setFlow] = useState(buildDefaultFlowState);
 
   useEffect(() => {
     const fetchTrainings = async () => {
       try {
         setLoading(true);
+        setFetchError("");
         const response = await apiClient.get("/trainings");
-        setTrainings(response.data ?? []);
+        const normalized = (response.data ?? []).map((item, index) => {
+          const apiId = item.id ?? item._id ?? item.trainingId ?? item?.identifier ?? null;
+          const clientKey = apiId ?? (item.roleName ? `${item.roleName}-${index}` : `training-${index}`);
+          return {
+            ...item,
+            apiId,
+            clientKey,
+          };
+        });
+        setTrainings(normalized);
       } catch (error) {
         console.error("Error fetching trainings:", error);
+        setFetchError("Unable to load trainings right now. Please refresh the page.");
       } finally {
         setLoading(false);
       }
@@ -54,87 +102,567 @@ const StudentTrainingRoleReady = () => {
     fetchTrainings();
   }, []);
 
-  const handleEnroll = (training) => {
-    setSelectedTraining(training);
-    setFormData(createEmptyStudent());
-    setStatusMessage("");
-    setShowEnrollmentForm(true);
-  };
+  const usableTrainings = useMemo(() => trainings ?? [], [trainings]);
 
-  const handleInputChange = (event) => {
-    const { name, value } = event.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  const closeModal = () => {
-    setShowEnrollmentForm(false);
-    setSelectedTraining(null);
-    setStatusMessage("");
-  };
-
-  const validateForm = () => {
-    const requiredFields = [
-      "fullName",
-      "email",
-      "phone",
-      "gender",
-      "dateOfBirth",
-      "addressLine1",
-      "city",
-      "state",
-      "pincode",
-      "highestQualification",
-      "collegeName",
-    ];
-
-    for (const field of requiredFields) {
-      if (!formData[field] || String(formData[field]).trim() === "") {
-        return false;
-      }
-    }
-
-    return true;
-  };
-
-  const submitEnrollment = async ({ closeAfterSave }) => {
-    if (!selectedTraining) {
+  const startEnrollment = (training) => {
+    if (!training?.apiId) {
+      setFlow((prev) => ({
+        ...buildDefaultFlowState(),
+        error: "This training is missing an identifier. Please refresh the page and try again.",
+      }));
       return;
     }
 
-    if (!validateForm()) {
-      alert("Please fill in all required fields before proceeding.");
+    setFlow({
+      ...buildDefaultFlowState(),
+      visible: true,
+      training,
+      institute: { ...EMPTY_INSTITUTE },
+      student: { ...EMPTY_STUDENT },
+    });
+  };
+
+  const closeEnrollment = () => {
+    setFlow(buildDefaultFlowState());
+  };
+
+  const updateInstituteField = (event) => {
+    const { name, value } = event.target;
+    setFlow((prev) => ({
+      ...prev,
+      institute: {
+        ...prev.institute,
+        [name]: value,
+      },
+    }));
+  };
+
+  const updateStudentField = (event) => {
+    const { name, value } = event.target;
+    setFlow((prev) => ({
+      ...prev,
+      student: {
+        ...prev.student,
+        [name]: value,
+      },
+    }));
+  };
+
+  const validateFields = (values, requirements) => {
+    for (const field of requirements) {
+      const raw = values[field.name];
+      if (raw === undefined || String(raw).trim() === "") {
+        return { valid: false, missing: field.label };
+      }
+    }
+    return { valid: true };
+  };
+
+  const proceedToStudentStep = () => {
+    const validation = validateFields(flow.institute, REQUIRED_INSTITUTE_FIELDS);
+    if (!validation.valid) {
+      setFlow((prev) => ({
+        ...prev,
+        error: `Please provide ${validation.missing} before continuing.`,
+      }));
+      return;
+    }
+
+    setFlow((prev) => ({
+      ...prev,
+      error: "",
+      step: "STUDENT",
+    }));
+  };
+
+  const submitEnrollment = async ({ addAnother }) => {
+    if (!flow.training?.apiId) {
+      setFlow((prev) => ({
+        ...prev,
+        error: "Training identifier is missing. Close the form, refresh, and try again.",
+      }));
+      return;
+    }
+
+    const instituteCheck = validateFields(flow.institute, REQUIRED_INSTITUTE_FIELDS);
+    if (!instituteCheck.valid) {
+      setFlow((prev) => ({
+        ...prev,
+        error: `Please provide ${instituteCheck.missing} before saving.`,
+      }));
+      return;
+    }
+
+    const studentCheck = validateFields(flow.student, REQUIRED_STUDENT_FIELDS);
+    if (!studentCheck.valid) {
+      setFlow((prev) => ({
+        ...prev,
+        error: `Please provide ${studentCheck.missing} before saving.`,
+      }));
       return;
     }
 
     try {
-      setSubmitting(true);
+      setFlow((prev) => ({ ...prev, submitting: true, error: "", status: "" }));
+
       const payload = {
-        ...formData,
-        percentageOrCgpa: formData.percentageOrCgpa ? parseFloat(formData.percentageOrCgpa) : 0,
-        yearsOfExperience: formData.yearsOfExperience ? parseInt(formData.yearsOfExperience, 10) : 0,
-        knownSkills: formData.knownSkills
-          ? formData.knownSkills.split(",").map((skill) => skill.trim()).filter(Boolean)
+        ...flow.institute,
+        ...flow.student,
+        percentageOrCgpa: flow.student.percentageOrCgpa ? parseFloat(flow.student.percentageOrCgpa) : 0,
+        yearsOfExperience: flow.student.yearsOfExperience ? parseInt(flow.student.yearsOfExperience, 10) : 0,
+        knownSkills: flow.student.knownSkills
+          ? flow.student.knownSkills
+              .split(",")
+              .map((skill) => skill.trim())
+              .filter(Boolean)
           : [],
       };
 
-      await apiClient.post(`/trainings/${selectedTraining.id}/enroll`, payload);
+      await apiClient.post(`/trainings/${flow.training.apiId}/enroll`, payload);
 
-      if (closeAfterSave) {
-        alert("Student data saved successfully.");
-        closeModal();
+      if (addAnother) {
+        setFlow((prev) => ({
+          ...prev,
+          submitting: false,
+          status: "Student saved. You can add another now.",
+          student: { ...EMPTY_STUDENT },
+        }));
       } else {
-        setStatusMessage("Student data saved. You can add another student now.");
-        setFormData(createEmptyStudent());
+        setFlow((prev) => ({
+          ...prev,
+          submitting: false,
+        }));
+        closeEnrollment();
+        alert("Student enrollment saved successfully.");
       }
     } catch (error) {
-      console.error("Error enrolling student:", error);
-      alert("Failed to save enrollment. Please try again.");
-    } finally {
-      setSubmitting(false);
+      console.error("Error saving enrollment:", error);
+      const notFound = error?.response?.status === 404;
+      setFlow((prev) => ({
+        ...prev,
+        submitting: false,
+        error: notFound
+          ? "This training is no longer available. Please refresh the page."
+          : "Unable to save enrollment right now. Please try again.",
+      }));
     }
+  };
+
+  const renderInstituteForm = () => (
+    <form
+      onSubmit={(event) => {
+        event.preventDefault();
+        proceedToStudentStep();
+      }}
+      className="p-6 space-y-6"
+    >
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="md:col-span-2">
+          <label className="block text-sm font-medium mb-1">
+            Institute Name <span className="text-red-500">*</span>
+          </label>
+          <Input
+            name="instituteName"
+            value={flow.institute.instituteName}
+            onChange={updateInstituteField}
+            placeholder="Enter institute or university name"
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">
+            Primary Contact Person <span className="text-red-500">*</span>
+          </label>
+          <Input
+            name="instituteContactPerson"
+            value={flow.institute.instituteContactPerson}
+            onChange={updateInstituteField}
+            placeholder="Name of coordinator"
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">
+            Contact Email <span className="text-red-500">*</span>
+          </label>
+          <Input
+            type="email"
+            name="instituteEmail"
+            value={flow.institute.instituteEmail}
+            onChange={updateInstituteField}
+            placeholder="coordinator@example.com"
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">
+            Contact Phone <span className="text-red-500">*</span>
+          </label>
+          <Input
+            type="tel"
+            name="institutePhone"
+            value={flow.institute.institutePhone}
+            onChange={updateInstituteField}
+            placeholder="Enter contact number"
+            required
+          />
+        </div>
+        <div className="md:col-span-2">
+          <label className="block text-sm font-medium mb-1">Notes for SaarthiX Team</label>
+          <Textarea
+            name="instituteNotes"
+            value={flow.institute.instituteNotes}
+            onChange={updateInstituteField}
+            placeholder="Share batch size, preferred timelines, or any special requirements"
+            rows={4}
+          />
+        </div>
+      </div>
+
+      <div className="flex flex-wrap justify-end gap-3 border-t pt-4">
+        <Button type="button" variant="outline" onClick={closeEnrollment}>
+          Cancel
+        </Button>
+        <Button type="submit">Next</Button>
+      </div>
+    </form>
+  );
+
+  const renderStudentForm = () => (
+    <form
+      onSubmit={(event) => {
+        event.preventDefault();
+        submitEnrollment({ addAnother: false });
+      }}
+      className="p-6 space-y-6"
+    >
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium mb-1">
+            Full Name <span className="text-red-500">*</span>
+          </label>
+          <Input
+            name="fullName"
+            value={flow.student.fullName}
+            onChange={updateStudentField}
+            placeholder="Enter student's full name"
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">
+            Email <span className="text-red-500">*</span>
+          </label>
+          <Input
+            type="email"
+            name="email"
+            value={flow.student.email}
+            onChange={updateStudentField}
+            placeholder="Enter student's email"
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">
+            Phone <span className="text-red-500">*</span>
+          </label>
+          <Input
+            type="tel"
+            name="phone"
+            value={flow.student.phone}
+            onChange={updateStudentField}
+            placeholder="Enter student's phone number"
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">
+            Gender <span className="text-red-500">*</span>
+          </label>
+          <select
+            name="gender"
+            value={flow.student.gender}
+            onChange={updateStudentField}
+            required
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+          >
+            <option value="">Select gender</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Other">Other</option>
+            <option value="Prefer not to say">Prefer not to say</option>
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">
+            Date of Birth <span className="text-red-500">*</span>
+          </label>
+          <Input
+            type="date"
+            name="dateOfBirth"
+            value={flow.student.dateOfBirth}
+            onChange={updateStudentField}
+            required
+          />
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold">Address</h3>
+        <div>
+          <label className="block text-sm font-medium mb-1">
+            Address Line 1 <span className="text-red-500">*</span>
+          </label>
+          <Input
+            name="addressLine1"
+            value={flow.student.addressLine1}
+            onChange={updateStudentField}
+            placeholder="Street address"
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Address Line 2</label>
+          <Input
+            name="addressLine2"
+            value={flow.student.addressLine2}
+            onChange={updateStudentField}
+            placeholder="Apartment, suite, etc."
+          />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              City <span className="text-red-500">*</span>
+            </label>
+            <Input
+              name="city"
+              value={flow.student.city}
+              onChange={updateStudentField}
+              placeholder="City"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              State <span className="text-red-500">*</span>
+            </label>
+            <Input
+              name="state"
+              value={flow.student.state}
+              onChange={updateStudentField}
+              placeholder="State"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              Pincode <span className="text-red-500">*</span>
+            </label>
+            <Input
+              name="pincode"
+              value={flow.student.pincode}
+              onChange={updateStudentField}
+              placeholder="Pincode"
+              required
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold">Education</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              Highest Qualification <span className="text-red-500">*</span>
+            </label>
+            <Input
+              name="highestQualification"
+              value={flow.student.highestQualification}
+              onChange={updateStudentField}
+              placeholder="e.g., B.Tech, B.Com"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Specialization</label>
+            <Input
+              name="specialization"
+              value={flow.student.specialization}
+              onChange={updateStudentField}
+              placeholder="e.g., Computer Science"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              College Name <span className="text-red-500">*</span>
+            </label>
+            <Input
+              name="collegeName"
+              value={flow.student.collegeName}
+              onChange={updateStudentField}
+              placeholder="Enter college/university name"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Graduation Year</label>
+            <Input
+              type="number"
+              name="graduationYear"
+              value={flow.student.graduationYear}
+              onChange={updateStudentField}
+              placeholder="e.g., 2024"
+              min="2000"
+              max="2035"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Percentage/CGPA</label>
+            <Input
+              type="number"
+              name="percentageOrCgpa"
+              value={flow.student.percentageOrCgpa}
+              onChange={updateStudentField}
+              placeholder="e.g., 75.5 or 8.5"
+              step="0.01"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold">Experience & Skills</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">Years of Experience</label>
+            <Input
+              type="number"
+              name="yearsOfExperience"
+              value={flow.student.yearsOfExperience}
+              onChange={updateStudentField}
+              placeholder="0"
+              min="0"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Known Skills</label>
+            <Input
+              name="knownSkills"
+              value={flow.student.knownSkills}
+              onChange={updateStudentField}
+              placeholder="Comma-separated skills"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold">Additional Information</h3>
+        <div>
+          <label className="block text-sm font-medium mb-1">Resume URL (Optional)</label>
+          <Input
+            type="url"
+            name="resumeUrl"
+            value={flow.student.resumeUrl}
+            onChange={updateStudentField}
+            placeholder="https://drive.google.com/..."
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Additional Notes</label>
+          <Textarea
+            name="additionalNotes"
+            value={flow.student.additionalNotes}
+            onChange={updateStudentField}
+            placeholder="Any additional information about the student"
+            rows={4}
+          />
+        </div>
+      </div>
+
+      <div className="flex flex-wrap justify-end gap-3 border-t pt-4">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => setFlow((prev) => ({ ...prev, step: "INSTITUTE", status: "", error: "" }))}
+          disabled={flow.submitting}
+        >
+          Back
+        </Button>
+        <Button type="submit" disabled={flow.submitting}>
+          {flow.submitting ? "Saving..." : "Save & Close"}
+        </Button>
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={() => submitEnrollment({ addAnother: true })}
+          disabled={flow.submitting}
+        >
+          {flow.submitting ? "Saving..." : "Save & Add Another"}
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={closeEnrollment}
+          disabled={flow.submitting}
+        >
+          Discard
+        </Button>
+      </div>
+    </form>
+  );
+
+  const renderModal = () => {
+    if (!flow.visible || !flow.training) {
+      return null;
+    }
+
+    return (
+      <div
+        className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] p-4"
+        onClick={(event) => {
+          if (event.target === event.currentTarget && !flow.submitting) {
+            closeEnrollment();
+          }
+        }}
+      >
+        <div
+          className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl"
+          onClick={(event) => event.stopPropagation()}
+        >
+          <div className="sticky top-0 bg-white border-b p-4 flex justify-between items-center z-10">
+            <div>
+              <h2 className="text-2xl font-bold">
+                {flow.step === "INSTITUTE"
+                  ? `Institute Enrollment for ${flow.training.roleName}`
+                  : `Enroll Students for ${flow.training.roleName}`}
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                Step {flow.step === "INSTITUTE" ? "1" : "2"} of 2
+              </p>
+              {flow.status && flow.step === "STUDENT" && (
+                <p className="text-sm text-green-600 mt-1">{flow.status}</p>
+              )}
+              {flow.error && <p className="text-sm text-red-600 mt-1">{flow.error}</p>}
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={closeEnrollment}
+              className="h-8 w-8"
+              type="button"
+              disabled={flow.submitting}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+
+          {flow.step === "INSTITUTE" ? renderInstituteForm() : renderStudentForm()}
+        </div>
+      </div>
+    );
   };
 
   if (loading) {
@@ -150,25 +678,30 @@ const StudentTrainingRoleReady = () => {
   return (
     <>
       <DashboardLayout sidebar={<div>Sidebar</div>}>
-        <div className="container mx-auto px-4 py-8">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold mb-2">Student Training (Role Ready)</h1>
+        <div className="container mx-auto px-4 py-8 space-y-6">
+          <header className="space-y-2">
+            <h1 className="text-3xl font-bold">Student Training (Role Ready)</h1>
             <p className="text-muted-foreground">
               Enroll batches of students into industry-aligned Role Ready training programs.
             </p>
-          </div>
+            {fetchError && <p className="text-sm text-red-600">{fetchError}</p>}
+          </header>
 
-          {trainings.length === 0 ? (
+          {usableTrainings.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-lg text-muted-foreground">No training programs available at the moment.</p>
+              <p className="text-lg text-muted-foreground">
+                No training programs available at the moment.
+              </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {trainings.map((training) => (
-                <Card key={training.id} className="flex flex-col hover:shadow-lg transition-shadow">
+              {usableTrainings.map((training) => (
+                <Card key={training.clientKey} className="flex flex-col hover:shadow-lg transition-shadow">
                   <CardHeader>
                     <CardTitle className="text-xl">{training.roleName}</CardTitle>
-                    <CardDescription className="line-clamp-2">{training.roleDescription}</CardDescription>
+                    <CardDescription className="line-clamp-2">
+                      {training.roleDescription}
+                    </CardDescription>
                   </CardHeader>
                   <CardContent className="flex-1 space-y-3 text-sm">
                     <div>
@@ -178,11 +711,13 @@ const StudentTrainingRoleReady = () => {
                       <span className="font-semibold">Duration:</span> {training.trainingDuration}
                     </div>
                     <div>
-                      <span className="font-semibold">Student Fees:</span> ₹{Number(training.trainingFees ?? 0).toLocaleString()}
+                      <span className="font-semibold">Student Fees:</span> ₹
+                      {Number(training.trainingFees ?? 0).toLocaleString()}
                     </div>
                     {typeof training.instituteTrainingFees === "number" && (
                       <div>
-                        <span className="font-semibold">Institute Fees:</span> ₹{Number(training.instituteTrainingFees ?? 0).toLocaleString()}
+                        <span className="font-semibold">Institute Fees:</span> ₹
+                        {Number(training.instituteTrainingFees ?? 0).toLocaleString()}
                       </div>
                     )}
                     {typeof training.totalStudentsAllowed === "number" && (
@@ -192,7 +727,8 @@ const StudentTrainingRoleReady = () => {
                     )}
                     {training.stipendIncluded && (
                       <div className="text-green-600">
-                        <span className="font-semibold">Stipend:</span> ₹{Number(training.stipendAmount ?? 0).toLocaleString()}/month
+                        <span className="font-semibold">Stipend:</span> ₹
+                        {Number(training.stipendAmount ?? 0).toLocaleString()}/month
                       </div>
                     )}
                     <div>
@@ -214,7 +750,13 @@ const StudentTrainingRoleReady = () => {
                     </div>
                   </CardContent>
                   <CardFooter>
-                    <Button type="button" onClick={() => handleEnroll(training)} className="w-full">
+                    <Button
+                      type="button"
+                      onClick={() => startEnrollment(training)}
+                      className="w-full"
+                      disabled={!training.apiId}
+                      title={!training.apiId ? "Training identifier missing. Please refresh." : undefined}
+                    >
                       Enroll Students
                     </Button>
                   </CardFooter>
@@ -225,315 +767,7 @@ const StudentTrainingRoleReady = () => {
         </div>
       </DashboardLayout>
 
-      {showEnrollmentForm && selectedTraining && (
-        <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] p-4"
-          onClick={(event) => {
-            if (event.target === event.currentTarget) {
-              closeModal();
-            }
-          }}
-        >
-          <div
-            className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="sticky top-0 bg-white border-b p-4 flex justify-between items-center z-10">
-              <div>
-                <h2 className="text-2xl font-bold">Enroll Students for {selectedTraining.roleName}</h2>
-                {statusMessage && <p className="text-sm text-green-600 mt-1">{statusMessage}</p>}
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={closeModal}
-                className="h-8 w-8"
-                type="button"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-
-            <form
-              onSubmit={(event) => {
-                event.preventDefault();
-                submitEnrollment({ closeAfterSave: true });
-              }}
-              className="p-6 space-y-6"
-            >
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Full Name <span className="text-red-500">*</span>
-                  </label>
-                  <Input
-                    name="fullName"
-                    value={formData.fullName}
-                    onChange={handleInputChange}
-                    required
-                    placeholder="Enter student's full name"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Email <span className="text-red-500">*</span>
-                  </label>
-                  <Input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    required
-                    placeholder="Enter student's email"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Phone <span className="text-red-500">*</span>
-                  </label>
-                  <Input
-                    type="tel"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleInputChange}
-                    required
-                    placeholder="Enter student's phone number"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Gender <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    name="gender"
-                    value={formData.gender}
-                    onChange={handleInputChange}
-                    required
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  >
-                    <option value="">Select gender</option>
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                    <option value="Other">Other</option>
-                    <option value="Prefer not to say">Prefer not to say</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Date of Birth <span className="text-red-500">*</span>
-                  </label>
-                  <Input
-                    type="date"
-                    name="dateOfBirth"
-                    value={formData.dateOfBirth}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Address</h3>
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Address Line 1 <span className="text-red-500">*</span>
-                  </label>
-                  <Input
-                    name="addressLine1"
-                    value={formData.addressLine1}
-                    onChange={handleInputChange}
-                    required
-                    placeholder="Street address"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Address Line 2</label>
-                  <Input
-                    name="addressLine2"
-                    value={formData.addressLine2}
-                    onChange={handleInputChange}
-                    placeholder="Apartment, suite, etc."
-                  />
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      City <span className="text-red-500">*</span>
-                    </label>
-                    <Input
-                      name="city"
-                      value={formData.city}
-                      onChange={handleInputChange}
-                      required
-                      placeholder="City"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      State <span className="text-red-500">*</span>
-                    </label>
-                    <Input
-                      name="state"
-                      value={formData.state}
-                      onChange={handleInputChange}
-                      required
-                      placeholder="State"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Pincode <span className="text-red-500">*</span>
-                    </label>
-                    <Input
-                      name="pincode"
-                      value={formData.pincode}
-                      onChange={handleInputChange}
-                      required
-                      placeholder="Pincode"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Education</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Highest Qualification <span className="text-red-500">*</span>
-                    </label>
-                    <Input
-                      name="highestQualification"
-                      value={formData.highestQualification}
-                      onChange={handleInputChange}
-                      required
-                      placeholder="e.g., B.Tech, B.Com, M.Com"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Specialization</label>
-                    <Input
-                      name="specialization"
-                      value={formData.specialization}
-                      onChange={handleInputChange}
-                      placeholder="e.g., Computer Science, Finance"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      College Name <span className="text-red-500">*</span>
-                    </label>
-                    <Input
-                      name="collegeName"
-                      value={formData.collegeName}
-                      onChange={handleInputChange}
-                      required
-                      placeholder="Enter college/university name"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Graduation Year</label>
-                    <Input
-                      type="number"
-                      name="graduationYear"
-                      value={formData.graduationYear}
-                      onChange={handleInputChange}
-                      placeholder="e.g., 2024"
-                      min="2000"
-                      max="2035"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Percentage/CGPA</label>
-                    <Input
-                      type="number"
-                      name="percentageOrCgpa"
-                      value={formData.percentageOrCgpa}
-                      onChange={handleInputChange}
-                      placeholder="e.g., 75.5 or 8.5"
-                      step="0.01"
-                      min="0"
-                      max="100"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Experience & Skills</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Years of Experience</label>
-                    <Input
-                      type="number"
-                      name="yearsOfExperience"
-                      value={formData.yearsOfExperience}
-                      onChange={handleInputChange}
-                      placeholder="0"
-                      min="0"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Known Skills</label>
-                    <Input
-                      name="knownSkills"
-                      value={formData.knownSkills}
-                      onChange={handleInputChange}
-                      placeholder="Comma-separated skills"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Additional Information</h3>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Resume URL (Optional)</label>
-                  <Input
-                    type="url"
-                    name="resumeUrl"
-                    value={formData.resumeUrl}
-                    onChange={handleInputChange}
-                    placeholder="https://drive.google.com/..."
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Additional Notes</label>
-                  <Textarea
-                    name="additionalNotes"
-                    value={formData.additionalNotes}
-                    onChange={handleInputChange}
-                    placeholder="Any additional information about the student"
-                    rows={4}
-                  />
-                </div>
-              </div>
-
-              <div className="flex flex-wrap justify-end gap-3 border-t pt-4">
-                <Button type="submit" disabled={submitting}>
-                  {submitting ? "Saving..." : "Save Data"}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={closeModal}
-                  disabled={submitting}
-                >
-                  Discard
-                </Button>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() => submitEnrollment({ closeAfterSave: false })}
-                  disabled={submitting}
-                >
-                  {submitting ? "Saving..." : "Add New Student"}
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {renderModal()}
     </>
   );
 };

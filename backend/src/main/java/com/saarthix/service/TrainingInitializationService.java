@@ -44,6 +44,13 @@ public class TrainingInitializationService implements CommandLineRunner {
         t1.setCertificationName("Certified BMS Engineer");
         t1.setEligibilityCriteria("Final year or graduated students from Electrical or Mechanical background");
         t1.setTrainingProvider("TechInfra Automation Pvt. Ltd.");
+        t1.setDayOneReady(true);
+        t1.setDayOneSummary("Certified to operate BMS consoles, respond to alerts, and log incidents from day one.");
+        t1.setDayOneDeliverables(Arrays.asList(
+                "Perform daily system health checks",
+                "Respond to HVAC and safety alerts within 15 minutes",
+                "Log and escalate incidents following SOPs"
+        ));
 
         Training t2 = new Training();
         t2.setRoleName("Data Analyst Intern");
@@ -65,6 +72,13 @@ public class TrainingInitializationService implements CommandLineRunner {
         t2.setCertificationName("Certified Data Analyst");
         t2.setEligibilityCriteria("Undergraduate students or graduates from any stream");
         t2.setTrainingProvider("DataMinds Analytics Academy");
+        t2.setDayOneReady(true);
+        t2.setDayOneSummary("Ready to pull data, build dashboards, and deliver daily metrics updates.");
+        t2.setDayOneDeliverables(Arrays.asList(
+                "Publish a daily KPI dashboard refresh",
+                "Write parameterized SQL queries for ad-hoc asks",
+                "Present findings with clear narrative decks"
+        ));
 
         Training t3 = new Training();
         t3.setRoleName("Full Stack Developer Trainee");
@@ -86,6 +100,13 @@ public class TrainingInitializationService implements CommandLineRunner {
         t3.setCertificationName("Full Stack Developer Certificate");
         t3.setEligibilityCriteria("Candidates with programming knowledge preferred");
         t3.setTrainingProvider("CodeX Technologies");
+        t3.setDayOneReady(true);
+        t3.setDayOneSummary("Capable of shipping features and resolving production bugs on day one.");
+        t3.setDayOneDeliverables(Arrays.asList(
+                "Pick up a scoped user story and deliver in Git-based workflow",
+                "Fix priority-2 bugs with automated tests",
+                "Deploy updates through CI/CD pipeline"
+        ));
 
         Training t4 = new Training();
         t4.setRoleName("Finance Executive Trainee");
@@ -107,6 +128,13 @@ public class TrainingInitializationService implements CommandLineRunner {
         t4.setCertificationName("Finance Executive Certification");
         t4.setEligibilityCriteria("Graduates from commerce or business backgrounds");
         t4.setTrainingProvider("FinEdge Learning Institute");
+        t4.setDayOneReady(true);
+        t4.setDayOneSummary("Ready to close books, process invoices, and reconcile ledgers from day one.");
+        t4.setDayOneDeliverables(Arrays.asList(
+                "Process 30+ invoices with 100% accuracy",
+                "Prepare GST filings and compliance schedules",
+                "Reconcile ledgers using SAP FICO workflows"
+        ));
 
         Training t5 = new Training();
         t5.setRoleName("Medical Coding Trainee");
@@ -128,6 +156,13 @@ public class TrainingInitializationService implements CommandLineRunner {
         t5.setCertificationName("Certified Medical Coder (CMC)");
         t5.setEligibilityCriteria("Graduates from Life Sciences or Paramedical streams");
         t5.setTrainingProvider("MediTrain Solutions");
+        t5.setDayOneReady(true);
+        t5.setDayOneSummary("CPC exam-aligned coders who can clear 25+ charts per shift with quality benchmarks.");
+        t5.setDayOneDeliverables(Arrays.asList(
+                "Code outpatient charts with 98% accuracy",
+                "Flag documentation gaps to physicians",
+                "Meet HIPAA compliance procedures"
+        ));
 
         Training t6 = new Training();
         t6.setRoleName("Digital Marketing Trainee");
@@ -149,8 +184,83 @@ public class TrainingInitializationService implements CommandLineRunner {
         t6.setCertificationName("Certified Digital Marketing Professional");
         t6.setEligibilityCriteria("Anyone with interest in marketing and communication");
         t6.setTrainingProvider("AdGrowth Academy");
+        t6.setDayOneReady(true);
+        t6.setDayOneSummary("Ready to manage paid and organic campaigns with weekly performance reporting.");
+        t6.setDayOneDeliverables(Arrays.asList(
+                "Launch and monitor Meta ad campaigns",
+                "Ship SEO content calendars and on-page optimizations",
+                "Deliver weekly campaign analytics report"
+        ));
 
-        return Arrays.asList(t1, t2, t3, t4, t5, t6);
+        Training t7 = new Training();
+        t7.setRoleName("Salesforce SDR Accelerator");
+        t7.setRoleDescription("Intensive program to prepare SDRs for Salesforce-centric lead generation and pipeline nurturing.");
+        t7.setIndustry("SaaS Sales");
+        t7.setEducationQualification("Any Graduate with strong communication");
+        t7.setTrainingDuration("8 Weeks");
+        t7.setTrainingFees(0);
+        t7.setInstituteTrainingFees(250000);
+        t7.setTotalStudentsAllowed(20);
+        t7.setStipendIncluded(false);
+        t7.setStipendAmount(0);
+        t7.setAccommodationProvided(false);
+        t7.setLocation("Remote");
+        t7.setPackageAfterTraining("₹5.8 LPA");
+        t7.setSkillsCovered(Arrays.asList(
+                "Salesforce CRM",
+                "Outbound Sequencing",
+                "Cold Calling & Emailing",
+                "Lead Qualification Frameworks",
+                "Demo Scheduling"
+        ));
+        t7.setTrainingMode("Online");
+        t7.setCertificationProvided(true);
+        t7.setCertificationName("Certified SDR Professional");
+        t7.setEligibilityCriteria("Graduates with fluent English communication skills.");
+        t7.setTrainingProvider("SaarthiX Revenue Academy");
+        t7.setDayOneReady(true);
+        t7.setDayOneSummary("SDRs can hit daily outreach targets and deliver SQLs from day one.");
+        t7.setDayOneDeliverables(Arrays.asList(
+                "Execute 60+ personalized outbound touches",
+                "Maintain CRM hygiene with opportunity notes",
+                "Book qualified discovery calls for AEs"
+        ));
+
+        Training t8 = new Training();
+        t8.setRoleName("Product Support Engineer Launchpad");
+        t8.setRoleDescription("Prepares engineers to troubleshoot SaaS products, resolve tickets, and manage on-call rotations.");
+        t8.setIndustry("Customer Support");
+        t8.setEducationQualification("B.Tech/B.Sc in Computer Science or equivalent");
+        t8.setTrainingDuration("10 Weeks");
+        t8.setTrainingFees(0);
+        t8.setInstituteTrainingFees(280000);
+        t8.setTotalStudentsAllowed(18);
+        t8.setStipendIncluded(false);
+        t8.setStipendAmount(0);
+        t8.setAccommodationProvided(false);
+        t8.setLocation("Pune");
+        t8.setPackageAfterTraining("₹6.2 LPA");
+        t8.setSkillsCovered(Arrays.asList(
+                "SaaS Product Debugging",
+                "SQL & Log Analysis",
+                "Customer Communication",
+                "Postman & API Troubleshooting",
+                "Incident Management"
+        ));
+        t8.setTrainingMode("Hybrid");
+        t8.setCertificationProvided(true);
+        t8.setCertificationName("Certified Product Support Engineer");
+        t8.setEligibilityCriteria("Fresh graduates comfortable with scripting and debugging.");
+        t8.setTrainingProvider("SaarthiX Support Guild");
+        t8.setDayOneReady(true);
+        t8.setDayOneSummary("Engineers can resolve L1 tickets, triage incidents, and maintain SLAs on day one.");
+        t8.setDayOneDeliverables(Arrays.asList(
+                "Resolve 15+ L1 tickets per shift with CSAT > 4.5",
+                "Escalate P1 incidents with full reproduction steps",
+                "Publish daily shift handover notes"
+        ));
+
+        return Arrays.asList(t1, t2, t3, t4, t5, t6, t7, t8);
     }
 }
 

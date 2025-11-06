@@ -23,6 +23,8 @@ public class TrainingEnrollment {
     private String instituteEmail;
     private String institutePhone;
     private String instituteNotes;
+    private int totalStudentsAllowed;
+    private double instituteTrainingFees;
 
     // Student personal info
     private String fullName;

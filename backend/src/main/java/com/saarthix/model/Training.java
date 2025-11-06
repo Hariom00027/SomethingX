@@ -19,6 +19,8 @@ public class Training {
     private String educationQualification;
     private String trainingDuration;
     private int trainingFees;
+    private int instituteTrainingFees;
+    private int totalStudentsAllowed;
     private boolean stipendIncluded;
     private int stipendAmount;
     private boolean accommodationProvided;

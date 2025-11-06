@@ -4,7 +4,7 @@ plugins {
     id 'java'
 }
 
-group = 'com.careerconnect'
+group = 'com.saarthix'
 version = '0.0.1-SNAPSHOT'
 java {
     sourceCompatibility = '17'

@@ -13,7 +13,7 @@ const Navbar = () => {
 
   return (
     <nav className="bg-gray-100 p-4 flex justify-between items-center border-b">
-      <Link to="/" className="text-2xl font-bold text-blue-600">CareerConnect 360</Link>
+      <Link to="/" className="text-2xl font-bold text-blue-600">SaarthiX</Link>
       
       {isAuthenticated ? (
         <div className="flex items-center gap-4">

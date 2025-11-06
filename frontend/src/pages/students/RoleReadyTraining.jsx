@@ -43,7 +43,17 @@ const RoleReadyTraining = () => {
     try {
       setLoading(true);
       const response = await apiClient.get("/trainings");
-      setTrainings(response.data);
+      const normalized = (response.data ?? []).map((item, index) => {
+        const apiId = item.id ?? item._id ?? item.trainingId ?? item?.identifier ?? null;
+        const clientKey = apiId ?? (item.roleName ? `${item.roleName}-${index}` : `training-${index}`);
+
+        return {
+          ...item,
+          apiId,
+          clientKey,
+        };
+      });
+      setTrainings(normalized);
     } catch (error) {
       console.error("Error fetching trainings:", error);
     } finally {
@@ -101,6 +111,12 @@ const RoleReadyTraining = () => {
     e.preventDefault();
     if (!selectedTraining) return;
 
+    const trainingId = selectedTraining.apiId ?? selectedTraining.id ?? selectedTraining._id;
+    if (!trainingId) {
+      alert("This training cannot be enrolled because it is missing an identifier. Please refresh and try again.");
+      return;
+    }
+
     try {
       setSubmitting(true);
       const enrollmentData = {
@@ -112,7 +128,7 @@ const RoleReadyTraining = () => {
           : [],
       };
 
-      await apiClient.post(`/trainings/${selectedTraining.id}/enroll`, enrollmentData);
+      await apiClient.post(`/trainings/${trainingId}/enroll`, enrollmentData);
       alert("Enrollment successful! We will contact you soon.");
       setShowEnrollmentForm(false);
       setSelectedTraining(null);
@@ -157,7 +173,7 @@ const RoleReadyTraining = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {trainings.map((training) => (
-                <Card key={training.id} className="flex flex-col hover:shadow-lg transition-shadow">
+                <Card key={training.clientKey ?? training.id} className="flex flex-col hover:shadow-lg transition-shadow">
                   <CardHeader>
                     <CardTitle className="text-xl">{training.roleName}</CardTitle>
                     <CardDescription className="line-clamp-2">{training.roleDescription}</CardDescription>

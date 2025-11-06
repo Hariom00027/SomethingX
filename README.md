@@ -1,4 +1,4 @@
-# CareerConnect 360
+# SaarthiX
 
 This is a full-stack career ecosystem platform built with React, Spring Boot, and MongoDB.
 

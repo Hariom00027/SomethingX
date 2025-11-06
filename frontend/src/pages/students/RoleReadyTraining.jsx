@@ -43,7 +43,17 @@ const RoleReadyTraining = () => {
     try {
       setLoading(true);
       const response = await apiClient.get("/trainings");
-      setTrainings(response.data);
+      const normalized = (response.data ?? []).map((item, index) => {
+        const apiId = item.id ?? item._id ?? item.trainingId ?? item?.identifier ?? null;
+        const clientKey = apiId ?? (item.roleName ? `${item.roleName}-${index}` : `training-${index}`);
+
+        return {
+          ...item,
+          apiId,
+          clientKey,
+        };
+      });
+      setTrainings(normalized);
     } catch (error) {
       console.error("Error fetching trainings:", error);
     } finally {
@@ -51,8 +61,8 @@ const RoleReadyTraining = () => {
     }
   };
 
-  const handleApply = (training) => {
-    console.log("Apply clicked for training:", training);
+  const handleEnroll = (training) => {
+    console.log("Enroll clicked for training:", training);
     setSelectedTraining(training);
     setShowEnrollmentForm(true);
     console.log("Modal state set - showEnrollmentForm should be true");
@@ -101,6 +111,12 @@ const RoleReadyTraining = () => {
     e.preventDefault();
     if (!selectedTraining) return;
 
+    const trainingId = selectedTraining.apiId ?? selectedTraining.id ?? selectedTraining._id;
+    if (!trainingId) {
+      alert("This training cannot be enrolled because it is missing an identifier. Please refresh and try again.");
+      return;
+    }
+
     try {
       setSubmitting(true);
       const enrollmentData = {
@@ -112,7 +128,7 @@ const RoleReadyTraining = () => {
           : [],
       };
 
-      await apiClient.post(`/trainings/${selectedTraining.id}/enroll`, enrollmentData);
+      await apiClient.post(`/trainings/${trainingId}/enroll`, enrollmentData);
       alert("Enrollment successful! We will contact you soon.");
       setShowEnrollmentForm(false);
       setSelectedTraining(null);
@@ -157,7 +173,7 @@ const RoleReadyTraining = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {trainings.map((training) => (
-                <Card key={training.id} className="flex flex-col hover:shadow-lg transition-shadow">
+                <Card key={training.clientKey ?? training.id} className="flex flex-col hover:shadow-lg transition-shadow">
                   <CardHeader>
                     <CardTitle className="text-xl">{training.roleName}</CardTitle>
                     <CardDescription className="line-clamp-2">{training.roleDescription}</CardDescription>
@@ -173,6 +189,16 @@ const RoleReadyTraining = () => {
                       <div>
                         <span className="font-semibold">Fees:</span> ₹{Number(training.trainingFees ?? 0).toLocaleString()}
                       </div>
+                      {typeof training.instituteTrainingFees === "number" && (
+                        <div>
+                          <span className="font-semibold">Institute Fees:</span> ₹{Number(training.instituteTrainingFees ?? 0).toLocaleString()}
+                        </div>
+                      )}
+                      {typeof training.totalStudentsAllowed === "number" && (
+                        <div>
+                          <span className="font-semibold">Total Seats:</span> {training.totalStudentsAllowed}
+                        </div>
+                      )}
                       {training.stipendIncluded && (
                         <div className="text-green-600">
                           <span className="font-semibold">Stipend:</span> ₹{Number(training.stipendAmount ?? 0).toLocaleString()}/month
@@ -218,10 +244,10 @@ const RoleReadyTraining = () => {
                   <CardFooter>
                     <Button
                       type="button"
-                      onClick={() => handleApply(training)}
+                      onClick={() => handleEnroll(training)}
                       className="w-full"
                     >
-                      Apply Now
+                      Enroll Now
                     </Button>
                   </CardFooter>
                 </Card>

@@ -45,6 +45,11 @@ const Dashboard = () => {
               <h3 className="text-xl font-semibold text-gray-900 mb-2">Internship Management</h3>
               <p className="text-gray-600">Manage student internships and placements</p>
             </Link>
+
+            <Link to="/institutes/student-training-role-ready" className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">Student Training (Role Ready)</h3>
+              <p className="text-gray-600">Enroll batches of students into role-ready programs</p>
+            </Link>
             
             <Link to="/institutes/expert-sessions" className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
               <h3 className="text-xl font-semibold text-gray-900 mb-2">Expert Sessions</h3>

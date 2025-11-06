@@ -15,23 +15,105 @@ const ReviewNotifications = () => {
   useEffect(() => {
     if (user?.userType === 'STUDENT') {
       fetchNotifications();
+      // Refresh notifications every 30 seconds
+      const interval = setInterval(() => {
+        fetchNotifications();
+      }, 30000);
+      return () => clearInterval(interval);
     }
   }, [user]);
 
   const fetchNotifications = async () => {
     try {
-      // Get student ID from user or use a placeholder
-      const studentId = user?.id || user?.email || 'demo-student-1';
+      // Get student ID from user - try multiple possible IDs
+      const studentId = user?.id || user?.googleId || user?.email;
+      
+      if (!studentId) {
+        console.log('No student ID available');
+        setNotifications([]);
+        return;
+      }
+      
       const apiPrefix = api.baseURL ? '' : '/api';
-      const response = await axios.get(`${api.baseURL}${apiPrefix}/reviews/student/${studentId}`);
+      console.log('Fetching notifications for student:', studentId);
+      console.log('User object:', user);
+      
+      // Try fetching by studentId
+      let response;
+      try {
+        response = await axios.get(`${api.baseURL}${apiPrefix}/reviews/student/${studentId}`);
+      } catch (error) {
+        console.error('Error fetching reviews by studentId:', error);
+        // Try alternative IDs if main one fails
+        const altIds = [user?.googleId, user?.email, user?.id].filter(id => id && id !== studentId);
+        for (const altId of altIds) {
+          try {
+            console.log('Trying alternative student ID:', altId);
+            response = await axios.get(`${api.baseURL}${apiPrefix}/reviews/student/${altId}`);
+            if (response.data && response.data.length > 0) {
+              console.log('Found reviews with alternative ID:', altId);
+              break;
+            }
+          } catch (e) {
+            console.log('Alternative ID failed:', altId);
+          }
+        }
+        if (!response) {
+          throw error;
+        }
+      }
+      
+      console.log('All reviews for student:', response.data);
       
       // Filter for completed mentor reviews
-      const completedReviews = response.data.filter(
-        review => review.type === 'HUMAN' && review.status === 'COMPLETED'
+      const completedReviews = (response.data || []).filter(
+        review => review && review.type === 'HUMAN' && review.status === 'COMPLETED'
       );
+      
+      console.log('Completed mentor reviews:', completedReviews);
+      
+      // If still no reviews, try fetching all resumes for this student and get their reviews
+      if (completedReviews.length === 0) {
+        try {
+          console.log('No reviews found, trying to fetch via resumes...');
+          const resumesResponse = await axios.get(`${api.baseURL}${apiPrefix}/resumes/student/${studentId}`);
+          console.log('Student resumes:', resumesResponse.data);
+          
+          if (resumesResponse.data && resumesResponse.data.length > 0) {
+            const allReviews = [];
+            for (const resume of resumesResponse.data) {
+              try {
+                const resumeReviewsResponse = await axios.get(`${api.baseURL}${apiPrefix}/reviews/resume/${resume.id}`);
+                const resumeReviews = (resumeReviewsResponse.data || []).filter(
+                  review => review && review.type === 'HUMAN' && review.status === 'COMPLETED'
+                );
+                allReviews.push(...resumeReviews);
+              } catch (e) {
+                console.log('Error fetching reviews for resume:', resume.id, e);
+              }
+            }
+            console.log('Reviews found via resumes:', allReviews);
+            if (allReviews.length > 0) {
+              completedReviews.push(...allReviews);
+            }
+          }
+        } catch (e) {
+          console.log('Error fetching via resumes:', e);
+        }
+      }
+      
+      // Sort by reviewedAt (most recent first)
+      completedReviews.sort((a, b) => {
+        const dateA = a.reviewedAt ? new Date(a.reviewedAt) : new Date(0);
+        const dateB = b.reviewedAt ? new Date(b.reviewedAt) : new Date(0);
+        return dateB - dateA;
+      });
+      
       setNotifications(completedReviews);
     } catch (error) {
       console.error('Error fetching notifications:', error);
+      console.error('Error details:', error.response?.data);
+      setNotifications([]);
     }
   };
 
@@ -74,7 +156,10 @@ const ReviewNotifications = () => {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => setShowModal(true)}
+          onClick={() => {
+            fetchNotifications(); // Refresh when opening modal
+            setShowModal(true);
+          }}
           className="relative"
         >
           <Bell className="w-5 h-5" />
@@ -91,16 +176,25 @@ const ReviewNotifications = () => {
           <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto m-4">
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Resume Review Notifications</CardTitle>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => {
-                  setShowModal(false);
-                  setSelectedReview(null);
-                }}
-              >
-                <X className="w-4 h-4" />
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fetchNotifications()}
+                >
+                  Refresh
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => {
+                    setShowModal(false);
+                    setSelectedReview(null);
+                  }}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               {notifications.length === 0 ? (

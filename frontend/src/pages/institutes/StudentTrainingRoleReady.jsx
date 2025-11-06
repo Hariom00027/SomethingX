@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,8 @@ const EMPTY_INSTITUTE = {
   instituteEmail: "",
   institutePhone: "",
   instituteNotes: "",
+  totalStudentsAllowed: "",
+  instituteTrainingFees: "",
 };
 
 const EMPTY_STUDENT = {
@@ -42,6 +45,8 @@ const REQUIRED_INSTITUTE_FIELDS = [
   { name: "instituteContactPerson", label: "Primary Contact Person" },
   { name: "instituteEmail", label: "Contact Email" },
   { name: "institutePhone", label: "Contact Phone" },
+  { name: "totalStudentsAllowed", label: "Total Number of Students Allowed" },
+  { name: "instituteTrainingFees", label: "Training Fees for Institute" },
 ];
 
 const REQUIRED_STUDENT_FIELDS = [
@@ -73,7 +78,7 @@ const StudentTrainingRoleReady = () => {
   const [trainings, setTrainings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState("");
-  const [flow, setFlow] = useState(buildDefaultFlowState);
+  const [flow, setFlow] = useState(buildDefaultFlowState());
 
   useEffect(() => {
     const fetchTrainings = async () => {
@@ -102,10 +107,16 @@ const StudentTrainingRoleReady = () => {
     fetchTrainings();
   }, []);
 
+  useEffect(() => {
+    console.log("Flow state changed:", flow);
+  }, [flow]);
+
   const usableTrainings = useMemo(() => trainings ?? [], [trainings]);
 
   const startEnrollment = (training) => {
+    console.log("startEnrollment called with training:", training);
     if (!training?.apiId) {
+      console.error("Training missing apiId:", training);
       setFlow((prev) => ({
         ...buildDefaultFlowState(),
         error: "This training is missing an identifier. Please refresh the page and try again.",
@@ -113,13 +124,15 @@ const StudentTrainingRoleReady = () => {
       return;
     }
 
-    setFlow({
+    const newFlow = {
       ...buildDefaultFlowState(),
       visible: true,
       training,
       institute: { ...EMPTY_INSTITUTE },
       student: { ...EMPTY_STUDENT },
-    });
+    };
+    console.log("Setting flow state:", newFlow);
+    setFlow(newFlow);
   };
 
   const closeEnrollment = () => {
@@ -208,6 +221,8 @@ const StudentTrainingRoleReady = () => {
       const payload = {
         ...flow.institute,
         ...flow.student,
+        totalStudentsAllowed: flow.institute.totalStudentsAllowed ? parseInt(flow.institute.totalStudentsAllowed, 10) : 0,
+        instituteTrainingFees: flow.institute.instituteTrainingFees ? parseFloat(flow.institute.instituteTrainingFees) : 0,
         percentageOrCgpa: flow.student.percentageOrCgpa ? parseFloat(flow.student.percentageOrCgpa) : 0,
         yearsOfExperience: flow.student.yearsOfExperience ? parseInt(flow.student.yearsOfExperience, 10) : 0,
         knownSkills: flow.student.knownSkills
@@ -258,10 +273,11 @@ const StudentTrainingRoleReady = () => {
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="md:col-span-2">
-          <label className="block text-sm font-medium mb-1">
+          <label htmlFor="instituteName" className="block text-sm font-medium mb-1">
             Institute Name <span className="text-red-500">*</span>
           </label>
           <Input
+            id="instituteName"
             name="instituteName"
             value={flow.institute.instituteName}
             onChange={updateInstituteField}
@@ -270,10 +286,11 @@ const StudentTrainingRoleReady = () => {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">
+          <label htmlFor="instituteContactPerson" className="block text-sm font-medium mb-1">
             Primary Contact Person <span className="text-red-500">*</span>
           </label>
           <Input
+            id="instituteContactPerson"
             name="instituteContactPerson"
             value={flow.institute.instituteContactPerson}
             onChange={updateInstituteField}
@@ -282,10 +299,11 @@ const StudentTrainingRoleReady = () => {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">
+          <label htmlFor="instituteEmail" className="block text-sm font-medium mb-1">
             Contact Email <span className="text-red-500">*</span>
           </label>
           <Input
+            id="instituteEmail"
             type="email"
             name="instituteEmail"
             value={flow.institute.instituteEmail}
@@ -295,10 +313,11 @@ const StudentTrainingRoleReady = () => {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">
+          <label htmlFor="institutePhone" className="block text-sm font-medium mb-1">
             Contact Phone <span className="text-red-500">*</span>
           </label>
           <Input
+            id="institutePhone"
             type="tel"
             name="institutePhone"
             value={flow.institute.institutePhone}
@@ -307,9 +326,41 @@ const StudentTrainingRoleReady = () => {
             required
           />
         </div>
+        <div>
+          <label htmlFor="totalStudentsAllowed" className="block text-sm font-medium mb-1">
+            Total Number of Students Allowed <span className="text-red-500">*</span>
+          </label>
+          <Input
+            id="totalStudentsAllowed"
+            type="number"
+            name="totalStudentsAllowed"
+            value={flow.institute.totalStudentsAllowed}
+            onChange={updateInstituteField}
+            placeholder="Enter total number of students"
+            min="1"
+            required
+          />
+        </div>
+        <div>
+          <label htmlFor="instituteTrainingFees" className="block text-sm font-medium mb-1">
+            Training Fees for Institute <span className="text-red-500">*</span>
+          </label>
+          <Input
+            id="instituteTrainingFees"
+            type="number"
+            name="instituteTrainingFees"
+            value={flow.institute.instituteTrainingFees}
+            onChange={updateInstituteField}
+            placeholder="Enter training fees in ₹"
+            min="0"
+            step="0.01"
+            required
+          />
+        </div>
         <div className="md:col-span-2">
-          <label className="block text-sm font-medium mb-1">Notes for SaarthiX Team</label>
+          <label htmlFor="instituteNotes" className="block text-sm font-medium mb-1">Notes for SaarthiX Team</label>
           <Textarea
+            id="instituteNotes"
             name="instituteNotes"
             value={flow.institute.instituteNotes}
             onChange={updateInstituteField}
@@ -323,7 +374,7 @@ const StudentTrainingRoleReady = () => {
         <Button type="button" variant="outline" onClick={closeEnrollment}>
           Cancel
         </Button>
-        <Button type="submit">Next</Button>
+        <Button type="submit">Enroll</Button>
       </div>
     </form>
   );
@@ -338,10 +389,11 @@ const StudentTrainingRoleReady = () => {
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium mb-1">
+          <label htmlFor="fullName" className="block text-sm font-medium mb-1">
             Full Name <span className="text-red-500">*</span>
           </label>
           <Input
+            id="fullName"
             name="fullName"
             value={flow.student.fullName}
             onChange={updateStudentField}
@@ -350,10 +402,11 @@ const StudentTrainingRoleReady = () => {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">
+          <label htmlFor="email" className="block text-sm font-medium mb-1">
             Email <span className="text-red-500">*</span>
           </label>
           <Input
+            id="email"
             type="email"
             name="email"
             value={flow.student.email}
@@ -363,10 +416,11 @@ const StudentTrainingRoleReady = () => {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">
+          <label htmlFor="phone" className="block text-sm font-medium mb-1">
             Phone <span className="text-red-500">*</span>
           </label>
           <Input
+            id="phone"
             type="tel"
             name="phone"
             value={flow.student.phone}
@@ -376,10 +430,11 @@ const StudentTrainingRoleReady = () => {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">
+          <label htmlFor="gender" className="block text-sm font-medium mb-1">
             Gender <span className="text-red-500">*</span>
           </label>
           <select
+            id="gender"
             name="gender"
             value={flow.student.gender}
             onChange={updateStudentField}
@@ -394,10 +449,11 @@ const StudentTrainingRoleReady = () => {
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">
+          <label htmlFor="dateOfBirth" className="block text-sm font-medium mb-1">
             Date of Birth <span className="text-red-500">*</span>
           </label>
           <Input
+            id="dateOfBirth"
             type="date"
             name="dateOfBirth"
             value={flow.student.dateOfBirth}
@@ -410,10 +466,11 @@ const StudentTrainingRoleReady = () => {
       <div className="space-y-4">
         <h3 className="text-lg font-semibold">Address</h3>
         <div>
-          <label className="block text-sm font-medium mb-1">
+          <label htmlFor="addressLine1" className="block text-sm font-medium mb-1">
             Address Line 1 <span className="text-red-500">*</span>
           </label>
           <Input
+            id="addressLine1"
             name="addressLine1"
             value={flow.student.addressLine1}
             onChange={updateStudentField}
@@ -422,8 +479,9 @@ const StudentTrainingRoleReady = () => {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">Address Line 2</label>
+          <label htmlFor="addressLine2" className="block text-sm font-medium mb-1">Address Line 2</label>
           <Input
+            id="addressLine2"
             name="addressLine2"
             value={flow.student.addressLine2}
             onChange={updateStudentField}
@@ -432,10 +490,11 @@ const StudentTrainingRoleReady = () => {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-medium mb-1">
+            <label htmlFor="city" className="block text-sm font-medium mb-1">
               City <span className="text-red-500">*</span>
             </label>
             <Input
+              id="city"
               name="city"
               value={flow.student.city}
               onChange={updateStudentField}
@@ -444,10 +503,11 @@ const StudentTrainingRoleReady = () => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">
+            <label htmlFor="state" className="block text-sm font-medium mb-1">
               State <span className="text-red-500">*</span>
             </label>
             <Input
+              id="state"
               name="state"
               value={flow.student.state}
               onChange={updateStudentField}
@@ -456,10 +516,11 @@ const StudentTrainingRoleReady = () => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">
+            <label htmlFor="pincode" className="block text-sm font-medium mb-1">
               Pincode <span className="text-red-500">*</span>
             </label>
             <Input
+              id="pincode"
               name="pincode"
               value={flow.student.pincode}
               onChange={updateStudentField}
@@ -474,10 +535,11 @@ const StudentTrainingRoleReady = () => {
         <h3 className="text-lg font-semibold">Education</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium mb-1">
+            <label htmlFor="highestQualification" className="block text-sm font-medium mb-1">
               Highest Qualification <span className="text-red-500">*</span>
             </label>
             <Input
+              id="highestQualification"
               name="highestQualification"
               value={flow.student.highestQualification}
               onChange={updateStudentField}
@@ -486,8 +548,9 @@ const StudentTrainingRoleReady = () => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Specialization</label>
+            <label htmlFor="specialization" className="block text-sm font-medium mb-1">Specialization</label>
             <Input
+              id="specialization"
               name="specialization"
               value={flow.student.specialization}
               onChange={updateStudentField}
@@ -495,10 +558,11 @@ const StudentTrainingRoleReady = () => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">
+            <label htmlFor="collegeName" className="block text-sm font-medium mb-1">
               College Name <span className="text-red-500">*</span>
             </label>
             <Input
+              id="collegeName"
               name="collegeName"
               value={flow.student.collegeName}
               onChange={updateStudentField}
@@ -507,8 +571,9 @@ const StudentTrainingRoleReady = () => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Graduation Year</label>
+            <label htmlFor="graduationYear" className="block text-sm font-medium mb-1">Graduation Year</label>
             <Input
+              id="graduationYear"
               type="number"
               name="graduationYear"
               value={flow.student.graduationYear}
@@ -519,8 +584,9 @@ const StudentTrainingRoleReady = () => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Percentage/CGPA</label>
+            <label htmlFor="percentageOrCgpa" className="block text-sm font-medium mb-1">Percentage/CGPA</label>
             <Input
+              id="percentageOrCgpa"
               type="number"
               name="percentageOrCgpa"
               value={flow.student.percentageOrCgpa}
@@ -536,8 +602,9 @@ const StudentTrainingRoleReady = () => {
         <h3 className="text-lg font-semibold">Experience & Skills</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium mb-1">Years of Experience</label>
+            <label htmlFor="yearsOfExperience" className="block text-sm font-medium mb-1">Years of Experience</label>
             <Input
+              id="yearsOfExperience"
               type="number"
               name="yearsOfExperience"
               value={flow.student.yearsOfExperience}
@@ -547,8 +614,9 @@ const StudentTrainingRoleReady = () => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Known Skills</label>
+            <label htmlFor="knownSkills" className="block text-sm font-medium mb-1">Known Skills</label>
             <Input
+              id="knownSkills"
               name="knownSkills"
               value={flow.student.knownSkills}
               onChange={updateStudentField}
@@ -561,8 +629,9 @@ const StudentTrainingRoleReady = () => {
       <div className="space-y-4">
         <h3 className="text-lg font-semibold">Additional Information</h3>
         <div>
-          <label className="block text-sm font-medium mb-1">Resume URL (Optional)</label>
+          <label htmlFor="resumeUrl" className="block text-sm font-medium mb-1">Resume URL (Optional)</label>
           <Input
+            id="resumeUrl"
             type="url"
             name="resumeUrl"
             value={flow.student.resumeUrl}
@@ -571,8 +640,9 @@ const StudentTrainingRoleReady = () => {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">Additional Notes</label>
+          <label htmlFor="additionalNotes" className="block text-sm font-medium mb-1">Additional Notes</label>
           <Textarea
+            id="additionalNotes"
             name="additionalNotes"
             value={flow.student.additionalNotes}
             onChange={updateStudentField}
@@ -592,7 +662,7 @@ const StudentTrainingRoleReady = () => {
           Back
         </Button>
         <Button type="submit" disabled={flow.submitting}>
-          {flow.submitting ? "Saving..." : "Save & Close"}
+          {flow.submitting ? "Saving..." : "Save the data"}
         </Button>
         <Button
           type="button"
@@ -600,7 +670,7 @@ const StudentTrainingRoleReady = () => {
           onClick={() => submitEnrollment({ addAnother: true })}
           disabled={flow.submitting}
         >
-          {flow.submitting ? "Saving..." : "Save & Add Another"}
+          {flow.submitting ? "Saving..." : "Add new students"}
         </Button>
         <Button
           type="button"
@@ -615,13 +685,23 @@ const StudentTrainingRoleReady = () => {
   );
 
   const renderModal = () => {
+    console.log("renderModal called, flow state:", { visible: flow.visible, training: flow.training });
     if (!flow.visible || !flow.training) {
+      console.log("Modal not rendering - visible:", flow.visible, "training:", flow.training);
       return null;
     }
 
-    return (
+    const modalContent = (
       <div
-        className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] p-4"
+        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4"
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 9999
+        }}
         onClick={(event) => {
           if (event.target === event.currentTarget && !flow.submitting) {
             closeEnrollment();
@@ -630,6 +710,13 @@ const StudentTrainingRoleReady = () => {
       >
         <div
           className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl"
+          style={{
+            backgroundColor: 'white',
+            borderRadius: '8px',
+            maxWidth: '56rem',
+            width: '100%',
+            maxHeight: '90vh'
+          }}
           onClick={(event) => event.stopPropagation()}
         >
           <div className="sticky top-0 bg-white border-b p-4 flex justify-between items-center z-10">
@@ -663,6 +750,9 @@ const StudentTrainingRoleReady = () => {
         </div>
       </div>
     );
+
+    // Render modal using portal to document.body to ensure it's above everything
+    return createPortal(modalContent, document.body);
   };
 
   if (loading) {
@@ -752,7 +842,12 @@ const StudentTrainingRoleReady = () => {
                   <CardFooter>
                     <Button
                       type="button"
-                      onClick={() => startEnrollment(training)}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log("Enroll Students button clicked for training:", training);
+                        startEnrollment(training);
+                      }}
                       className="w-full"
                       disabled={!training.apiId}
                       title={!training.apiId ? "Training identifier missing. Please refresh." : undefined}

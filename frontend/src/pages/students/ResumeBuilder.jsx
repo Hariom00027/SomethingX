@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { api } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   DndContext,
   closestCenter,
@@ -369,7 +370,8 @@ const ResumeBuilder = () => {
     })
   );
 
-  const studentId = "demo-student-1"; // TODO: integrate with auth when available
+  const { user } = useAuth();
+  const studentId = user?.id || user?.googleId || user?.email || "demo-student-1";
 
   useEffect(() => {
     axios.get(`${api.baseURL}/resume-templates`).then((res) => setTemplates(res.data));

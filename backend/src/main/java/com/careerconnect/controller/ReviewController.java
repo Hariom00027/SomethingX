@@ -28,12 +28,25 @@ public class ReviewController {
         req.setStatus("PENDING");
         req.setRequestedAt(Instant.now());
         
+        // Ensure studentId is set from resume if not provided
+        if (req.getStudentId() == null || req.getStudentId().isEmpty()) {
+            Resume resume = resumeRepository.findById(req.getResumeId())
+                    .orElse(null);
+            if (resume != null && resume.getStudentId() != null) {
+                req.setStudentId(resume.getStudentId());
+            }
+        }
+        
         // If it's a mentor review, mark the resume accordingly
         if ("HUMAN".equals(req.getType())) {
             Resume resume = resumeRepository.findById(req.getResumeId())
                     .orElse(null);
             if (resume != null) {
                 resume.setMentorReviewRequested(true);
+                // Also ensure studentId is set if not already set
+                if (req.getStudentId() == null || req.getStudentId().isEmpty()) {
+                    req.setStudentId(resume.getStudentId());
+                }
                 resumeRepository.save(resume);
             }
         }
@@ -48,7 +61,27 @@ public class ReviewController {
 
     @GetMapping("/student/{studentId}")
     public List<ReviewRequest> byStudent(@PathVariable String studentId) {
-        return reviewRepository.findByStudentId(studentId);
+        List<ReviewRequest> reviews = reviewRepository.findByStudentId(studentId);
+        // If no reviews found by studentId, try to find by resume's studentId
+        if (reviews.isEmpty()) {
+            // Find all resumes for this student
+            List<Resume> studentResumes = resumeRepository.findByStudentId(studentId);
+            // Find reviews for those resumes
+            for (Resume resume : studentResumes) {
+                List<ReviewRequest> resumeReviews = reviewRepository.findByResumeId(resume.getId());
+                for (ReviewRequest review : resumeReviews) {
+                    // Ensure studentId is set on the review
+                    if (review.getStudentId() == null || review.getStudentId().isEmpty()) {
+                        review.setStudentId(studentId);
+                        reviewRepository.save(review);
+                    }
+                    if (!reviews.contains(review)) {
+                        reviews.add(review);
+                    }
+                }
+            }
+        }
+        return reviews;
     }
 
     // Mentor review endpoints

@@ -4,7 +4,7 @@ import { Button } from '../../components/ui/button';
 import { Textarea } from '../../components/ui/textarea';
 import axios from 'axios';
 import { api } from '../../lib/utils';
-import { Star, X, Check, Eye } from 'lucide-react';
+import { Star, X, Check, Eye, Trash2 } from 'lucide-react';
 
 const ResumeReview = () => {
   const [resumes, setResumes] = useState([]);
@@ -33,26 +33,43 @@ const ResumeReview = () => {
       const resumes = resumesResponse.data || [];
       setResumes(resumes);
       console.log('Fetched resumes:', resumes);
+      console.log('Resume IDs:', resumes.map(r => r.id));
 
       // Fetch all review requests for these resumes (not just pending)
       // We need to get all review requests to match them with resumes
       const allReviewPromises = resumes.map(resume => 
-        axios.get(`${api.baseURL}${apiPrefix}/reviews/resume/${resume.id}`).catch(() => null)
+        axios.get(`${api.baseURL}${apiPrefix}/reviews/resume/${resume.id}`)
+          .then(response => ({ resumeId: resume.id, reviews: response.data }))
+          .catch(error => {
+            console.error(`Error fetching reviews for resume ${resume.id}:`, error);
+            return { resumeId: resume.id, reviews: [] };
+          })
       );
       const allReviewResults = await Promise.all(allReviewPromises);
       const allReviews = allReviewResults
-        .filter(r => r && r.data && Array.isArray(r.data))
-        .flatMap(r => r.data)
-        .filter(r => r.type === 'HUMAN');
+        .filter(r => r && r.reviews && Array.isArray(r.reviews))
+        .flatMap(r => r.reviews)
+        .filter(r => r && r.type === 'HUMAN' && r.id); // Ensure review has an ID
       
       console.log('Fetched review requests:', allReviews);
+      console.log('Review request IDs:', allReviews.map(r => r.id));
+      console.log('Review request resume IDs:', allReviews.map(r => r.resumeId));
       setReviewRequests(allReviews);
 
       // Also try to get pending reviews separately for status check
       try {
         const pendingResponse = await axios.get(`${api.baseURL}${apiPrefix}/reviews/mentor/pending`);
         console.log('Pending reviews:', pendingResponse.data);
+        // Merge with existing reviews if needed
+        if (pendingResponse.data && Array.isArray(pendingResponse.data)) {
+          const pendingIds = new Set(allReviews.map(r => r.id));
+          const newPending = pendingResponse.data.filter(r => r && !pendingIds.has(r.id));
+          if (newPending.length > 0) {
+            setReviewRequests(prev => [...prev, ...newPending]);
+          }
+        }
       } catch (e) {
+        console.log('Could not fetch pending reviews separately:', e);
         // Ignore if endpoint doesn't exist
       }
     } catch (error) {
@@ -62,7 +79,13 @@ const ResumeReview = () => {
   };
 
   const findReviewRequestForResume = (resumeId) => {
-    return reviewRequests.find(req => req.resumeId === resumeId);
+    if (!resumeId || !reviewRequests || reviewRequests.length === 0) {
+      console.log('No resume ID or review requests available');
+      return null;
+    }
+    const found = reviewRequests.find(req => req && req.resumeId === resumeId);
+    console.log(`Finding review for resume ${resumeId}:`, found);
+    return found || null;
   };
 
   const handleAccept = async (reviewRequest) => {
@@ -91,8 +114,15 @@ const ResumeReview = () => {
       console.log('Accept response:', response);
       
       if (response.data && (response.status === 200 || response.status === 201)) {
+        // Update only the specific review request in state instead of refetching all
+        setReviewRequests(prev => 
+          prev.map(req => 
+            req.id === reviewRequest.id 
+              ? { ...req, status: 'ACCEPTED', mentorId: response.data.mentorId || 'admin' }
+              : req
+          )
+        );
         alert('Review request accepted successfully!');
-        await fetchResumeReviewRequests();
       } else {
         alert('Unexpected response from server. Please refresh the page.');
       }
@@ -126,8 +156,15 @@ const ResumeReview = () => {
       );
       
       if (response.data && (response.status === 200 || response.status === 201)) {
+        // Update only the specific review request in state
+        setReviewRequests(prev => 
+          prev.map(req => 
+            req.id === reviewRequest.id 
+              ? { ...req, status: 'REJECTED' }
+              : req
+          )
+        );
         alert('Review request rejected successfully!');
-        await fetchResumeReviewRequests();
       } else {
         alert('Unexpected response from server. Please refresh the page.');
       }
@@ -138,6 +175,30 @@ const ResumeReview = () => {
                           error.message || 
                           'Failed to reject review request';
       alert(`Failed to reject review request: ${errorMessage}`);
+    }
+  };
+
+  const handleRemoveResume = async (resume) => {
+    if (!window.confirm(`Are you sure you want to remove "${resume.personalInfo?.fullName || 'this resume'}" from the review queue?`)) {
+      return;
+    }
+
+    try {
+      const apiPrefix = api.baseURL ? '' : '/api';
+      // Update the resume to set mentorReviewRequested to false
+      const updatedResume = { ...resume, mentorReviewRequested: false };
+      await axios.put(`${api.baseURL}${apiPrefix}/resumes/${resume.id}`, updatedResume);
+      
+      // Remove from local state
+      setResumes(prev => prev.filter(r => r.id !== resume.id));
+      
+      // Also remove associated review requests from state
+      setReviewRequests(prev => prev.filter(req => req.resumeId !== resume.id));
+      
+      alert('Resume removed from review queue successfully!');
+    } catch (error) {
+      console.error('Error removing resume:', error);
+      alert('Failed to remove resume. Please try again.');
     }
   };
 
@@ -381,15 +442,45 @@ const ResumeReview = () => {
                         Requested: {new Date(reviewRequest.requestedAt).toLocaleDateString()}
                       </p>
                     )}
+                    {reviewRequest?.id && (
+                      <p className="text-xs text-gray-400">
+                        Review ID: {reviewRequest.id}
+                      </p>
+                    )}
+                    {!reviewRequest && (
+                      <p className="text-xs text-red-500">
+                        ⚠️ No review request found for this resume
+                      </p>
+                    )}
                   </div>
 
                   <div className="flex gap-2 flex-wrap">
-                    {status === 'PENDING' && reviewRequest && (
+                    <Button
+                      onClick={() => handleRemoveResume(resume)}
+                      size="sm"
+                      variant="outline"
+                      className="w-full mb-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                    >
+                      <Trash2 className="w-4 h-4 mr-1" />
+                      Remove from Queue
+                    </Button>
+                  </div>
+
+                  <div className="flex gap-2 flex-wrap mt-2">
+                    {status === 'PENDING' && reviewRequest && reviewRequest.id ? (
                       <>
                         <Button
-                          onClick={() => {
-                            console.log('Accepting review request:', reviewRequest);
-                            handleAccept(reviewRequest);
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const currentReview = findReviewRequestForResume(resume.id);
+                            if (!currentReview || !currentReview.id) {
+                              console.error('Review request not found for resume:', resume.id);
+                              alert('Review request not found. Please refresh the page and try again.');
+                              return;
+                            }
+                            console.log('Accepting review request:', currentReview);
+                            handleAccept(currentReview);
                           }}
                           size="sm"
                           variant="outline"
@@ -399,9 +490,17 @@ const ResumeReview = () => {
                           Accept
                         </Button>
                         <Button
-                          onClick={() => {
-                            console.log('Rejecting review request:', reviewRequest);
-                            handleReject(reviewRequest);
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const currentReview = findReviewRequestForResume(resume.id);
+                            if (!currentReview || !currentReview.id) {
+                              console.error('Review request not found for resume:', resume.id);
+                              alert('Review request not found. Please refresh the page and try again.');
+                              return;
+                            }
+                            console.log('Rejecting review request:', currentReview);
+                            handleReject(currentReview);
                           }}
                           size="sm"
                           variant="destructive"
@@ -411,12 +510,11 @@ const ResumeReview = () => {
                           Reject
                         </Button>
                       </>
-                    )}
-                    {status === 'PENDING' && !reviewRequest && (
+                    ) : status === 'PENDING' ? (
                       <p className="text-xs text-yellow-600 w-full text-center">
                         Review request not found. Please refresh the page.
                       </p>
-                    )}
+                    ) : null}
                     {status === 'ACCEPTED' && (
                       <Button
                         onClick={() => handleStartReview(resume)}

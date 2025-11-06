@@ -28,6 +28,7 @@ import StudentTrainingRoleReady from "./pages/institutes/StudentTrainingRoleRead
 import ResumeAccess from "./pages/industry/ResumeAccess";
 import PostJobs from "./pages/industry/PostJobs";
 import AiInterview from "./pages/industry/AiInterview";
+import RoleReadyFreshers from "./pages/industry/RoleReadyFreshers";
 import AdminDashboard from "./pages/AdminDashboard";
 import ResumeReview from "./pages/admin/ResumeReview";
 
@@ -162,6 +163,11 @@ function App() {
           <Route path="/industry/post-jobs" element={
             <ProtectedRoute requiredUserType="INDUSTRY">
               <PostJobs />
+            </ProtectedRoute>
+          } />
+          <Route path="/industry/role-ready-freshers" element={
+            <ProtectedRoute requiredUserType="INDUSTRY">
+              <RoleReadyFreshers />
             </ProtectedRoute>
           } />
           <Route path="/industry/ai-interview" element={

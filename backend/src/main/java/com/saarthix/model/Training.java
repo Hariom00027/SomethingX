@@ -32,6 +32,10 @@ public class Training {
     private String certificationName;
     private String eligibilityCriteria;
     private String trainingProvider;
+
+    private boolean dayOneReady;
+    private String dayOneSummary;
+    private List<String> dayOneDeliverables;
 }
 
 

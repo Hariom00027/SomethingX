@@ -41,6 +41,7 @@ const Navbar = () => {
             </DropdownMenuTrigger>
             <DropdownMenuContent>
               <DropdownMenuItem asChild><Link to="/institutes/internship-management">Internship Management</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild><Link to="/institutes/student-training-role-ready">Student Training (Role Ready)</Link></DropdownMenuItem>
               <DropdownMenuItem asChild><Link to="/institutes/expert-sessions">Expert Sessions</Link></DropdownMenuItem>
               <DropdownMenuItem asChild><Link to="/institutes/workshops">Workshops</Link></DropdownMenuItem>
             </DropdownMenuContent>
@@ -52,6 +53,7 @@ const Navbar = () => {
             </DropdownMenuTrigger>
             <DropdownMenuContent>
               <DropdownMenuItem asChild><Link to="/industry/resume-access">Resume Access</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild><Link to="/industry/role-ready-freshers">Role Ready Freshers</Link></DropdownMenuItem>
               <DropdownMenuItem asChild><Link to="/industry/post-jobs">Post Jobs & Hackathons</Link></DropdownMenuItem>
               <DropdownMenuItem asChild><Link to="/industry/ai-interview">AI Technical Interview</Link></DropdownMenuItem>
             </DropdownMenuContent>

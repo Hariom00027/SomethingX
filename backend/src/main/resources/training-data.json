@@ -25,7 +25,14 @@
     "certificationProvided": true,
     "certificationName": "Certified BMS Engineer",
     "eligibilityCriteria": "Final year or recent graduates with basic electrical systems knowledge.",
-    "trainingProvider": "SaarthiX Industrial Academy"
+    "trainingProvider": "SaarthiX Industrial Academy",
+    "dayOneReady": true,
+    "dayOneSummary": "Certified to operate BMS consoles, respond to alerts, and log incidents from day one.",
+    "dayOneDeliverables": [
+      "Perform daily system health checks",
+      "Respond to HVAC and safety alerts within 15 minutes",
+      "Log and escalate incidents following SOPs"
+    ]
   },
   {
     "id": "training-data-analyst-intern",
@@ -53,7 +60,14 @@
     "certificationProvided": true,
     "certificationName": "Certified Data Analyst",
     "eligibilityCriteria": "Students with foundational statistics and analytical aptitude.",
-    "trainingProvider": "SaarthiX Analytics Lab"
+    "trainingProvider": "SaarthiX Analytics Lab",
+    "dayOneReady": true,
+    "dayOneSummary": "Ready to pull data, build dashboards, and deliver daily metrics updates.",
+    "dayOneDeliverables": [
+      "Publish a daily KPI dashboard refresh",
+      "Write parameterized SQL queries for ad-hoc asks",
+      "Present findings with clear narrative decks"
+    ]
   },
   {
     "id": "training-full-stack-trainee",
@@ -81,7 +95,14 @@
     "certificationProvided": true,
     "certificationName": "Full Stack Developer Certification",
     "eligibilityCriteria": "Students comfortable with basic programming concepts.",
-    "trainingProvider": "SaarthiX Coding Bootcamp"
+    "trainingProvider": "SaarthiX Coding Bootcamp",
+    "dayOneReady": true,
+    "dayOneSummary": "Capable of shipping features and resolving production bugs on day one.",
+    "dayOneDeliverables": [
+      "Pick up a scoped user story and deliver in Git-based workflow",
+      "Fix priority-2 bugs with automated tests",
+      "Deploy updates through CI/CD pipeline"
+    ]
   },
   {
     "id": "training-finance-executive",
@@ -109,7 +130,14 @@
     "certificationProvided": true,
     "certificationName": "Finance Operations Certification",
     "eligibilityCriteria": "Students with fundamental accounting knowledge.",
-    "trainingProvider": "SaarthiX Finance Academy"
+    "trainingProvider": "SaarthiX Finance Academy",
+    "dayOneReady": true,
+    "dayOneSummary": "Ready to close books, process invoices, and reconcile ledgers from day one.",
+    "dayOneDeliverables": [
+      "Process 30+ invoices with 100% accuracy",
+      "Prepare GST filings and compliance schedules",
+      "Reconcile ledgers using SAP FICO workflows"
+    ]
   },
   {
     "id": "training-medical-coding",
@@ -137,7 +165,14 @@
     "certificationProvided": true,
     "certificationName": "CPC Preparation Program",
     "eligibilityCriteria": "Graduates with biology or allied health background.",
-    "trainingProvider": "SaarthiX Healthcare Academy"
+    "trainingProvider": "SaarthiX Healthcare Academy",
+    "dayOneReady": true,
+    "dayOneSummary": "CPC exam-aligned coders who can clear 25+ charts per shift with quality benchmarks.",
+    "dayOneDeliverables": [
+      "Code outpatient charts with 98% accuracy",
+      "Flag documentation gaps to physicians",
+      "Meet HIPAA compliance procedures"
+    ]
   },
   {
     "id": "training-digital-marketing",
@@ -165,7 +200,84 @@
     "certificationProvided": true,
     "certificationName": "Digital Marketing Professional Certificate",
     "eligibilityCriteria": "Graduates with interest in marketing and communication skills.",
-    "trainingProvider": "SaarthiX Growth Lab"
+    "trainingProvider": "SaarthiX Growth Lab",
+    "dayOneReady": true,
+    "dayOneSummary": "Ready to manage paid and organic campaigns with weekly performance reporting.",
+    "dayOneDeliverables": [
+      "Launch and monitor Meta ad campaigns",
+      "Ship SEO content calendars and on-page optimizations",
+      "Deliver weekly campaign analytics report"
+    ]
+  },
+  {
+    "id": "training-salesforce-sdr",
+    "roleName": "Salesforce SDR Accelerator",
+    "roleDescription": "Intensive program to prepare SDRs for Salesforce-centric lead generation and pipeline nurturing.",
+    "industry": "SaaS Sales",
+    "educationQualification": "Any Graduate with strong communication",
+    "trainingDuration": "8 Weeks",
+    "trainingFees": 0,
+    "instituteTrainingFees": 250000,
+    "totalStudentsAllowed": 20,
+    "stipendIncluded": false,
+    "stipendAmount": 0,
+    "accommodationProvided": false,
+    "location": "Remote",
+    "packageAfterTraining": "₹5.8 LPA",
+    "skillsCovered": [
+      "Salesforce CRM",
+      "Outbound Sequencing",
+      "Cold Calling & Emailing",
+      "Lead Qualification Frameworks",
+      "Demo Scheduling"
+    ],
+    "trainingMode": "Online",
+    "certificationProvided": true,
+    "certificationName": "Certified SDR Professional",
+    "eligibilityCriteria": "Graduates with fluent English communication skills.",
+    "trainingProvider": "SaarthiX Revenue Academy",
+    "dayOneReady": true,
+    "dayOneSummary": "SDRs can hit daily outreach targets and deliver SQLs from day one.",
+    "dayOneDeliverables": [
+      "Execute 60+ personalized outbound touches",
+      "Maintain CRM hygiene with opportunity notes",
+      "Book qualified discovery calls for AEs"
+    ]
+  },
+  {
+    "id": "training-support-engineer",
+    "roleName": "Product Support Engineer Launchpad",
+    "roleDescription": "Prepares engineers to troubleshoot SaaS products, resolve tickets, and manage on-call rotations.",
+    "industry": "Customer Support",
+    "educationQualification": "B.Tech/B.Sc in Computer Science or equivalent",
+    "trainingDuration": "10 Weeks",
+    "trainingFees": 0,
+    "instituteTrainingFees": 280000,
+    "totalStudentsAllowed": 18,
+    "stipendIncluded": false,
+    "stipendAmount": 0,
+    "accommodationProvided": false,
+    "location": "Pune",
+    "packageAfterTraining": "₹6.2 LPA",
+    "skillsCovered": [
+      "SaaS Product Debugging",
+      "SQL & Log Analysis",
+      "Customer Communication",
+      "Postman & API Troubleshooting",
+      "Incident Management"
+    ],
+    "trainingMode": "Hybrid",
+    "certificationProvided": true,
+    "certificationName": "Certified Product Support Engineer",
+    "eligibilityCriteria": "Fresh graduates comfortable with scripting and debugging.",
+    "trainingProvider": "SaarthiX Support Guild",
+    "dayOneReady": true,
+    "dayOneSummary": "Engineers can resolve L1 tickets, triage incidents, and maintain SLAs on day one.",
+    "dayOneDeliverables": [
+      "Resolve 15+ L1 tickets per shift with CSAT > 4.5",
+      "Escalate P1 incidents with full reproduction steps",
+      "Publish daily shift handover notes"
+    ]
   }
 ]
 

@@ -51,8 +51,8 @@ const RoleReadyTraining = () => {
     }
   };
 
-  const handleApply = (training) => {
-    console.log("Apply clicked for training:", training);
+  const handleEnroll = (training) => {
+    console.log("Enroll clicked for training:", training);
     setSelectedTraining(training);
     setShowEnrollmentForm(true);
     console.log("Modal state set - showEnrollmentForm should be true");
@@ -173,6 +173,16 @@ const RoleReadyTraining = () => {
                       <div>
                         <span className="font-semibold">Fees:</span> ₹{Number(training.trainingFees ?? 0).toLocaleString()}
                       </div>
+                      {typeof training.instituteTrainingFees === "number" && (
+                        <div>
+                          <span className="font-semibold">Institute Fees:</span> ₹{Number(training.instituteTrainingFees ?? 0).toLocaleString()}
+                        </div>
+                      )}
+                      {typeof training.totalStudentsAllowed === "number" && (
+                        <div>
+                          <span className="font-semibold">Total Seats:</span> {training.totalStudentsAllowed}
+                        </div>
+                      )}
                       {training.stipendIncluded && (
                         <div className="text-green-600">
                           <span className="font-semibold">Stipend:</span> ₹{Number(training.stipendAmount ?? 0).toLocaleString()}/month
@@ -218,10 +228,10 @@ const RoleReadyTraining = () => {
                   <CardFooter>
                     <Button
                       type="button"
-                      onClick={() => handleApply(training)}
+                      onClick={() => handleEnroll(training)}
                       className="w-full"
                     >
-                      Apply Now
+                      Enroll Now
                     </Button>
                   </CardFooter>
                 </Card>

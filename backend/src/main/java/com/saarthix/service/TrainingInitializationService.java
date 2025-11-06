@@ -31,6 +31,8 @@ public class TrainingInitializationService implements CommandLineRunner {
         t1.setEducationQualification("B.E/B.Tech in Electrical, Electronics, or Mechanical Engineering");
         t1.setTrainingDuration("6 months");
         t1.setTrainingFees(25000);
+        t1.setInstituteTrainingFees(220000);
+        t1.setTotalStudentsAllowed(40);
         t1.setStipendIncluded(true);
         t1.setStipendAmount(8000);
         t1.setAccommodationProvided(false);
@@ -50,6 +52,8 @@ public class TrainingInitializationService implements CommandLineRunner {
         t2.setEducationQualification("Any graduate with basic computer and math skills");
         t2.setTrainingDuration("4 months");
         t2.setTrainingFees(18000);
+        t2.setInstituteTrainingFees(160000);
+        t2.setTotalStudentsAllowed(30);
         t2.setStipendIncluded(true);
         t2.setStipendAmount(5000);
         t2.setAccommodationProvided(false);
@@ -69,6 +73,8 @@ public class TrainingInitializationService implements CommandLineRunner {
         t3.setEducationQualification("B.Tech/BCA/MCA or equivalent in Computer Science or IT");
         t3.setTrainingDuration("6 months");
         t3.setTrainingFees(30000);
+        t3.setInstituteTrainingFees(270000);
+        t3.setTotalStudentsAllowed(35);
         t3.setStipendIncluded(false);
         t3.setStipendAmount(0);
         t3.setAccommodationProvided(true);
@@ -88,6 +94,8 @@ public class TrainingInitializationService implements CommandLineRunner {
         t4.setEducationQualification("B.Com, M.Com, BBA, MBA (Finance)");
         t4.setTrainingDuration("3 months");
         t4.setTrainingFees(15000);
+        t4.setInstituteTrainingFees(140000);
+        t4.setTotalStudentsAllowed(25);
         t4.setStipendIncluded(true);
         t4.setStipendAmount(7000);
         t4.setAccommodationProvided(false);
@@ -107,6 +115,8 @@ public class TrainingInitializationService implements CommandLineRunner {
         t5.setEducationQualification("B.Sc in Life Sciences or Pharmacy");
         t5.setTrainingDuration("4 months");
         t5.setTrainingFees(20000);
+        t5.setInstituteTrainingFees(180000);
+        t5.setTotalStudentsAllowed(30);
         t5.setStipendIncluded(false);
         t5.setStipendAmount(0);
         t5.setAccommodationProvided(true);
@@ -126,6 +136,8 @@ public class TrainingInitializationService implements CommandLineRunner {
         t6.setEducationQualification("Any graduate or undergraduate");
         t6.setTrainingDuration("3 months");
         t6.setTrainingFees(12000);
+        t6.setInstituteTrainingFees(100000);
+        t6.setTotalStudentsAllowed(50);
         t6.setStipendIncluded(true);
         t6.setStipendAmount(4000);
         t6.setAccommodationProvided(false);

@@ -24,6 +24,7 @@ import RoleReadyTraining from "./pages/students/RoleReadyTraining";
 import InternshipManagement from "./pages/institutes/InternshipManagement";
 import ExpertSessions from "./pages/institutes/ExpertSessions";
 import Workshops from "./pages/institutes/Workshops";
+import StudentTrainingRoleReady from "./pages/institutes/StudentTrainingRoleReady";
 import ResumeAccess from "./pages/industry/ResumeAccess";
 import PostJobs from "./pages/industry/PostJobs";
 import AiInterview from "./pages/industry/AiInterview";
@@ -144,6 +145,11 @@ function App() {
           <Route path="/institutes/workshops" element={
             <ProtectedRoute requiredUserType="INSTITUTE">
               <Workshops />
+            </ProtectedRoute>
+          } />
+          <Route path="/institutes/student-training-role-ready" element={
+            <ProtectedRoute requiredUserType="INSTITUTE">
+              <StudentTrainingRoleReady />
             </ProtectedRoute>
           } />
           

@@ -13,6 +13,7 @@ The Role Ready Training service allows students to browse and enroll in speciali
   - Certification details
   - Package after training
 - Enroll in training programs through a comprehensive enrollment form
+- Share training catalog with institutes who can batch-enroll students
 
 ## Setup Instructions
 
@@ -59,7 +60,12 @@ The frontend page is available at:
 2. Start the frontend server
 3. Login as a student
 4. Navigate to "Students" → "Role Ready Training" from the navbar
-5. Browse available training programs and click "Apply Now" to enroll
+5. Browse available training programs and click "Enroll Now" to submit your details
+
+### 5. Institute Batch Enrollment
+- Route: `/institutes/student-training-role-ready`
+- Institutes can open any training and enroll multiple students sequentially using `Save Data`, `Discard`, and `Add New Student` actions.
+- Uses the same training catalog as the student-facing Role Ready Training page.
 
 ## Enrollment Form Fields
 
@@ -101,8 +107,8 @@ The enrollment form collects the following information:
 
 ## Sample Training Programs
 
-The seed data includes 6 training programs:
-1. BMS Engineer
+The seed data (`backend/src/main/resources/training-data.json`) includes institute-specific details such as `instituteTrainingFees` and `totalStudentsAllowed` for each program. Current samples cover:
+1. BMS Engineer Trainee
 2. Data Analyst Intern
 3. Full Stack Developer Trainee
 4. Finance Executive Trainee

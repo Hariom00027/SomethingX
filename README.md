@@ -4,8 +4,8 @@ This is a full-stack career ecosystem platform built with React, Spring Boot, an
 
 ## Features
 
-- **Students:** Job Blueprint, Resume Builder, Career Counselling, Apply to Jobs, Courses.
-- **Institutes:** Internship Management, Expert Sessions, Workshops.
+- **Students:** Job Blueprint, Resume Builder, Career Counselling, Apply to Jobs, Courses, Role Ready Training.
+- **Institutes:** Internship Management, Student Training (Role Ready), Expert Sessions, Workshops.
 - **Industry:** Resume Access, Post Jobs & Hackathons, AI Technical Interview.
 
 ## Tech Stack

@@ -14,8 +14,6 @@ const EMPTY_INSTITUTE = {
   instituteEmail: "",
   institutePhone: "",
   instituteNotes: "",
-  totalStudentsAllowed: "",
-  instituteTrainingFees: "",
 };
 
 const EMPTY_STUDENT = {
@@ -45,8 +43,6 @@ const REQUIRED_INSTITUTE_FIELDS = [
   { name: "instituteContactPerson", label: "Primary Contact Person" },
   { name: "instituteEmail", label: "Contact Email" },
   { name: "institutePhone", label: "Contact Phone" },
-  { name: "totalStudentsAllowed", label: "Total Number of Students Allowed" },
-  { name: "instituteTrainingFees", label: "Training Fees for Institute" },
 ];
 
 const REQUIRED_STUDENT_FIELDS = [
@@ -221,8 +217,6 @@ const StudentTrainingRoleReady = () => {
       const payload = {
         ...flow.institute,
         ...flow.student,
-        totalStudentsAllowed: flow.institute.totalStudentsAllowed ? parseInt(flow.institute.totalStudentsAllowed, 10) : 0,
-        instituteTrainingFees: flow.institute.instituteTrainingFees ? parseFloat(flow.institute.instituteTrainingFees) : 0,
         percentageOrCgpa: flow.student.percentageOrCgpa ? parseFloat(flow.student.percentageOrCgpa) : 0,
         yearsOfExperience: flow.student.yearsOfExperience ? parseInt(flow.student.yearsOfExperience, 10) : 0,
         knownSkills: flow.student.knownSkills
@@ -323,37 +317,6 @@ const StudentTrainingRoleReady = () => {
             value={flow.institute.institutePhone}
             onChange={updateInstituteField}
             placeholder="Enter contact number"
-            required
-          />
-        </div>
-        <div>
-          <label htmlFor="totalStudentsAllowed" className="block text-sm font-medium mb-1">
-            Total Number of Students Allowed <span className="text-red-500">*</span>
-          </label>
-          <Input
-            id="totalStudentsAllowed"
-            type="number"
-            name="totalStudentsAllowed"
-            value={flow.institute.totalStudentsAllowed}
-            onChange={updateInstituteField}
-            placeholder="Enter total number of students"
-            min="1"
-            required
-          />
-        </div>
-        <div>
-          <label htmlFor="instituteTrainingFees" className="block text-sm font-medium mb-1">
-            Training Fees for Institute <span className="text-red-500">*</span>
-          </label>
-          <Input
-            id="instituteTrainingFees"
-            type="number"
-            name="instituteTrainingFees"
-            value={flow.institute.instituteTrainingFees}
-            onChange={updateInstituteField}
-            placeholder="Enter training fees in ₹"
-            min="0"
-            step="0.01"
             required
           />
         </div>

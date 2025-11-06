@@ -14,15 +14,18 @@ The Role Ready Training service allows students to browse and enroll in speciali
   - Package after training
 - Enroll in training programs through a comprehensive enrollment form
 - Share training catalog with institutes who can batch-enroll students
+- Enable industry partners to request day-one ready talent or bespoke training cohorts
 
 ## Setup Instructions
 
 ### 1. Backend Setup
-The backend endpoints are already set up in `TrainingController.java`:
+The backend endpoints are already set up in `TrainingController.java` and `IndustryTrainingController.java`:
 - `GET /api/trainings` - Get all training programs
 - `GET /api/trainings/{id}` - Get a specific training program
 - `POST /api/trainings/{id}/enroll` - Enroll in a training program
 - `POST /api/trainings/seed` - Seed training data
+- `POST /api/industry-training/apply` - Submit a Role Ready Freshers request (existing or custom training)
+- `GET /api/industry-training/requests` - List submitted industry requests (optional filters by trainingId/contactEmail)
 
 ### 2. Seed Training Data
 
@@ -67,6 +70,13 @@ The frontend page is available at:
 - Institutes can open any training and enroll multiple students sequentially using `Save Data`, `Discard`, and `Add New Student` actions.
 - Uses the same training catalog as the student-facing Role Ready Training page.
 
+### 6. Industry Role Ready Freshers
+- Route: `/industry/role-ready-freshers`
+- Industry partners can request day-one ready candidates for existing programs or submit bespoke training requirements.
+- Form captures company details, desired cohort size, start timeline, and optional skill requirements.
+- Backend persists requests in the `industry_training_requests` collection via `IndustryTrainingController`.
+- Navigation: Industry → Role Ready Freshers (navbar) or Industry dashboard card.
+
 ## Enrollment Form Fields
 
 The enrollment form collects the following information:
@@ -104,14 +114,17 @@ The enrollment form collects the following information:
 
 - Training data is stored in MongoDB collection: `trainings`
 - Enrollment data is stored in MongoDB collection: `training_enrollments`
+- Industry requests are stored in MongoDB collection: `industry_training_requests`
 
 ## Sample Training Programs
 
-The seed data (`backend/src/main/resources/training-data.json`) includes institute-specific details such as `instituteTrainingFees` and `totalStudentsAllowed` for each program. Current samples cover:
+The seed data (`backend/src/main/resources/training-data.json`) includes institute-specific details such as `instituteTrainingFees` and `totalStudentsAllowed` for each program, plus day-one readiness summaries. Current samples cover:
 1. BMS Engineer Trainee
 2. Data Analyst Intern
 3. Full Stack Developer Trainee
 4. Finance Executive Trainee
 5. Medical Coding Trainee
 6. Digital Marketing Trainee
+7. Salesforce SDR Accelerator
+8. Product Support Engineer Launchpad
 

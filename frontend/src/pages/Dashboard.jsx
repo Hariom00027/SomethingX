@@ -76,6 +76,11 @@ const Dashboard = () => {
               <p className="text-gray-600">Browse student resumes and profiles</p>
             </Link>
             
+            <Link to="/industry/role-ready-freshers" className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">Role Ready Freshers</h3>
+              <p className="text-gray-600">Request day-one ready training cohorts</p>
+            </Link>
+            
             <Link to="/industry/ai-interview" className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
               <h3 className="text-xl font-semibold text-gray-900 mb-2">AI Interview</h3>
               <p className="text-gray-600">Conduct AI-powered interviews</p>

@@ -23,7 +23,7 @@ Use this connection string in your chosen tool. This will connect you to the Mon
 
 Once you are connected, you need to tell the tool which database and collection you want to work with.
 
-*   **Database:** The database your application uses is named `careerconnect`.
+*   **Database:** The database your application uses is named `saarthix`.
 *   **Collection:** A collection is a group of documents (data entries). The name of the collection usually matches the name of the data you want to add. For example, to add a new job, you would use the `jobs` collection.
 
 ## Step 3: Find the Right Structure for Your Data
@@ -31,7 +31,7 @@ Once you are connected, you need to tell the tool which database and collection 
 Every piece of data you add must have the correct "fields" (the structure). The easiest way to find the correct structure is to look at the application's "model" files.
 
 You can find all the model files in this directory:
-`SomethingX/backend/src/main/java/com/careerconnect/model/`
+`SomethingX/backend/src/main/java/com/saarthix/model/`
 
 Here are some of the available models:
 *   Blueprint.java
@@ -56,7 +56,7 @@ To add a new job to the `jobs` collection, you would use a command like this:
 
 ```javascript
 // First, tell mongosh to use the correct database
-use careerconnect
+use saarthix
 
 // Now, insert a new job into the "jobs" collection
 db.jobs.insertOne({
@@ -74,7 +74,7 @@ To add a new blueprint to the `blueprints` collection, you would use a command l
 
 ```javascript
 // First, tell mongosh to use the correct database
-use careerconnect
+use saarthix
 
 // Now, insert a new blueprint into the "blueprints" collection
 db.blueprints.insertOne({

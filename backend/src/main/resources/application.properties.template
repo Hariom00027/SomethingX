@@ -1,7 +1,8 @@
 server.port=8080
-# Docker profile default URI (mongodb is the docker-compose service hostname)
-spring.data.mongodb.uri=mongodb://mongodb:27017/careerconnect
-spring.data.mongodb.database=careerconnect
+# MongoDB Configuration
+# For Docker: mongodb is the docker-compose service hostname
+# For Local: use mongodb://localhost:27017/saarthix
+spring.data.mongodb.uri=mongodb://mongodb:27017/saarthix
 
 # OAuth2 Configuration
 spring.security.oauth2.client.registration.google.client-id=${GOOGLE_CLIENT_ID}

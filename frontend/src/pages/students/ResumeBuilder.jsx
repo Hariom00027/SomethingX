@@ -25,7 +25,7 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, Edit3, Eye, Palette, Save, Download, EyeOff, ArrowLeft, FileText, Sparkles, X, CheckCircle2, Loader2 } from "lucide-react";
+import { GripVertical, Edit3, Eye, Palette, Save, Download, EyeOff, ArrowLeft, FileText, Sparkles, X, CheckCircle2, Loader2, Plus, Trash2 } from "lucide-react";
 
 const emptyResume = (studentId, templateId) => ({
   studentId,
@@ -77,7 +77,7 @@ const emptyResume = (studentId, templateId) => ({
 });
 
 // Sortable Section Component
-const SortableSection = ({ id, children, isEditing, onEdit, onDelete }) => {
+const SortableSection = ({ id, children, isEditing, onEdit, onDelete, onColorChange }) => {
   const {
     attributes,
     listeners,
@@ -95,36 +95,84 @@ const SortableSection = ({ id, children, isEditing, onEdit, onDelete }) => {
 
   return (
     <div ref={setNodeRef} style={style} className="relative group">
-      {isEditing && (
-        <div className="absolute -left-8 top-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto z-10">
+        <div className="absolute top-2 right-2 flex gap-2 bg-white rounded-lg shadow-lg border border-gray-200 p-1">
           <button
             {...attributes}
             {...listeners}
-            className="p-1 hover:bg-gray-200 rounded cursor-grab active:cursor-grabbing"
+            className="p-2 hover:bg-gray-100 rounded cursor-grab active:cursor-grabbing"
+            title="Drag to reorder"
           >
-            <GripVertical className="w-4 h-4 text-gray-500" />
+            <GripVertical className="w-4 h-4 text-gray-600" />
           </button>
           <button
-            onClick={() => onEdit(id)}
-            className="p-1 hover:bg-gray-200 rounded"
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit(id);
+            }}
+            className="p-2 hover:bg-blue-100 rounded text-blue-600"
+            title="Edit section"
           >
-            <Edit3 className="w-4 h-4 text-gray-500" />
+            <Edit3 className="w-4 h-4" />
           </button>
           <button
-            onClick={() => onDelete(id)}
-            className="p-1 hover:bg-red-200 rounded text-red-500"
+            onClick={(e) => {
+              e.stopPropagation();
+              onColorChange(id);
+            }}
+            className="p-2 hover:bg-purple-100 rounded text-purple-600"
+            title="Change color"
           >
-            ×
+            <Palette className="w-4 h-4" />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(id);
+            }}
+            className="p-2 hover:bg-red-100 rounded text-red-600"
+            title="Remove section"
+          >
+            <Trash2 className="w-4 h-4" />
           </button>
         </div>
-      )}
+      </div>
       {children}
     </div>
   );
 };
 
+// A4 Page Component for multi-page support
+const A4Page = ({ children, pageNumber, totalPages }) => {
+  // A4 dimensions: 210mm x 297mm = 794px x 1123px at 96 DPI
+  const A4_WIDTH = 794;
+  const A4_HEIGHT = 1123;
+  
+  return (
+    <div 
+      className="bg-white shadow-2xl mx-auto mb-6 relative"
+      style={{
+        width: `${A4_WIDTH}px`,
+        minHeight: `${A4_HEIGHT}px`,
+        padding: '40px',
+        boxSizing: 'border-box',
+        pageBreakAfter: 'always',
+        pageBreakInside: 'avoid',
+        border: '1px solid #e5e7eb'
+      }}
+    >
+      {children}
+      {totalPages > 1 && (
+        <div className="absolute bottom-4 right-4 text-xs text-gray-400">
+          Page {pageNumber} of {totalPages}
+        </div>
+      )}
+    </div>
+  );
+};
+
 // Resume Preview Component
-const ResumePreview = ({ resume, template, isEditing, onEdit, onDelete, colors }) => {
+const ResumePreview = ({ resume, template, isEditing, onEdit, onDelete, onColorChange, colors }) => {
   const getSectionContent = (sectionId) => {
     switch (sectionId) {
       case 'personalInfo':
@@ -336,18 +384,85 @@ const ResumePreview = ({ resume, template, isEditing, onEdit, onDelete, colors }
     return content !== null;
   });
 
+  // Get estimated height for a section based on its content
+  const getSectionHeight = (sectionId) => {
+    switch (sectionId) {
+      case 'personalInfo':
+        return 120;
+      case 'summary':
+        return resume.summary ? Math.max(80, (resume.summary.length / 100) * 20) : 0;
+      case 'bio':
+        return resume.bio ? Math.max(80, (resume.bio.length / 100) * 20) : 0;
+      case 'experience':
+        return resume.experience ? resume.experience.length * 120 : 0;
+      case 'education':
+        return resume.education ? resume.education.length * 80 : 0;
+      case 'projects':
+        return resume.projects ? resume.projects.length * 100 : 0;
+      case 'skills':
+        return resume.skills ? Math.max(60, Math.ceil(resume.skills.length / 8) * 40) : 0;
+      case 'achievements':
+        return resume.achievements ? resume.achievements.length * 30 : 0;
+      case 'certificates':
+        return resume.certificates ? resume.certificates.length * 60 : 0;
+      case 'languages':
+        return resume.languages ? resume.languages.length * 40 : 0;
+      case 'hobbies':
+        return resume.hobbies ? Math.max(60, Math.ceil(resume.hobbies.length / 8) * 40) : 0;
+      default:
+        return 100;
+    }
+  };
+
+  // Split content into pages based on estimated heights
+  const splitIntoPages = (sections) => {
+    const pages = [];
+    let currentPage = [];
+    let currentHeight = 0;
+    const A4_CONTENT_HEIGHT = 1123 - 80; // A4 height minus padding (40px top + 40px bottom)
+
+    sections.forEach((sectionId) => {
+      const sectionHeight = getSectionHeight(sectionId);
+      
+      // If adding this section would exceed page height and we have content, start new page
+      if (currentHeight + sectionHeight > A4_CONTENT_HEIGHT && currentPage.length > 0) {
+        pages.push([...currentPage]);
+        currentPage = [sectionId];
+        currentHeight = sectionHeight;
+      } else {
+        currentPage.push(sectionId);
+        currentHeight += sectionHeight;
+      }
+    });
+
+    // Add the last page if it has content
+    if (currentPage.length > 0) {
+      pages.push(currentPage);
+    }
+
+    // If no pages, return at least one empty page
+    return pages.length > 0 ? pages : [[]];
+  };
+
+  const pages = splitIntoPages(visibleSections);
+
   return (
-    <div className="bg-white p-6 shadow-lg max-w-4xl mx-auto" style={{ minHeight: '800px' }}>
-      {visibleSections.map((sectionId) => (
-        <SortableSection
-          key={sectionId}
-          id={sectionId}
-          isEditing={isEditing}
-          onEdit={onEdit}
-          onDelete={onDelete}
-        >
-          {getSectionContent(sectionId)}
-        </SortableSection>
+    <div className="flex flex-col items-center" style={{ padding: '20px 0' }}>
+      {pages.map((pageSections, pageIndex) => (
+        <A4Page key={pageIndex} pageNumber={pageIndex + 1} totalPages={pages.length}>
+          {pageSections.map((sectionId) => (
+            <SortableSection
+              key={sectionId}
+              id={sectionId}
+              isEditing={isEditing}
+              onEdit={onEdit}
+              onDelete={onDelete}
+              onColorChange={onColorChange}
+            >
+              {getSectionContent(sectionId)}
+            </SortableSection>
+          ))}
+        </A4Page>
       ))}
     </div>
   );
@@ -362,6 +477,7 @@ const ResumeBuilder = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editingSection, setEditingSection] = useState(null);
   const [showColorPicker, setShowColorPicker] = useState(false);
+  const [colorPickerSection, setColorPickerSection] = useState(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -509,6 +625,15 @@ const ResumeBuilder = () => {
       ...prev,
       sectionOrder: prev.sectionOrder.filter(id => id !== sectionId)
     }));
+    if (editingSection === sectionId) {
+      setEditingSection(null);
+    }
+  };
+
+  const handleColorChange = (sectionId) => {
+    setColorPickerSection(sectionId);
+    setEditingSection(sectionId);
+    setShowColorPicker(true);
   };
 
   const updateColor = (colorType, color) => {
@@ -826,8 +951,226 @@ const ResumeBuilder = () => {
     }
   };
 
+  // Sidebar content for editor
+  const renderSidebar = () => {
+    if (!selectedTemplateId || !resume) return null;
+
+    const availableSections = [
+      { id: 'personalInfo', label: 'Personal Info', icon: '👤', color: 'bg-blue-100 hover:bg-blue-200' },
+      { id: 'summary', label: 'Summary', icon: '📝', color: 'bg-blue-100 hover:bg-blue-200' },
+      { id: 'bio', label: 'Bio', icon: '👤', color: 'bg-purple-100 hover:bg-purple-200' },
+      { id: 'experience', label: 'Experience', icon: '💼', color: 'bg-green-100 hover:bg-green-200' },
+      { id: 'education', label: 'Education', icon: '🎓', color: 'bg-yellow-100 hover:bg-yellow-200' },
+      { id: 'projects', label: 'Projects', icon: '🚀', color: 'bg-pink-100 hover:bg-pink-200' },
+      { id: 'skills', label: 'Skills', icon: '⚡', color: 'bg-orange-100 hover:bg-orange-200' },
+      { id: 'achievements', label: 'Achievements', icon: '🏆', color: 'bg-indigo-100 hover:bg-indigo-200' },
+      { id: 'certificates', label: 'Certificates', icon: '📜', color: 'bg-teal-100 hover:bg-teal-200' },
+      { id: 'languages', label: 'Languages', icon: '🌍', color: 'bg-cyan-100 hover:bg-cyan-200' },
+      { id: 'hobbies', label: 'Hobbies', icon: '🎯', color: 'bg-rose-100 hover:bg-rose-200' }
+    ];
+
+    return (
+      <div className="h-full overflow-y-auto">
+        <div className="mb-4">
+          <h2 className="text-lg font-semibold flex items-center gap-2 mb-3">
+            <Edit3 className="w-5 h-5 text-purple-600" />
+            Section Editor
+          </h2>
+        </div>
+
+        {/* Add Section Button */}
+        <Card className="mb-4 border-2 border-gray-200">
+          <CardHeader className="bg-gradient-to-r from-gray-50 to-blue-50 p-3">
+            <CardTitle className="flex items-center gap-2 text-sm">
+              <Plus className="w-4 h-4 text-blue-600" />
+              Add Section
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-3">
+            <div className="grid grid-cols-1 gap-2">
+              {availableSections.map(section => {
+                const isAdded = resume.sectionOrder.includes(section.id);
+                return (
+                  <Button
+                    key={section.id}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      if (!isAdded) {
+                        setResume((prev) => ({
+                          ...prev,
+                          sectionOrder: [...prev.sectionOrder, section.id]
+                        }));
+                      }
+                      setEditingSection(section.id);
+                      // Initialize empty data for the section if it doesn't exist
+                      if (section.id === 'experience' && (!resume.experience || resume.experience.length === 0)) {
+                        onChange("experience", [{ role: "", company: "", startDate: "", endDate: "", achievements: [] }]);
+                      } else if (section.id === 'education' && (!resume.education || resume.education.length === 0)) {
+                        onChange("education", [{ degree: "", institution: "", fieldOfStudy: "", startDate: "", endDate: "" }]);
+                      } else if (section.id === 'projects' && (!resume.projects || resume.projects.length === 0)) {
+                        onChange("projects", [{ name: "", description: "", link: "", technologies: [], startDate: "", endDate: "" }]);
+                      } else if (section.id === 'certificates' && (!resume.certificates || resume.certificates.length === 0)) {
+                        onChange("certificates", [{ name: "", issuer: "", issueDate: "" }]);
+                      } else if (section.id === 'languages' && (!resume.languages || resume.languages.length === 0)) {
+                        onChange("languages", [{ name: "", proficiency: "" }]);
+                      } else if (section.id === 'summary' && !resume.summary) {
+                        onChange("summary", "");
+                      } else if (section.id === 'bio' && !resume.bio) {
+                        onChange("bio", "");
+                      } else if (section.id === 'skills' && (!resume.skills || resume.skills.length === 0)) {
+                        onChange("skills", []);
+                      } else if (section.id === 'achievements' && (!resume.achievements || resume.achievements.length === 0)) {
+                        onChange("achievements", []);
+                      } else if (section.id === 'hobbies' && (!resume.hobbies || resume.hobbies.length === 0)) {
+                        onChange("hobbies", []);
+                      }
+                    }}
+                    className={`flex items-center justify-between transition-all ${section.color} border-0 text-xs ${isAdded ? 'opacity-75' : ''}`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm">{section.icon}</span>
+                      <span className="font-medium">{section.label}</span>
+                    </div>
+                    {isAdded && (
+                      <span className="text-xs bg-green-500 text-white px-1.5 py-0.5 rounded">Added</span>
+                    )}
+                  </Button>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Section Editor */}
+        {editingSection ? (
+          <div className="space-y-4">
+            <Card className="border-2 border-blue-200">
+              <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50 p-3">
+                <div className="flex justify-between items-center">
+                  <CardTitle className="flex items-center gap-2 text-sm">
+                    <Edit3 className="w-4 h-4 text-blue-600" />
+                    {editingSection.charAt(0).toUpperCase() + editingSection.slice(1).replace(/([A-Z])/g, ' $1')}
+                  </CardTitle>
+                  <Button 
+                    onClick={() => {
+                      setEditingSection(null);
+                      setShowColorPicker(false);
+                      setColorPickerSection(null);
+                    }} 
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0"
+                  >
+                    <X className="w-3 h-3" />
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-3">
+                {showColorPicker && colorPickerSection === editingSection ? (
+                  <div className="space-y-3">
+                    <div className="space-y-2">
+                      <label className="block text-xs font-semibold text-gray-700">Primary Color</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={resume.colors.primary}
+                          onChange={(e) => updateColor('primary', e.target.value)}
+                          className="w-12 h-12 border-2 border-gray-300 rounded cursor-pointer"
+                        />
+                        <Input
+                          value={resume.colors.primary}
+                          onChange={(e) => updateColor('primary', e.target.value)}
+                          className="font-mono text-xs h-8"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="block text-xs font-semibold text-gray-700">Secondary Color</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={resume.colors.secondary}
+                          onChange={(e) => updateColor('secondary', e.target.value)}
+                          className="w-12 h-12 border-2 border-gray-300 rounded cursor-pointer"
+                        />
+                        <Input
+                          value={resume.colors.secondary}
+                          onChange={(e) => updateColor('secondary', e.target.value)}
+                          className="font-mono text-xs h-8"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="block text-xs font-semibold text-gray-700">Accent Color</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={resume.colors.accent}
+                          onChange={(e) => updateColor('accent', e.target.value)}
+                          className="w-12 h-12 border-2 border-gray-300 rounded cursor-pointer"
+                        />
+                        <Input
+                          value={resume.colors.accent}
+                          onChange={(e) => updateColor('accent', e.target.value)}
+                          className="font-mono text-xs h-8"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setShowColorPicker(false);
+                          setColorPickerSection(null);
+                        }}
+                        className="flex-1 text-xs"
+                      >
+                        Done
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setShowColorPicker(false);
+                          setColorPickerSection(null);
+                        }}
+                        className="flex-1 text-xs"
+                      >
+                        Edit Text
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {renderSectionEditor()}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        ) : (
+          <Card className="border-2 border-dashed border-gray-300">
+            <CardContent className="py-8">
+              <div className="text-center">
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-100 mb-3">
+                  <Edit3 className="w-6 h-6 text-gray-400" />
+                </div>
+                <h3 className="text-sm font-semibold text-gray-700 mb-1">No Section Selected</h3>
+                <p className="text-gray-500 text-xs">
+                  Click on a section in the preview or add a new section above to start editing.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    );
+  };
+
   return (
-    <DashboardLayout sidebar={<div>Sidebar</div>}>
+    <DashboardLayout sidebar={renderSidebar()}>
       <div className="mb-6">
         <h1 className="text-3xl font-bold mb-2 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
           Resume Builder
@@ -923,14 +1266,6 @@ const ResumeBuilder = () => {
                   </>
                 )}
               </Button>
-              <Button 
-                onClick={() => setShowColorPicker(!showColorPicker)} 
-                variant="outline"
-                className="gap-2"
-              >
-                <Palette className="w-4 h-4" />
-                Customize Colors
-              </Button>
               <div className="h-6 w-px bg-gray-300"></div>
               <Button 
                 onClick={previewHtml} 
@@ -972,104 +1307,21 @@ const ResumeBuilder = () => {
             </div>
           </div>
 
-          {/* Color Picker */}
-          {showColorPicker && (
-            <Card className="border-2 border-blue-200 shadow-lg">
-              <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2">
-                    <Palette className="w-5 h-5 text-blue-600" />
-                    Color Customization
-                  </CardTitle>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowColorPicker(false)}
-                    className="h-8 w-8 p-0"
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="space-y-3">
-                    <label className="block text-sm font-semibold text-gray-700">Primary Color</label>
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="color"
-                        value={resume.colors.primary}
-                        onChange={(e) => updateColor('primary', e.target.value)}
-                        className="w-16 h-16 border-2 border-gray-300 rounded-lg cursor-pointer shadow-sm hover:shadow-md transition-shadow"
-                      />
-                      <div className="flex-1">
-                        <Input
-                          value={resume.colors.primary}
-                          onChange={(e) => updateColor('primary', e.target.value)}
-                          className="font-mono text-sm"
-                        />
-                      </div>
-                    </div>
-                    <p className="text-xs text-gray-500">Used for headings and main elements</p>
-                  </div>
-                  <div className="space-y-3">
-                    <label className="block text-sm font-semibold text-gray-700">Secondary Color</label>
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="color"
-                        value={resume.colors.secondary}
-                        onChange={(e) => updateColor('secondary', e.target.value)}
-                        className="w-16 h-16 border-2 border-gray-300 rounded-lg cursor-pointer shadow-sm hover:shadow-md transition-shadow"
-                      />
-                      <div className="flex-1">
-                        <Input
-                          value={resume.colors.secondary}
-                          onChange={(e) => updateColor('secondary', e.target.value)}
-                          className="font-mono text-sm"
-                        />
-                      </div>
-                    </div>
-                    <p className="text-xs text-gray-500">Used for secondary text and details</p>
-                  </div>
-                  <div className="space-y-3">
-                    <label className="block text-sm font-semibold text-gray-700">Accent Color</label>
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="color"
-                        value={resume.colors.accent}
-                        onChange={(e) => updateColor('accent', e.target.value)}
-                        className="w-16 h-16 border-2 border-gray-300 rounded-lg cursor-pointer shadow-sm hover:shadow-md transition-shadow"
-                      />
-                      <div className="flex-1">
-                        <Input
-                          value={resume.colors.accent}
-                          onChange={(e) => updateColor('accent', e.target.value)}
-                          className="font-mono text-sm"
-                        />
-                      </div>
-                    </div>
-                    <p className="text-xs text-gray-500">Used for badges and highlights</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Resume Preview */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold flex items-center gap-2">
-                  <FileText className="w-5 h-5 text-blue-600" />
-                  Resume Preview
-                </h2>
-                {isEditing && (
-                  <span className="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-medium">
-                    Edit Mode Active
-                  </span>
-                )}
-              </div>
-              <div className="sticky top-4">
+          {/* Resume Preview */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold flex items-center gap-2">
+                <FileText className="w-5 h-5 text-blue-600" />
+                Resume Preview (A4 Size)
+              </h2>
+              {isEditing && (
+                <span className="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-medium">
+                  Edit Mode Active
+                </span>
+              )}
+            </div>
+            <div className="flex justify-center bg-gray-100 p-4 rounded-lg overflow-auto" style={{ maxHeight: 'calc(100vh - 200px)' }}>
+              <div className="flex flex-col items-center">
                 <DndContext
                   sensors={sensors}
                   collisionDetection={closestCenter}
@@ -1082,110 +1334,12 @@ const ResumeBuilder = () => {
                       isEditing={isEditing}
                       onEdit={handleEditSection}
                       onDelete={handleDeleteSection}
+                      onColorChange={handleColorChange}
                       colors={resume.colors}
                     />
                   </SortableContext>
                 </DndContext>
               </div>
-            </div>
-
-            {/* Section Editor */}
-            <div className="space-y-4">
-              <h2 className="text-xl font-semibold flex items-center gap-2 mb-4">
-                <Edit3 className="w-5 h-5 text-purple-600" />
-                Section Editor
-              </h2>
-              
-              {/* Section Management */}
-              <Card className="border-2 border-gray-200">
-                <CardHeader className="bg-gradient-to-r from-gray-50 to-blue-50">
-                  <CardTitle className="flex items-center gap-2">
-                    <Sparkles className="w-5 h-5 text-blue-600" />
-                    Add Sections
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-6">
-                  <div className="grid grid-cols-2 gap-3">
-                    {[
-                      { id: 'summary', label: 'Summary', icon: '📝', color: 'bg-blue-100 hover:bg-blue-200' },
-                      { id: 'bio', label: 'Bio', icon: '👤', color: 'bg-purple-100 hover:bg-purple-200' },
-                      { id: 'experience', label: 'Experience', icon: '💼', color: 'bg-green-100 hover:bg-green-200' },
-                      { id: 'education', label: 'Education', icon: '🎓', color: 'bg-yellow-100 hover:bg-yellow-200' },
-                      { id: 'projects', label: 'Projects', icon: '🚀', color: 'bg-pink-100 hover:bg-pink-200' },
-                      { id: 'skills', label: 'Skills', icon: '⚡', color: 'bg-orange-100 hover:bg-orange-200' },
-                      { id: 'achievements', label: 'Achievements', icon: '🏆', color: 'bg-indigo-100 hover:bg-indigo-200' },
-                      { id: 'certificates', label: 'Certificates', icon: '📜', color: 'bg-teal-100 hover:bg-teal-200' },
-                      { id: 'languages', label: 'Languages', icon: '🌍', color: 'bg-cyan-100 hover:bg-cyan-200' },
-                      { id: 'hobbies', label: 'Hobbies', icon: '🎯', color: 'bg-rose-100 hover:bg-rose-200' }
-                    ].map(section => (
-                      <Button
-                        key={section.id}
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setEditingSection(section.id);
-                          // Initialize empty data for the section if it doesn't exist
-                          if (section.id === 'experience' && (!resume.experience || resume.experience.length === 0)) {
-                            onChange("experience", [{ role: "", company: "", startDate: "", endDate: "", achievements: [] }]);
-                          } else if (section.id === 'education' && (!resume.education || resume.education.length === 0)) {
-                            onChange("education", [{ degree: "", institution: "", fieldOfStudy: "", startDate: "", endDate: "" }]);
-                          } else if (section.id === 'projects' && (!resume.projects || resume.projects.length === 0)) {
-                            onChange("projects", [{ name: "", description: "", link: "", technologies: [], startDate: "", endDate: "" }]);
-                          } else if (section.id === 'certificates' && (!resume.certificates || resume.certificates.length === 0)) {
-                            onChange("certificates", [{ name: "", issuer: "", issueDate: "" }]);
-                          } else if (section.id === 'languages' && (!resume.languages || resume.languages.length === 0)) {
-                            onChange("languages", [{ name: "", proficiency: "" }]);
-                          }
-                        }}
-                        className={`flex items-center gap-2 transition-all ${section.color} border-0`}
-                      >
-                        <span className="text-lg">{section.icon}</span>
-                        <span className="font-medium">{section.label}</span>
-                      </Button>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {editingSection ? (
-                <div className="space-y-4">
-                  <Card className="border-2 border-blue-200">
-                    <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50">
-                      <div className="flex justify-between items-center">
-                        <CardTitle className="flex items-center gap-2">
-                          <Edit3 className="w-5 h-5 text-blue-600" />
-                          Editing: {editingSection.charAt(0).toUpperCase() + editingSection.slice(1)}
-                        </CardTitle>
-                        <Button 
-                          onClick={() => setEditingSection(null)} 
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0"
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="pt-6">
-                      {renderSectionEditor()}
-                    </CardContent>
-                  </Card>
-                </div>
-              ) : (
-                <Card className="border-2 border-dashed border-gray-300">
-                  <CardContent className="py-12">
-                    <div className="text-center">
-                      <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
-                        <Edit3 className="w-8 h-8 text-gray-400" />
-                      </div>
-                      <h3 className="text-lg font-semibold text-gray-700 mb-2">No Section Selected</h3>
-                      <p className="text-gray-500 text-sm">
-                        Click on a section button above to start editing, or click on a section in the preview to edit it.
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
             </div>
           </div>
 

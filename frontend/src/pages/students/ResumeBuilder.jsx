@@ -25,7 +25,7 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, Edit3, Eye, Palette, Save, Download, EyeOff } from "lucide-react";
+import { GripVertical, Edit3, Eye, Palette, Save, Download, EyeOff, ArrowLeft, FileText, Sparkles, X, CheckCircle2, Loader2 } from "lucide-react";
 
 const emptyResume = (studentId, templateId) => ({
   studentId,
@@ -828,78 +828,228 @@ const ResumeBuilder = () => {
 
   return (
     <DashboardLayout sidebar={<div>Sidebar</div>}>
-      <h1 className="text-2xl font-bold mb-4">Resume Builder</h1>
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold mb-2 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          Resume Builder
+        </h1>
+        <p className="text-gray-600">Create a professional resume that stands out</p>
+      </div>
 
       {/* Template gallery */}
       {!selectedTemplateId && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {templates.map((t) => (
-            <Card key={t.id} className="cursor-pointer hover:shadow" onClick={() => setSelectedTemplateId(t.id)}>
-              <CardHeader>
-                <CardTitle>{t.name}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <img src={t.previewUrl} alt={t.name} className="w-full h-48 object-contain" />
-              </CardContent>
-            </Card>
-          ))}
+        <div className="space-y-6">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl font-semibold mb-2">Choose a Template</h2>
+            <p className="text-gray-600">Select a template to get started with your resume</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {templates.map((t) => (
+              <Card 
+                key={t.id} 
+                className="cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-105 border-2 hover:border-blue-500 group overflow-hidden"
+                onClick={() => setSelectedTemplateId(t.id)}
+              >
+                <div className="relative overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10"></div>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2">
+                      <FileText className="w-5 h-5 text-blue-600" />
+                      {t.name}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <div className="relative bg-gray-50 rounded-lg p-4 border border-gray-200">
+                      <img src={t.previewUrl} alt={t.name} className="w-full h-48 object-contain rounded" />
+                    </div>
+                    <div className="mt-4 flex items-center justify-center">
+                      <span className="text-sm text-blue-600 font-medium group-hover:text-blue-700">
+                        Select Template →
+                      </span>
+                    </div>
+                  </CardContent>
+                </div>
+              </Card>
+            ))}
+          </div>
         </div>
       )}
 
       {/* Editor */}
       {selectedTemplateId && resume && (
         <div className="space-y-6">
-          <div className="flex gap-2 flex-wrap">
-            <Button onClick={() => setSelectedTemplateId("")} variant="ghost">Back</Button>
-            <Button onClick={save} disabled={saving}>{saving ? "Saving..." : "Save"}</Button>
-            <Button onClick={() => setIsEditing(!isEditing)} variant={isEditing ? "default" : "outline"}>
-              {isEditing ? <EyeOff className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
-              {isEditing ? "Exit Edit" : "Edit Mode"}
-            </Button>
-            <Button onClick={() => setShowColorPicker(!showColorPicker)} variant="outline">
-              <Palette className="w-4 h-4 mr-2" />
-              Colors
-            </Button>
-            <Button onClick={() => setResume(emptyResume(studentId, selectedTemplateId))} variant="outline">
-              Clear Sample Data
-            </Button>
-            <Button onClick={previewHtml} disabled={!resume?.id}>Preview HTML</Button>
-            <Button onClick={downloadPdf} disabled={!resume?.id}>Download PDF</Button>
-            <Button onClick={() => requestReview("AI")} disabled={!resume?.id}>AI Review</Button>
-            <Button onClick={() => requestReview("HUMAN")} disabled={!resume?.id}>Mentor Review</Button>
+          {/* Toolbar */}
+          <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+            <div className="flex flex-wrap items-center gap-3">
+              <Button 
+                onClick={() => setSelectedTemplateId("")} 
+                variant="ghost" 
+                className="gap-2"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Back to Templates
+              </Button>
+              <div className="h-6 w-px bg-gray-300"></div>
+              <Button 
+                onClick={save} 
+                disabled={saving}
+                className="gap-2 bg-blue-600 hover:bg-blue-700"
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4" />
+                    Save Resume
+                  </>
+                )}
+              </Button>
+              <Button 
+                onClick={() => setIsEditing(!isEditing)} 
+                variant={isEditing ? "default" : "outline"}
+                className="gap-2"
+              >
+                {isEditing ? (
+                  <>
+                    <EyeOff className="w-4 h-4" />
+                    Exit Edit
+                  </>
+                ) : (
+                  <>
+                    <Eye className="w-4 h-4" />
+                    Edit Mode
+                  </>
+                )}
+              </Button>
+              <Button 
+                onClick={() => setShowColorPicker(!showColorPicker)} 
+                variant="outline"
+                className="gap-2"
+              >
+                <Palette className="w-4 h-4" />
+                Customize Colors
+              </Button>
+              <div className="h-6 w-px bg-gray-300"></div>
+              <Button 
+                onClick={previewHtml} 
+                disabled={!resume?.id}
+                variant="outline"
+                className="gap-2"
+              >
+                <Eye className="w-4 h-4" />
+                Preview HTML
+              </Button>
+              <Button 
+                onClick={downloadPdf} 
+                disabled={!resume?.id}
+                variant="outline"
+                className="gap-2"
+              >
+                <Download className="w-4 h-4" />
+                Download PDF
+              </Button>
+              <div className="h-6 w-px bg-gray-300"></div>
+              <Button 
+                onClick={() => requestReview("AI")} 
+                disabled={!resume?.id}
+                variant="outline"
+                className="gap-2 border-purple-200 text-purple-700 hover:bg-purple-50"
+              >
+                <Sparkles className="w-4 h-4" />
+                AI Review
+              </Button>
+              <Button 
+                onClick={() => requestReview("HUMAN")} 
+                disabled={!resume?.id}
+                variant="outline"
+                className="gap-2 border-green-200 text-green-700 hover:bg-green-50"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                Mentor Review
+              </Button>
+            </div>
           </div>
 
           {/* Color Picker */}
           {showColorPicker && (
-            <Card>
-              <CardHeader><CardTitle>Color Customization</CardTitle></CardHeader>
-              <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">Primary Color</label>
-                  <input
-                    type="color"
-                    value={resume.colors.primary}
-                    onChange={(e) => updateColor('primary', e.target.value)}
-                    className="w-full h-10 border rounded"
-                  />
+            <Card className="border-2 border-blue-200 shadow-lg">
+              <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <Palette className="w-5 h-5 text-blue-600" />
+                    Color Customization
+                  </CardTitle>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowColorPicker(false)}
+                    className="h-8 w-8 p-0"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Secondary Color</label>
-                  <input
-                    type="color"
-                    value={resume.colors.secondary}
-                    onChange={(e) => updateColor('secondary', e.target.value)}
-                    className="w-full h-10 border rounded"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Accent Color</label>
-                  <input
-                    type="color"
-                    value={resume.colors.accent}
-                    onChange={(e) => updateColor('accent', e.target.value)}
-                    className="w-full h-10 border rounded"
-                  />
+              </CardHeader>
+              <CardContent className="pt-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="space-y-3">
+                    <label className="block text-sm font-semibold text-gray-700">Primary Color</label>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="color"
+                        value={resume.colors.primary}
+                        onChange={(e) => updateColor('primary', e.target.value)}
+                        className="w-16 h-16 border-2 border-gray-300 rounded-lg cursor-pointer shadow-sm hover:shadow-md transition-shadow"
+                      />
+                      <div className="flex-1">
+                        <Input
+                          value={resume.colors.primary}
+                          onChange={(e) => updateColor('primary', e.target.value)}
+                          className="font-mono text-sm"
+                        />
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-500">Used for headings and main elements</p>
+                  </div>
+                  <div className="space-y-3">
+                    <label className="block text-sm font-semibold text-gray-700">Secondary Color</label>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="color"
+                        value={resume.colors.secondary}
+                        onChange={(e) => updateColor('secondary', e.target.value)}
+                        className="w-16 h-16 border-2 border-gray-300 rounded-lg cursor-pointer shadow-sm hover:shadow-md transition-shadow"
+                      />
+                      <div className="flex-1">
+                        <Input
+                          value={resume.colors.secondary}
+                          onChange={(e) => updateColor('secondary', e.target.value)}
+                          className="font-mono text-sm"
+                        />
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-500">Used for secondary text and details</p>
+                  </div>
+                  <div className="space-y-3">
+                    <label className="block text-sm font-semibold text-gray-700">Accent Color</label>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="color"
+                        value={resume.colors.accent}
+                        onChange={(e) => updateColor('accent', e.target.value)}
+                        className="w-16 h-16 border-2 border-gray-300 rounded-lg cursor-pointer shadow-sm hover:shadow-md transition-shadow"
+                      />
+                      <div className="flex-1">
+                        <Input
+                          value={resume.colors.accent}
+                          onChange={(e) => updateColor('accent', e.target.value)}
+                          className="font-mono text-sm"
+                        />
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-500">Used for badges and highlights</p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -908,45 +1058,65 @@ const ResumeBuilder = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Resume Preview */}
             <div className="space-y-4">
-              <h2 className="text-xl font-semibold">Resume Preview</h2>
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragEnd={handleDragEnd}
-              >
-                <SortableContext items={resume.sectionOrder} strategy={verticalListSortingStrategy}>
-                  <ResumePreview
-                    resume={resume}
-                    template={templates.find(t => t.id === selectedTemplateId)}
-                    isEditing={isEditing}
-                    onEdit={handleEditSection}
-                    onDelete={handleDeleteSection}
-                    colors={resume.colors}
-                  />
-                </SortableContext>
-              </DndContext>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-blue-600" />
+                  Resume Preview
+                </h2>
+                {isEditing && (
+                  <span className="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-medium">
+                    Edit Mode Active
+                  </span>
+                )}
+              </div>
+              <div className="sticky top-4">
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
+                >
+                  <SortableContext items={resume.sectionOrder} strategy={verticalListSortingStrategy}>
+                    <ResumePreview
+                      resume={resume}
+                      template={templates.find(t => t.id === selectedTemplateId)}
+                      isEditing={isEditing}
+                      onEdit={handleEditSection}
+                      onDelete={handleDeleteSection}
+                      colors={resume.colors}
+                    />
+                  </SortableContext>
+                </DndContext>
+              </div>
             </div>
 
             {/* Section Editor */}
             <div className="space-y-4">
-              <h2 className="text-xl font-semibold">Section Editor</h2>
+              <h2 className="text-xl font-semibold flex items-center gap-2 mb-4">
+                <Edit3 className="w-5 h-5 text-purple-600" />
+                Section Editor
+              </h2>
               
               {/* Section Management */}
-              <Card>
-                <CardHeader><CardTitle>Add Sections</CardTitle></CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-2">
+              <Card className="border-2 border-gray-200">
+                <CardHeader className="bg-gradient-to-r from-gray-50 to-blue-50">
+                  <CardTitle className="flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-blue-600" />
+                    Add Sections
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-6">
+                  <div className="grid grid-cols-2 gap-3">
                     {[
-                      { id: 'summary', label: 'Summary', icon: '📝' },
-                      { id: 'bio', label: 'Bio', icon: '👤' },
-                      { id: 'experience', label: 'Experience', icon: '💼' },
-                      { id: 'education', label: 'Education', icon: '🎓' },
-                      { id: 'projects', label: 'Projects', icon: '🚀' },
-                      { id: 'skills', label: 'Skills', icon: '⚡' },
-                      { id: 'achievements', label: 'Achievements', icon: '🏆' },
-                      { id: 'certificates', label: 'Certificates', icon: '📜' },
-                      { id: 'languages', label: 'Languages', icon: '🌍' },
-                      { id: 'hobbies', label: 'Hobbies', icon: '🎯' }
+                      { id: 'summary', label: 'Summary', icon: '📝', color: 'bg-blue-100 hover:bg-blue-200' },
+                      { id: 'bio', label: 'Bio', icon: '👤', color: 'bg-purple-100 hover:bg-purple-200' },
+                      { id: 'experience', label: 'Experience', icon: '💼', color: 'bg-green-100 hover:bg-green-200' },
+                      { id: 'education', label: 'Education', icon: '🎓', color: 'bg-yellow-100 hover:bg-yellow-200' },
+                      { id: 'projects', label: 'Projects', icon: '🚀', color: 'bg-pink-100 hover:bg-pink-200' },
+                      { id: 'skills', label: 'Skills', icon: '⚡', color: 'bg-orange-100 hover:bg-orange-200' },
+                      { id: 'achievements', label: 'Achievements', icon: '🏆', color: 'bg-indigo-100 hover:bg-indigo-200' },
+                      { id: 'certificates', label: 'Certificates', icon: '📜', color: 'bg-teal-100 hover:bg-teal-200' },
+                      { id: 'languages', label: 'Languages', icon: '🌍', color: 'bg-cyan-100 hover:bg-cyan-200' },
+                      { id: 'hobbies', label: 'Hobbies', icon: '🎯', color: 'bg-rose-100 hover:bg-rose-200' }
                     ].map(section => (
                       <Button
                         key={section.id}
@@ -967,10 +1137,10 @@ const ResumeBuilder = () => {
                             onChange("languages", [{ name: "", proficiency: "" }]);
                           }
                         }}
-                        className="flex items-center gap-2"
+                        className={`flex items-center gap-2 transition-all ${section.color} border-0`}
                       >
-                        <span>{section.icon}</span>
-                        {section.label}
+                        <span className="text-lg">{section.icon}</span>
+                        <span className="font-medium">{section.label}</span>
                       </Button>
                     ))}
                   </div>
@@ -978,27 +1148,76 @@ const ResumeBuilder = () => {
               </Card>
 
               {editingSection ? (
-                <div>
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-medium">Editing: {editingSection}</h3>
-                    <Button onClick={() => setEditingSection(null)} variant="outline">
-                      Close
-                    </Button>
-                  </div>
-                  {renderSectionEditor()}
+                <div className="space-y-4">
+                  <Card className="border-2 border-blue-200">
+                    <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50">
+                      <div className="flex justify-between items-center">
+                        <CardTitle className="flex items-center gap-2">
+                          <Edit3 className="w-5 h-5 text-blue-600" />
+                          Editing: {editingSection.charAt(0).toUpperCase() + editingSection.slice(1)}
+                        </CardTitle>
+                        <Button 
+                          onClick={() => setEditingSection(null)} 
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0"
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="pt-6">
+                      {renderSectionEditor()}
+                    </CardContent>
+                  </Card>
                 </div>
               ) : (
-                <div className="text-center text-gray-500 py-8">
-                  Click on a section button above to start editing, or click on a section in the preview to edit it.
-                </div>
+                <Card className="border-2 border-dashed border-gray-300">
+                  <CardContent className="py-12">
+                    <div className="text-center">
+                      <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
+                        <Edit3 className="w-8 h-8 text-gray-400" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-gray-700 mb-2">No Section Selected</h3>
+                      <p className="text-gray-500 text-sm">
+                        Click on a section button above to start editing, or click on a section in the preview to edit it.
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
               )}
             </div>
           </div>
 
           {feedback && (
-            <div className="mt-4 p-4 bg-blue-100 rounded-md">
-              <h3 className="font-semibold">Feedback:</h3>
-              <p>{feedback}</p>
+            <div className={`mt-4 p-4 rounded-lg border-2 shadow-sm ${
+              feedback.includes('Error') || feedback.includes('Failed') 
+                ? 'bg-red-50 border-red-200' 
+                : 'bg-green-50 border-green-200'
+            }`}>
+              <div className="flex items-start gap-3">
+                {feedback.includes('Error') || feedback.includes('Failed') ? (
+                  <X className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
+                ) : (
+                  <CheckCircle2 className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+                )}
+                <div>
+                  <h3 className={`font-semibold mb-1 ${
+                    feedback.includes('Error') || feedback.includes('Failed') 
+                      ? 'text-red-800' 
+                      : 'text-green-800'
+                  }`}>
+                    {feedback.includes('Error') || feedback.includes('Failed') ? 'Error' : 'Success'}
+                  </h3>
+                  <p className={`text-sm ${
+                    feedback.includes('Error') || feedback.includes('Failed') 
+                      ? 'text-red-700' 
+                      : 'text-green-700'
+                  }`}>
+                    {feedback}
+                  </p>
+                </div>
+              </div>
             </div>
           )}
         </div>

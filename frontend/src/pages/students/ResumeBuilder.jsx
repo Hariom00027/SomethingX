@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
-import { api } from "@/lib/utils";
+import { api, getTemplateThumbnail } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   DndContext,
@@ -25,12 +25,129 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, Edit3, Eye, Palette, Save, Download, EyeOff, ArrowLeft, FileText, Sparkles, X, CheckCircle2, Loader2, Plus, Trash2 } from "lucide-react";
+import { GripVertical, Edit3, Eye, Palette, Save, Download, EyeOff, ArrowLeft, FileText, Sparkles, X, CheckCircle2, Loader2, Plus, Trash2, Image as ImageIcon, Move, Maximize2 } from "lucide-react";
+
+// Draggable and Resizable Image Component
+const DraggableResizableImage = ({ src, onUpdate, style, isEditing }) => {
+  const [isDragging, setIsDragging] = useState(false);
+  const [isResizing, setIsResizing] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0 });
+
+  const currentStyle = {
+    width: style.width || '150px',
+    height: style.height || '150px',
+    left: style.left || 'auto',
+    top: style.top || 'auto',
+    position: style.position || 'relative',
+    ...style
+  };
+
+  const handleMouseDown = (e, type) => {
+    if (!isEditing) return;
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (type === 'drag') {
+      setIsDragging(true);
+      setDragStart({
+        x: e.clientX - (parseFloat(currentStyle.left) || 0),
+        y: e.clientY - (parseFloat(currentStyle.top) || 0)
+      });
+    } else if (type === 'resize') {
+      setIsResizing(true);
+      setResizeStart({
+        x: e.clientX,
+        y: e.clientY,
+        width: parseFloat(currentStyle.width) || 150,
+        height: parseFloat(currentStyle.height) || 150
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (!isDragging && !isResizing) return;
+
+    const handleMouseMove = (e) => {
+      if (isDragging) {
+        const newLeft = e.clientX - dragStart.x;
+        const newTop = e.clientY - dragStart.y;
+        onUpdate({
+          ...style,
+          left: `${newLeft}px`,
+          top: `${newTop}px`,
+          position: 'absolute'
+        });
+      } else if (isResizing) {
+        const deltaX = e.clientX - resizeStart.x;
+        const deltaY = e.clientY - resizeStart.y;
+        const newWidth = Math.max(50, resizeStart.width + deltaX);
+        const newHeight = Math.max(50, resizeStart.height + deltaY);
+        onUpdate({
+          ...style,
+          width: `${newWidth}px`,
+          height: `${newHeight}px`
+        });
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+      setIsResizing(false);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging, isResizing, dragStart, resizeStart, style, onUpdate]);
+
+  return (
+    <div 
+      className="profile-image-container relative inline-block"
+      style={{ position: 'relative', display: 'inline-block' }}
+    >
+      <img 
+        src={src} 
+        alt="Profile" 
+        className="profile-image"
+        style={{
+          ...currentStyle,
+          cursor: isEditing ? (isDragging ? 'grabbing' : 'grab') : 'default',
+          userSelect: 'none'
+        }}
+        onMouseDown={(e) => isEditing && handleMouseDown(e, 'drag')}
+        draggable={false}
+      />
+      {isEditing && (
+        <>
+          <div
+            className="absolute -top-1 -left-1 w-4 h-4 bg-blue-500 rounded-full cursor-move flex items-center justify-center z-10"
+            onMouseDown={(e) => handleMouseDown(e, 'drag')}
+            style={{ touchAction: 'none' }}
+          >
+            <Move className="w-2 h-2 text-white" />
+          </div>
+          <div
+            className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full cursor-nwse-resize flex items-center justify-center z-10"
+            onMouseDown={(e) => handleMouseDown(e, 'resize')}
+            style={{ touchAction: 'none' }}
+          >
+            <Maximize2 className="w-2 h-2 text-white" />
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
 
 const emptyResume = (studentId, templateId) => ({
   studentId,
   templateId,
-  personalInfo: { fullName: "John Doe", email: "john.doe@email.com", phone: "+1 (555) 123-4567", location: "New York, NY", title: "Software Engineer" },
+  personalInfo: { fullName: "John Doe", email: "john.doe@email.com", phone: "+1 (555) 123-4567", location: "New York, NY", title: "Software Engineer", profileImage: "", profileImageStyle: {} },
   summary: "Experienced software engineer with 5+ years of experience in full-stack development. Passionate about creating scalable web applications and leading development teams.",
   bio: "I am a dedicated software engineer who loves solving complex problems and building innovative solutions. I enjoy working in collaborative environments and mentoring junior developers.",
   education: [
@@ -73,6 +190,18 @@ const emptyResume = (studentId, templateId) => ({
     primary: '#2563eb',
     secondary: '#64748b',
     accent: '#3b82f6'
+  },
+  sectionTitles: {
+    summary: 'Professional Summary',
+    bio: 'About Me',
+    experience: 'Professional Experience',
+    education: 'Education',
+    projects: 'Projects',
+    skills: 'Skills',
+    achievements: 'Key Achievements',
+    certificates: 'Certifications',
+    languages: 'Languages',
+    hobbies: 'Interests & Hobbies'
   }
 });
 
@@ -144,9 +273,12 @@ const SortableSection = ({ id, children, isEditing, onEdit, onDelete, onColorCha
 
 // A4 Page Component for multi-page support
 const A4Page = ({ children, pageNumber, totalPages }) => {
-  // A4 dimensions: 210mm x 297mm = 794px x 1123px at 96 DPI
-  const A4_WIDTH = 794;
-  const A4_HEIGHT = 1123;
+  // A4 dimensions: 210mm x 297mm
+  // At 96 DPI (screen): 210mm = 793.7px, 297mm = 1122.5px
+  // Using precise values for better accuracy
+  const A4_WIDTH = 793.7;  // 210mm at 96 DPI
+  const A4_HEIGHT = 1122.5; // 297mm at 96 DPI
+  const A4_ASPECT_RATIO = A4_HEIGHT / A4_WIDTH; // ~1.414 (√2)
   
   return (
     <div 
@@ -154,6 +286,7 @@ const A4Page = ({ children, pageNumber, totalPages }) => {
       style={{
         width: `${A4_WIDTH}px`,
         minHeight: `${A4_HEIGHT}px`,
+        aspectRatio: `${A4_WIDTH} / ${A4_HEIGHT}`,
         padding: '40px',
         boxSizing: 'border-box',
         pageBreakAfter: 'always',
@@ -171,20 +304,105 @@ const A4Page = ({ children, pageNumber, totalPages }) => {
   );
 };
 
+// Editable Section Title Component
+const EditableSectionTitle = ({ sectionId, title, isEditing, onUpdate, defaultTitle }) => {
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editValue, setEditValue] = useState(title || defaultTitle);
+
+  useEffect(() => {
+    setEditValue(title || defaultTitle);
+  }, [title, defaultTitle]);
+
+  const handleBlur = () => {
+    setIsEditingTitle(false);
+    if (editValue.trim() && editValue !== title) {
+      onUpdate(editValue.trim());
+    } else {
+      setEditValue(title || defaultTitle);
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      handleBlur();
+    } else if (e.key === 'Escape') {
+      setEditValue(title || defaultTitle);
+      setIsEditingTitle(false);
+    }
+  };
+
+  if (!isEditing) {
+    return <div className="section-title">{title || defaultTitle}</div>;
+  }
+
+  if (isEditingTitle) {
+    return (
+      <input
+        type="text"
+        value={editValue}
+        onChange={(e) => setEditValue(e.target.value)}
+        onBlur={handleBlur}
+        onKeyDown={handleKeyDown}
+        className="section-title-editable"
+        style={{
+          width: '100%',
+          fontSize: 'inherit',
+          fontWeight: 'inherit',
+          fontFamily: 'inherit',
+          color: 'inherit',
+          background: 'rgba(59, 130, 246, 0.1)',
+          border: '1px solid #3b82f6',
+          borderRadius: '4px',
+          padding: '2px 6px',
+          outline: 'none'
+        }}
+        autoFocus
+      />
+    );
+  }
+
+  return (
+    <div 
+      className="section-title cursor-pointer hover:bg-blue-50 rounded px-1 transition-colors"
+      onClick={() => setIsEditingTitle(true)}
+      title="Click to edit title"
+    >
+      {title || defaultTitle}
+    </div>
+  );
+};
+
 // Resume Preview Component
-const ResumePreview = ({ resume, template, isEditing, onEdit, onDelete, onColorChange, colors }) => {
+const ResumePreview = ({ resume, template, isEditing, onEdit, onDelete, onColorChange, colors, onImageStyleUpdate, onSectionTitleUpdate }) => {
+  // Get colors from template if not overridden
+  const templateColors = {
+    primary: colors?.primary || template?.primaryColor || '#2563eb',
+    secondary: colors?.secondary || template?.secondaryColor || '#64748b',
+    accent: colors?.accent || template?.accentColor || '#3b82f6'
+  };
+
+  // Inject template CSS
+  const templateCss = template?.css || '';
+  
   const getSectionContent = (sectionId) => {
+    const layoutType = template?.layoutType || 'single-column';
+    const hasImage = template?.hasProfileImage && resume.personalInfo?.profileImage;
+    
     switch (sectionId) {
       case 'personalInfo':
         return resume.personalInfo && (
-          <div className="text-center mb-6 pb-4 border-b-2" style={{ borderColor: colors.primary }}>
-            <h1 className="text-2xl font-bold mb-2" style={{ color: colors.primary }}>
-              {resume.personalInfo.fullName || 'Your Name'}
-            </h1>
-            <h2 className="text-lg mb-3" style={{ color: colors.secondary }}>
-              {resume.personalInfo.title || 'Your Title'}
-            </h2>
-            <div className="text-sm space-x-4" style={{ color: colors.secondary }}>
+          <div className={`header-section ${layoutType === 'sidebar' ? 'sidebar-header' : ''}`} style={{ position: 'relative' }}>
+            {hasImage && onImageStyleUpdate && (
+              <DraggableResizableImage
+                src={resume.personalInfo.profileImage}
+                onUpdate={onImageStyleUpdate}
+                style={resume.personalInfo.profileImageStyle || {}}
+                isEditing={isEditing}
+              />
+            )}
+            <div className="name">{resume.personalInfo.fullName || 'Your Name'}</div>
+            <div className="title">{resume.personalInfo.title || 'Your Title'}</div>
+            <div className="contact-info">
               {resume.personalInfo.email && <span>{resume.personalInfo.email}</span>}
               {resume.personalInfo.phone && <span>{resume.personalInfo.phone}</span>}
               {resume.personalInfo.location && <span>{resume.personalInfo.location}</span>}
@@ -194,164 +412,196 @@ const ResumePreview = ({ resume, template, isEditing, onEdit, onDelete, onColorC
       
       case 'summary':
         return resume.summary && resume.summary.trim() && (
-          <div className="mb-4">
-            <h3 className="text-lg font-semibold mb-2" style={{ color: colors.primary }}>
-              Professional Summary
-            </h3>
-            <p className="text-sm">{resume.summary}</p>
+          <div className="section">
+            <EditableSectionTitle
+              sectionId="summary"
+              title={resume.sectionTitles?.summary}
+              isEditing={isEditing}
+              onUpdate={(newTitle) => onSectionTitleUpdate && onSectionTitleUpdate('summary', newTitle)}
+              defaultTitle="Professional Summary"
+            />
+            <div className="section-content">{resume.summary}</div>
           </div>
         );
       
       case 'bio':
         return resume.bio && resume.bio.trim() && (
-          <div className="mb-4">
-            <h3 className="text-lg font-semibold mb-2" style={{ color: colors.primary }}>
-              About Me
-            </h3>
-            <p className="text-sm">{resume.bio}</p>
+          <div className="section">
+            <EditableSectionTitle
+              sectionId="bio"
+              title={resume.sectionTitles?.bio}
+              isEditing={isEditing}
+              onUpdate={(newTitle) => onSectionTitleUpdate && onSectionTitleUpdate('bio', newTitle)}
+              defaultTitle="About Me"
+            />
+            <div className="section-content">{resume.bio}</div>
           </div>
         );
       
       case 'experience':
         return resume.experience && resume.experience.length > 0 && (
-          <div className="mb-4">
-            <h3 className="text-lg font-semibold mb-3" style={{ color: colors.primary }}>
-              Professional Experience
-            </h3>
-            {resume.experience.map((exp, index) => (
-              <div key={index} className="mb-3">
-                <div className="flex justify-between items-start">
-                  <h4 className="font-semibold">{exp.role}</h4>
-                  <span className="text-sm" style={{ color: colors.secondary }}>
-                    {exp.startDate} - {exp.endDate}
-                  </span>
+          <div className="section">
+            <EditableSectionTitle
+              sectionId="experience"
+              title={resume.sectionTitles?.experience}
+              isEditing={isEditing}
+              onUpdate={(newTitle) => onSectionTitleUpdate && onSectionTitleUpdate('experience', newTitle)}
+              defaultTitle="Professional Experience"
+            />
+            <div className="section-content">
+              {resume.experience.map((exp, index) => (
+                <div key={index} className="experience-item">
+                  <div className="item-header">
+                    <div className="item-title">{exp.role}</div>
+                    <div className="item-date">{exp.startDate} - {exp.endDate}</div>
+                  </div>
+                  <div className="item-company">{exp.company}</div>
+                  {exp.achievements && exp.achievements.length > 0 && (
+                    <ul className="bullet-list">
+                      {exp.achievements.map((achievement, i) => (
+                        <li key={i}>{achievement}</li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
-                <p className="text-sm font-medium mb-1" style={{ color: colors.secondary }}>
-                  {exp.company}
-                </p>
-                {exp.achievements && exp.achievements.length > 0 && (
-                  <ul className="text-sm list-disc list-inside ml-4">
-                    {exp.achievements.map((achievement, i) => (
-                      <li key={i}>{achievement}</li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         );
       
       case 'education':
         return resume.education && resume.education.length > 0 && (
-          <div className="mb-4">
-            <h3 className="text-lg font-semibold mb-3" style={{ color: colors.primary }}>
-              Education
-            </h3>
-            {resume.education.map((edu, index) => (
-              <div key={index} className="mb-2">
-                <div className="flex justify-between items-start">
-                  <h4 className="font-semibold">{edu.degree}</h4>
-                  <span className="text-sm" style={{ color: colors.secondary }}>
-                    {edu.startDate} - {edu.endDate}
-                  </span>
+          <div className="section">
+            <EditableSectionTitle
+              sectionId="education"
+              title={resume.sectionTitles?.education}
+              isEditing={isEditing}
+              onUpdate={(newTitle) => onSectionTitleUpdate && onSectionTitleUpdate('education', newTitle)}
+              defaultTitle="Education"
+            />
+            <div className="section-content">
+              {resume.education.map((edu, index) => (
+                <div key={index} className="education-item">
+                  <div className="item-header">
+                    <div className="item-title">{edu.degree}</div>
+                    <div className="item-date">{edu.startDate} - {edu.endDate}</div>
+                  </div>
+                  <div className="item-company">{edu.institution}</div>
+                  {edu.fieldOfStudy && (
+                    <div className="section-content">{edu.fieldOfStudy}</div>
+                  )}
                 </div>
-                <p className="text-sm font-medium" style={{ color: colors.secondary }}>
-                  {edu.institution}
-                </p>
-                {edu.fieldOfStudy && (
-                  <p className="text-sm">{edu.fieldOfStudy}</p>
-                )}
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         );
       
       case 'projects':
         return resume.projects && resume.projects.length > 0 && (
-          <div className="mb-4">
-            <h3 className="text-lg font-semibold mb-3" style={{ color: colors.primary }}>
-              Projects
-            </h3>
-            {resume.projects.map((project, index) => (
-              <div key={index} className="mb-3">
-                <h4 className="font-semibold">{project.name}</h4>
-                {project.description && (
-                  <p className="text-sm mb-2">{project.description}</p>
-                )}
-                {project.technologies && project.technologies.length > 0 && (
-                  <div className="flex flex-wrap gap-1">
-                    {project.technologies.map((tech, i) => (
-                      <span key={i} className="px-2 py-1 text-xs rounded" style={{ backgroundColor: colors.accent, color: 'white' }}>
-                        {tech}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
+          <div className="section">
+            <EditableSectionTitle
+              sectionId="projects"
+              title={resume.sectionTitles?.projects}
+              isEditing={isEditing}
+              onUpdate={(newTitle) => onSectionTitleUpdate && onSectionTitleUpdate('projects', newTitle)}
+              defaultTitle="Projects"
+            />
+            <div className="section-content">
+              {resume.projects.map((project, index) => (
+                <div key={index} className="experience-item">
+                  <div className="item-title">{project.name}</div>
+                  {project.description && (
+                    <div className="section-content">{project.description}</div>
+                  )}
+                  {project.technologies && project.technologies.length > 0 && (
+                    <div className="skills-container">
+                      {project.technologies.map((tech, i) => (
+                        <span key={i} className="skill-tag">{tech}</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         );
       
       case 'skills':
         return resume.skills && resume.skills.length > 0 && (
-          <div className="mb-4">
-            <h3 className="text-lg font-semibold mb-3" style={{ color: colors.primary }}>
-              Skills
-            </h3>
-            <div className="flex flex-wrap gap-2">
-              {resume.skills.map((skill, index) => (
-                <span key={index} className="px-2 py-1 text-xs rounded" style={{ backgroundColor: colors.accent, color: 'white' }}>
-                  {skill}
-                </span>
-              ))}
+          <div className="section">
+            <EditableSectionTitle
+              sectionId="skills"
+              title={resume.sectionTitles?.skills}
+              isEditing={isEditing}
+              onUpdate={(newTitle) => onSectionTitleUpdate && onSectionTitleUpdate('skills', newTitle)}
+              defaultTitle="Skills"
+            />
+            <div className="section-content">
+              <div className="skills-container">
+                {resume.skills.map((skill, index) => (
+                  <span key={index} className="skill-tag">{skill}</span>
+                ))}
+              </div>
             </div>
           </div>
         );
       
       case 'achievements':
         return resume.achievements && resume.achievements.length > 0 && (
-          <div className="mb-4">
-            <h3 className="text-lg font-semibold mb-3" style={{ color: colors.primary }}>
-              Key Achievements
-            </h3>
-            <ul className="text-sm list-disc list-inside">
-              {resume.achievements.map((achievement, index) => (
-                <li key={index}>{achievement}</li>
-              ))}
-            </ul>
+          <div className="section">
+            <EditableSectionTitle
+              sectionId="achievements"
+              title={resume.sectionTitles?.achievements}
+              isEditing={isEditing}
+              onUpdate={(newTitle) => onSectionTitleUpdate && onSectionTitleUpdate('achievements', newTitle)}
+              defaultTitle="Key Achievements"
+            />
+            <div className="section-content">
+              <ul className="bullet-list">
+                {resume.achievements.map((achievement, index) => (
+                  <li key={index}>{achievement}</li>
+                ))}
+              </ul>
+            </div>
           </div>
         );
       
       case 'certificates':
         return resume.certificates && resume.certificates.length > 0 && (
-          <div className="mb-4">
-            <h3 className="text-lg font-semibold mb-3" style={{ color: colors.primary }}>
-              Certifications
-            </h3>
-            {resume.certificates.map((cert, index) => (
-              <div key={index} className="mb-2">
-                <h4 className="font-semibold">{cert.name}</h4>
-                <p className="text-sm" style={{ color: colors.secondary }}>
-                  {cert.issuer} {cert.issueDate && `(${cert.issueDate})`}
-                </p>
-              </div>
-            ))}
+          <div className="section">
+            <EditableSectionTitle
+              sectionId="certificates"
+              title={resume.sectionTitles?.certificates}
+              isEditing={isEditing}
+              onUpdate={(newTitle) => onSectionTitleUpdate && onSectionTitleUpdate('certificates', newTitle)}
+              defaultTitle="Certifications"
+            />
+            <div className="section-content">
+              {resume.certificates.map((cert, index) => (
+                <div key={index} className="education-item">
+                  <div className="item-title">{cert.name}</div>
+                  <div className="item-company">{cert.issuer} {cert.issueDate && `(${cert.issueDate})`}</div>
+                </div>
+              ))}
+            </div>
           </div>
         );
       
       case 'languages':
         return resume.languages && resume.languages.length > 0 && (
-          <div className="mb-4">
-            <h3 className="text-lg font-semibold mb-3" style={{ color: colors.primary }}>
-              Languages
-            </h3>
-            <div className="grid grid-cols-2 gap-2">
+          <div className="section">
+            <EditableSectionTitle
+              sectionId="languages"
+              title={resume.sectionTitles?.languages}
+              isEditing={isEditing}
+              onUpdate={(newTitle) => onSectionTitleUpdate && onSectionTitleUpdate('languages', newTitle)}
+              defaultTitle="Languages"
+            />
+            <div className="section-content">
               {resume.languages.map((lang, index) => (
-                <div key={index} className="flex justify-between">
-                  <span className="font-medium">{lang.name}</span>
-                  <span className="text-sm" style={{ color: colors.secondary }}>
-                    {lang.proficiency}
-                  </span>
+                <div key={index} className="item-header">
+                  <div className="item-title">{lang.name}</div>
+                  <div className="item-date">{lang.proficiency}</div>
                 </div>
               ))}
             </div>
@@ -360,16 +610,20 @@ const ResumePreview = ({ resume, template, isEditing, onEdit, onDelete, onColorC
       
       case 'hobbies':
         return resume.hobbies && resume.hobbies.length > 0 && (
-          <div className="mb-4">
-            <h3 className="text-lg font-semibold mb-3" style={{ color: colors.primary }}>
-              Interests & Hobbies
-            </h3>
-            <div className="flex flex-wrap gap-2">
-              {resume.hobbies.map((hobby, index) => (
-                <span key={index} className="px-2 py-1 text-xs rounded" style={{ backgroundColor: colors.accent, color: 'white' }}>
-                  {hobby}
-                </span>
-              ))}
+          <div className="section">
+            <EditableSectionTitle
+              sectionId="hobbies"
+              title={resume.sectionTitles?.hobbies}
+              isEditing={isEditing}
+              onUpdate={(newTitle) => onSectionTitleUpdate && onSectionTitleUpdate('hobbies', newTitle)}
+              defaultTitle="Interests & Hobbies"
+            />
+            <div className="section-content">
+              <div className="skills-container">
+                {resume.hobbies.map((hobby, index) => (
+                  <span key={index} className="skill-tag">{hobby}</span>
+                ))}
+              </div>
             </div>
           </div>
         );
@@ -445,26 +699,64 @@ const ResumePreview = ({ resume, template, isEditing, onEdit, onDelete, onColorC
   };
 
   const pages = splitIntoPages(visibleSections);
+  const layoutType = template?.layoutType || 'single-column';
+  const isSidebarLayout = layoutType === 'sidebar';
+  const isTwoColumn = layoutType === 'two-column';
+
+  // Get sidebar sections (for sidebar layout)
+  const sidebarSections = ['personalInfo', 'skills', 'languages', 'certificates'];
+  const mainSections = visibleSections.filter(s => !isSidebarLayout || !sidebarSections.includes(s));
+  const sidebarContent = isSidebarLayout ? visibleSections.filter(s => sidebarSections.includes(s)) : [];
 
   return (
-    <div className="flex flex-col items-center" style={{ padding: '20px 0' }}>
-      {pages.map((pageSections, pageIndex) => (
-        <A4Page key={pageIndex} pageNumber={pageIndex + 1} totalPages={pages.length}>
-          {pageSections.map((sectionId) => (
-            <SortableSection
-              key={sectionId}
-              id={sectionId}
-              isEditing={isEditing}
-              onEdit={onEdit}
-              onDelete={onDelete}
-              onColorChange={onColorChange}
-            >
-              {getSectionContent(sectionId)}
-            </SortableSection>
-          ))}
-        </A4Page>
-      ))}
-    </div>
+    <>
+      <style>{templateCss}</style>
+      <div className="flex flex-col items-center" style={{ padding: '20px 0' }}>
+        {pages.map((pageSections, pageIndex) => (
+          <A4Page key={pageIndex} pageNumber={pageIndex + 1} totalPages={pages.length}>
+            <div className={`resume-container ${layoutType}`}>
+              {isSidebarLayout && (
+                <div className="sidebar">
+                  {sidebarContent.map((sectionId) => (
+                    <SortableSection
+                      key={sectionId}
+                      id={sectionId}
+                      isEditing={isEditing}
+                      onEdit={onEdit}
+                      onDelete={onDelete}
+                      onColorChange={onColorChange}
+                    >
+                      {getSectionContent(sectionId)}
+                    </SortableSection>
+                  ))}
+                </div>
+              )}
+              <div className={isSidebarLayout ? "main-content" : isTwoColumn ? "left-column" : ""}>
+                {pageSections
+                  .filter(s => !isSidebarLayout || !sidebarSections.includes(s))
+                  .map((sectionId) => (
+                    <SortableSection
+                      key={sectionId}
+                      id={sectionId}
+                      isEditing={isEditing}
+                      onEdit={onEdit}
+                      onDelete={onDelete}
+                      onColorChange={onColorChange}
+                    >
+                      {getSectionContent(sectionId)}
+                    </SortableSection>
+                  ))}
+              </div>
+              {isTwoColumn && !isSidebarLayout && (
+                <div className="right-column">
+                  {/* Right column content can be added here if needed */}
+                </div>
+              )}
+            </div>
+          </A4Page>
+        ))}
+      </div>
+    </>
   );
 };
 
@@ -648,18 +940,67 @@ const ResumeBuilder = () => {
 
   const renderSectionEditor = () => {
     if (!editingSection) return null;
+    const currentTemplate = templates.find(t => t.id === selectedTemplateId);
+    const templateSupportsImage = currentTemplate?.hasProfileImage === true;
 
     switch (editingSection) {
       case 'personalInfo':
+        const handleImageUploadInEditor = (e) => {
+          const file = e.target.files[0];
+          if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              onChange("personalInfo.profileImage", reader.result);
+            };
+            reader.readAsDataURL(file);
+          }
+        };
         return (
           <Card>
             <CardHeader><CardTitle>Personal Info</CardTitle></CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input placeholder="Full name" value={resume.personalInfo.fullName} onChange={(e) => onChange("personalInfo.fullName", e.target.value)} />
-              <Input placeholder="Title" value={resume.personalInfo.title} onChange={(e) => onChange("personalInfo.title", e.target.value)} />
-              <Input placeholder="Email" value={resume.personalInfo.email} onChange={(e) => onChange("personalInfo.email", e.target.value)} />
-              <Input placeholder="Phone" value={resume.personalInfo.phone} onChange={(e) => onChange("personalInfo.phone", e.target.value)} />
-              <Input placeholder="Location" value={resume.personalInfo.location} onChange={(e) => onChange("personalInfo.location", e.target.value)} />
+            <CardContent className="space-y-4">
+              {templateSupportsImage && (
+                <div className="space-y-2">
+                  <label className="block text-xs font-semibold text-gray-700">Profile Image</label>
+                  <div className="flex items-center gap-4">
+                    {resume.personalInfo?.profileImage && (
+                      <img 
+                        src={resume.personalInfo.profileImage} 
+                        alt="Profile" 
+                        className="w-20 h-20 rounded-full object-cover border-2 border-gray-300"
+                      />
+                    )}
+                    <label className="cursor-pointer">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUploadInEditor}
+                        className="hidden"
+                      />
+                      <Button variant="outline" size="sm" className="text-xs" type="button">
+                        {resume.personalInfo?.profileImage ? 'Change Image' : 'Upload Image'}
+                      </Button>
+                    </label>
+                  </div>
+                  {resume.personalInfo?.profileImage && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onChange("personalInfo.profileImage", "")}
+                      className="text-xs"
+                    >
+                      Remove Image
+                    </Button>
+                  )}
+                </div>
+              )}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input placeholder="Full name" value={resume.personalInfo?.fullName || ""} onChange={(e) => onChange("personalInfo.fullName", e.target.value)} />
+                <Input placeholder="Title" value={resume.personalInfo?.title || ""} onChange={(e) => onChange("personalInfo.title", e.target.value)} />
+                <Input placeholder="Email" value={resume.personalInfo?.email || ""} onChange={(e) => onChange("personalInfo.email", e.target.value)} />
+                <Input placeholder="Phone" value={resume.personalInfo?.phone || ""} onChange={(e) => onChange("personalInfo.phone", e.target.value)} />
+                <Input placeholder="Location" value={resume.personalInfo?.location || ""} onChange={(e) => onChange("personalInfo.location", e.target.value)} />
+              </div>
             </CardContent>
           </Card>
         );
@@ -955,6 +1296,20 @@ const ResumeBuilder = () => {
   const renderSidebar = () => {
     if (!selectedTemplateId || !resume) return null;
 
+    const currentTemplate = templates.find(t => t.id === selectedTemplateId);
+    const supportsImage = currentTemplate?.hasProfileImage === true;
+
+    const handleImageUpload = (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          onChange("personalInfo.profileImage", reader.result);
+        };
+        reader.readAsDataURL(file);
+      }
+    };
+
     const availableSections = [
       { id: 'personalInfo', label: 'Personal Info', icon: '👤', color: 'bg-blue-100 hover:bg-blue-200' },
       { id: 'summary', label: 'Summary', icon: '📝', color: 'bg-blue-100 hover:bg-blue-200' },
@@ -978,6 +1333,114 @@ const ResumeBuilder = () => {
           </h2>
         </div>
 
+        {/* Add Profile Image Button (for templates that support it) */}
+        {supportsImage && (
+          <Card className="mb-4 border-2 border-purple-200">
+            <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 p-3">
+              <CardTitle className="flex items-center gap-2 text-sm">
+                <ImageIcon className="w-4 h-4 text-purple-600" />
+                Profile Image
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-3">
+              <div className="space-y-3">
+                {resume.personalInfo?.profileImage ? (
+                  <div className="space-y-2">
+                    <img 
+                      src={resume.personalInfo.profileImage} 
+                      alt="Profile" 
+                      className="w-full h-32 object-cover rounded-lg border-2 border-gray-300"
+                    />
+                    <div className="flex gap-2">
+                      <label className="flex-1 cursor-pointer">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                          className="hidden"
+                        />
+                        <Button variant="outline" size="sm" className="w-full text-xs" type="button">
+                          Change Image
+                        </Button>
+                      </label>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onChange("personalInfo.profileImage", "")}
+                        className="text-xs"
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <label className="block cursor-pointer">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                    />
+                    <Button variant="outline" size="sm" className="w-full text-xs" type="button">
+                      <ImageIcon className="w-3 h-3 mr-1" />
+                      Upload Profile Image
+                    </Button>
+                  </label>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Add a New Section Button - Prominent */}
+        <Button
+          onClick={() => {
+            // Find the first available section that's not added
+            const sectionOrder = resume.sectionOrder || [];
+            const firstAvailable = availableSections.find(s => !sectionOrder.includes(s.id));
+            if (firstAvailable) {
+              setResume((prev) => {
+                const currentSectionOrder = prev.sectionOrder || [];
+                const updatedResume = {
+                  ...prev,
+                  sectionOrder: [...currentSectionOrder, firstAvailable.id]
+                };
+                // Initialize empty data
+                if (firstAvailable.id === 'experience' && (!prev.experience || prev.experience.length === 0)) {
+                  updatedResume.experience = [{ role: "", company: "", startDate: "", endDate: "", achievements: [] }];
+                } else if (firstAvailable.id === 'education' && (!prev.education || prev.education.length === 0)) {
+                  updatedResume.education = [{ degree: "", institution: "", fieldOfStudy: "", startDate: "", endDate: "" }];
+                } else if (firstAvailable.id === 'projects' && (!prev.projects || prev.projects.length === 0)) {
+                  updatedResume.projects = [{ name: "", description: "", link: "", technologies: [], startDate: "", endDate: "" }];
+                } else if (firstAvailable.id === 'certificates' && (!prev.certificates || prev.certificates.length === 0)) {
+                  updatedResume.certificates = [{ name: "", issuer: "", issueDate: "" }];
+                } else if (firstAvailable.id === 'languages' && (!prev.languages || prev.languages.length === 0)) {
+                  updatedResume.languages = [{ name: "", proficiency: "" }];
+                } else if (firstAvailable.id === 'summary' && !prev.summary) {
+                  updatedResume.summary = "";
+                } else if (firstAvailable.id === 'bio' && !prev.bio) {
+                  updatedResume.bio = "";
+                } else if (firstAvailable.id === 'skills' && (!prev.skills || prev.skills.length === 0)) {
+                  updatedResume.skills = [];
+                } else if (firstAvailable.id === 'achievements' && (!prev.achievements || prev.achievements.length === 0)) {
+                  updatedResume.achievements = [];
+                } else if (firstAvailable.id === 'hobbies' && (!prev.hobbies || prev.hobbies.length === 0)) {
+                  updatedResume.hobbies = [];
+                } else if (firstAvailable.id === 'personalInfo' && !prev.personalInfo) {
+                  updatedResume.personalInfo = { fullName: "", email: "", phone: "", location: "", title: "", profileImage: "", profileImageStyle: {} };
+                }
+                return updatedResume;
+              });
+              setEditingSection(firstAvailable.id);
+            }
+          }}
+          className="w-full mb-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 shadow-lg"
+          size="lg"
+        >
+          <Plus className="w-5 h-5 mr-2" />
+          Add a New Section
+        </Button>
+
         {/* Add Section Button */}
         <Card className="mb-4 border-2 border-gray-200">
           <CardHeader className="bg-gradient-to-r from-gray-50 to-blue-50 p-3">
@@ -989,42 +1452,53 @@ const ResumeBuilder = () => {
           <CardContent className="pt-3">
             <div className="grid grid-cols-1 gap-2">
               {availableSections.map(section => {
-                const isAdded = resume.sectionOrder.includes(section.id);
+                const sectionOrder = resume.sectionOrder || [];
+                const isAdded = sectionOrder.includes(section.id);
                 return (
                   <Button
                     key={section.id}
                     variant="outline"
                     size="sm"
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      // Add section to sectionOrder if not already added
                       if (!isAdded) {
-                        setResume((prev) => ({
-                          ...prev,
-                          sectionOrder: [...prev.sectionOrder, section.id]
-                        }));
+                        setResume((prev) => {
+                          const currentSectionOrder = prev.sectionOrder || [];
+                          const updatedResume = {
+                            ...prev,
+                            sectionOrder: [...currentSectionOrder, section.id]
+                          };
+                          // Initialize empty data for the section if it doesn't exist
+                          if (section.id === 'experience' && (!prev.experience || prev.experience.length === 0)) {
+                            updatedResume.experience = [{ role: "", company: "", startDate: "", endDate: "", achievements: [] }];
+                          } else if (section.id === 'education' && (!prev.education || prev.education.length === 0)) {
+                            updatedResume.education = [{ degree: "", institution: "", fieldOfStudy: "", startDate: "", endDate: "" }];
+                          } else if (section.id === 'projects' && (!prev.projects || prev.projects.length === 0)) {
+                            updatedResume.projects = [{ name: "", description: "", link: "", technologies: [], startDate: "", endDate: "" }];
+                          } else if (section.id === 'certificates' && (!prev.certificates || prev.certificates.length === 0)) {
+                            updatedResume.certificates = [{ name: "", issuer: "", issueDate: "" }];
+                          } else if (section.id === 'languages' && (!prev.languages || prev.languages.length === 0)) {
+                            updatedResume.languages = [{ name: "", proficiency: "" }];
+                          } else if (section.id === 'summary' && !prev.summary) {
+                            updatedResume.summary = "";
+                          } else if (section.id === 'bio' && !prev.bio) {
+                            updatedResume.bio = "";
+                          } else if (section.id === 'skills' && (!prev.skills || prev.skills.length === 0)) {
+                            updatedResume.skills = [];
+                          } else if (section.id === 'achievements' && (!prev.achievements || prev.achievements.length === 0)) {
+                            updatedResume.achievements = [];
+                          } else if (section.id === 'hobbies' && (!prev.hobbies || prev.hobbies.length === 0)) {
+                            updatedResume.hobbies = [];
+                          } else if (section.id === 'personalInfo' && !prev.personalInfo) {
+                            updatedResume.personalInfo = { fullName: "", email: "", phone: "", location: "", title: "", profileImage: "", profileImageStyle: {} };
+                          }
+                          return updatedResume;
+                        });
                       }
+                      // Always set editing section
                       setEditingSection(section.id);
-                      // Initialize empty data for the section if it doesn't exist
-                      if (section.id === 'experience' && (!resume.experience || resume.experience.length === 0)) {
-                        onChange("experience", [{ role: "", company: "", startDate: "", endDate: "", achievements: [] }]);
-                      } else if (section.id === 'education' && (!resume.education || resume.education.length === 0)) {
-                        onChange("education", [{ degree: "", institution: "", fieldOfStudy: "", startDate: "", endDate: "" }]);
-                      } else if (section.id === 'projects' && (!resume.projects || resume.projects.length === 0)) {
-                        onChange("projects", [{ name: "", description: "", link: "", technologies: [], startDate: "", endDate: "" }]);
-                      } else if (section.id === 'certificates' && (!resume.certificates || resume.certificates.length === 0)) {
-                        onChange("certificates", [{ name: "", issuer: "", issueDate: "" }]);
-                      } else if (section.id === 'languages' && (!resume.languages || resume.languages.length === 0)) {
-                        onChange("languages", [{ name: "", proficiency: "" }]);
-                      } else if (section.id === 'summary' && !resume.summary) {
-                        onChange("summary", "");
-                      } else if (section.id === 'bio' && !resume.bio) {
-                        onChange("bio", "");
-                      } else if (section.id === 'skills' && (!resume.skills || resume.skills.length === 0)) {
-                        onChange("skills", []);
-                      } else if (section.id === 'achievements' && (!resume.achievements || resume.achievements.length === 0)) {
-                        onChange("achievements", []);
-                      } else if (section.id === 'hobbies' && (!resume.hobbies || resume.hobbies.length === 0)) {
-                        onChange("hobbies", []);
-                      }
                     }}
                     className={`flex items-center justify-between transition-all ${section.color} border-0 text-xs ${isAdded ? 'opacity-75' : ''}`}
                   >
@@ -1180,40 +1654,152 @@ const ResumeBuilder = () => {
 
       {/* Template gallery */}
       {!selectedTemplateId && (
-        <div className="space-y-6">
-          <div className="text-center mb-8">
-            <h2 className="text-2xl font-semibold mb-2">Choose a Template</h2>
-            <p className="text-gray-600">Select a template to get started with your resume</p>
+        <div className="min-h-screen bg-gradient-to-br from-violet-400 via-purple-400 via-pink-400 to-orange-400 py-12 relative overflow-hidden">
+          {/* Animated background elements */}
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute top-20 left-10 w-72 h-72 bg-yellow-300 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob"></div>
+            <div className="absolute top-40 right-10 w-72 h-72 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-2000"></div>
+            <div className="absolute -bottom-8 left-1/2 w-72 h-72 bg-blue-300 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-4000"></div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {templates.map((t) => (
-              <Card 
-                key={t.id} 
-                className="cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-105 border-2 hover:border-blue-500 group overflow-hidden"
-                onClick={() => setSelectedTemplateId(t.id)}
-              >
-                <div className="relative overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10"></div>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center gap-2">
-                      <FileText className="w-5 h-5 text-blue-600" />
-                      {t.name}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <div className="relative bg-gray-50 rounded-lg p-4 border border-gray-200">
-                      <img src={t.previewUrl} alt={t.name} className="w-full h-48 object-contain rounded" />
+          
+          <div className="relative z-10">
+            <div className="text-center mb-12 px-4">
+              <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-br from-yellow-400 via-pink-500 to-purple-600 mb-6 shadow-2xl transform hover:scale-110 transition-transform duration-300">
+                <FileText className="w-12 h-12 text-white" />
+              </div>
+              <h2 className="text-5xl font-extrabold mb-4 text-white drop-shadow-lg">
+                Choose Your Resume Template
+              </h2>
+              <p className="text-white/90 text-xl max-w-2xl mx-auto font-semibold drop-shadow-md">
+                Select a professional template that matches your style. Hover over any template to preview it.
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 px-8 max-w-7xl mx-auto">
+              {templates.map((t, index) => {
+                const thumbnailPath = getTemplateThumbnail(t.name) || t.previewUrl;
+                // Vibrant color schemes for each card
+                const cardColors = [
+                  { bg: 'from-purple-500 to-pink-500', border: 'border-purple-400', accent: 'bg-purple-500' },
+                  { bg: 'from-blue-500 to-cyan-500', border: 'border-blue-400', accent: 'bg-blue-500' },
+                  { bg: 'from-orange-500 to-red-500', border: 'border-orange-400', accent: 'bg-orange-500' },
+                  { bg: 'from-green-500 to-emerald-500', border: 'border-green-400', accent: 'bg-green-500' },
+                  { bg: 'from-indigo-500 to-purple-500', border: 'border-indigo-400', accent: 'bg-indigo-500' },
+                  { bg: 'from-pink-500 to-rose-500', border: 'border-pink-400', accent: 'bg-pink-500' },
+                  { bg: 'from-yellow-500 to-orange-500', border: 'border-yellow-400', accent: 'bg-yellow-500' },
+                ];
+                const colors = cardColors[index % cardColors.length];
+                
+                return (
+                  <div
+                    key={t.id}
+                    className="group relative cursor-pointer"
+                    onClick={() => setSelectedTemplateId(t.id)}
+                  >
+                    {/* Main Card Container - Colorful */}
+                    <div className={`relative bg-gradient-to-br ${colors.bg} rounded-3xl shadow-2xl hover:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] transition-all duration-500 overflow-hidden border-4 ${colors.border} transform hover:-translate-y-4 hover:scale-105`}>
+                      {/* Image Card Wrapper */}
+                      <div className="relative p-5 bg-white/20 backdrop-blur-sm">
+                        <Card className="overflow-hidden border-4 border-white/50 shadow-xl bg-white rounded-xl">
+                          <div className="relative overflow-hidden bg-white" style={{ aspectRatio: '3/4', height: '280px' }}>
+                            <img 
+                              src={thumbnailPath} 
+                              alt={t.name}
+                              className="w-full h-full object-contain p-2 transition-transform duration-700 group-hover:scale-110"
+                              onError={(e) => {
+                                if (t.previewUrl && e.target.src !== t.previewUrl) {
+                                  e.target.src = t.previewUrl;
+                                }
+                              }}
+                            />
+                            {/* Hover overlay */}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-start justify-end p-4">
+                              <div className="bg-white rounded-full px-4 py-2 shadow-2xl flex items-center gap-2 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-500">
+                                <Eye className="w-4 h-4 text-purple-600" />
+                                <span className="text-sm font-bold text-purple-600">Preview</span>
+                              </div>
+                            </div>
+                          </div>
+                        </Card>
+                      </div>
+                      
+                      {/* Template Details Below Image - Colorful */}
+                      <div className="p-6 bg-white/10 backdrop-blur-md">
+                        {/* Template Name */}
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className={`w-2 h-8 rounded-full ${colors.accent} shadow-lg`}></div>
+                          <h3 className="text-xl font-extrabold text-white drop-shadow-lg">
+                            {t.name}
+                          </h3>
+                        </div>
+                        
+                        {/* Description */}
+                        {t.description && (
+                          <p className="text-sm text-white/90 mb-4 font-medium overflow-hidden" style={{
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical'
+                          }}>
+                            {t.description}
+                          </p>
+                        )}
+                        
+                        {/* Category Badge */}
+                        {t.category && (
+                          <div className="flex items-center gap-2 mb-5">
+                            <span className={`px-4 py-2 rounded-full text-xs font-bold ${colors.accent} text-white shadow-lg`}>
+                              {t.category.toUpperCase()}
+                            </span>
+                          </div>
+                        )}
+                        
+                        {/* Action Button */}
+                        <div className="flex items-center justify-between pt-4 border-t-2 border-white/30">
+                          <div className="flex items-center gap-2 text-white/80">
+                            <Sparkles className="w-5 h-5" />
+                            <span className="text-sm font-semibold">Click to Select</span>
+                          </div>
+                          <div className={`flex items-center gap-2 px-5 py-2.5 rounded-xl ${colors.accent} text-white shadow-xl group-hover:shadow-2xl transition-all duration-300 transform group-hover:scale-110`}>
+                            <span className="text-sm font-bold">Use Template</span>
+                            <svg className="w-5 h-5 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                            </svg>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Shine effect on hover */}
+                      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none overflow-hidden rounded-3xl">
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+                      </div>
                     </div>
-                    <div className="mt-4 flex items-center justify-center">
-                      <span className="text-sm text-blue-600 font-medium group-hover:text-blue-700">
-                        Select Template →
-                      </span>
-                    </div>
-                  </CardContent>
-                </div>
-              </Card>
-            ))}
+                    
+                    {/* Enhanced Colorful Glow effect */}
+                    <div className={`absolute -inset-2 bg-gradient-to-r ${colors.bg} rounded-3xl opacity-0 group-hover:opacity-50 blur-2xl transition-opacity duration-500 -z-10`}></div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
+          
+          {/* Add animation keyframes via style tag */}
+          <style>{`
+            @keyframes blob {
+              0% { transform: translate(0px, 0px) scale(1); }
+              33% { transform: translate(30px, -50px) scale(1.1); }
+              66% { transform: translate(-20px, 20px) scale(0.9); }
+              100% { transform: translate(0px, 0px) scale(1); }
+            }
+            .animate-blob {
+              animation: blob 7s infinite;
+            }
+            .animation-delay-2000 {
+              animation-delay: 2s;
+            }
+            .animation-delay-4000 {
+              animation-delay: 4s;
+            }
+          `}</style>
         </div>
       )}
 
@@ -1336,6 +1922,14 @@ const ResumeBuilder = () => {
                       onDelete={handleDeleteSection}
                       onColorChange={handleColorChange}
                       colors={resume.colors}
+                      onImageStyleUpdate={(style) => onChange("personalInfo.profileImageStyle", style)}
+                      onSectionTitleUpdate={(sectionId, newTitle) => {
+                        const currentTitles = resume.sectionTitles || {};
+                        onChange("sectionTitles", {
+                          ...currentTitles,
+                          [sectionId]: newTitle
+                        });
+                      }}
                     />
                   </SortableContext>
                 </DndContext>

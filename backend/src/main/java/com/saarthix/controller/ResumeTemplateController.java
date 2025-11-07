@@ -19,7 +19,9 @@ public class ResumeTemplateController {
 
     @GetMapping
     public List<ResumeTemplate> list() {
-        return templateRepository.findAll();
+        return templateRepository.findAll().stream()
+                .filter(ResumeTemplate::isActive)
+                .toList();
     }
 }
 

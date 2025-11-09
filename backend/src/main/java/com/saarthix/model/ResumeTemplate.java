@@ -22,6 +22,9 @@ public class ResumeTemplate {
     private String primaryColor;
     private String secondaryColor;
     private String accentColor;
+    private String templateJson; // JSON document structure template
+    private boolean hasProfileImage; // Whether this template supports profile images
+    private String layoutType; // "single-column", "two-column", "sidebar", "modern", "classic"
 }
 
 

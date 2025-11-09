@@ -23,6 +23,7 @@ public class IndustryTrainingRequest {
     private String contactName;
     private String contactEmail;
     private String contactPhone;
+    private String industryContactNumber;
 
     private Integer numberOfCandidates;
     private String preferredStartDate;
@@ -31,7 +32,15 @@ public class IndustryTrainingRequest {
     private String customRequirements;
     private List<String> desiredSkills;
 
+    private String exampleCompany;
+    private String specificRole;
+    private String targetIndustry;
+    private String packageAfterSelection;
+    private String stipendDetails;
+    private String otherRequirements;
+
     private String additionalNotes;
     private String status = "PENDING";
     private Instant createdAt = Instant.now();
 }
+

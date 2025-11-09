@@ -14,7 +14,7 @@ The Role Ready Training service allows students to browse and enroll in speciali
   - Package after training
 - Enroll in training programs through a comprehensive enrollment form
 - Share training catalog with institutes who can batch-enroll students
-- Enable industry partners to request day-one ready talent or bespoke training cohorts
+- Provide industry partners with day-one ready cohorts and custom program requests
 
 ## Setup Instructions
 
@@ -72,10 +72,12 @@ The frontend page is available at:
 
 ### 6. Industry Role Ready Freshers
 - Route: `/industry/role-ready-freshers`
-- Industry partners can request day-one ready candidates for existing programs or submit bespoke training requirements.
-- Form captures company details, desired cohort size, start timeline, and optional skill requirements.
-- Backend persists requests in the `industry_training_requests` collection via `IndustryTrainingController`.
+- Each day-one ready training card exposes two actions:
+  - **Apply for Cohort:** raise a request against an existing program to spin up ready-to-hire cohorts.
+  - **Request Custom Training:** capture bespoke role requirements, tooling, and success metrics for tailored programs.
+- Requests persist in MongoDB via `IndustryTrainingRequestRepository` for partnership follow-up.
 - Navigation: Industry → Role Ready Freshers (navbar) or Industry dashboard card.
+
 
 ## Enrollment Form Fields
 

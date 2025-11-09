@@ -1,59 +1,67 @@
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import apiClient from "@/lib/apiClient";
 import { X } from "lucide-react";
 
-const EMPTY_REQUEST = {
+const EMPTY_FORM = {
   companyName: "",
   companyWebsite: "",
   contactName: "",
   contactEmail: "",
   contactPhone: "",
+  industryContactNumber: "",
   numberOfCandidates: "",
   preferredStartDate: "",
-  customRoleName: "",
-  customRequirements: "",
   desiredSkills: "",
   additionalNotes: "",
+  customRoleName: "",
+  customRequirements: "",
+  exampleCompany: "",
+  specificRole: "",
+  targetIndustry: "",
+  packageAfterSelection: "",
+  stipendDetails: "",
+  otherRequirements: "",
 };
 
 const RoleReadyFreshers = () => {
   const [trainings, setTrainings] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [fetchError, setFetchError] = useState("");
+  const [error, setError] = useState("");
   const [modal, setModal] = useState({
     open: false,
     mode: "existing",
     training: null,
-    form: { ...EMPTY_REQUEST },
-    error: "",
-    status: "",
+    form: { ...EMPTY_FORM },
     submitting: false,
+    status: "",
+    formError: "",
   });
 
   useEffect(() => {
     const fetchTrainings = async () => {
       try {
         setLoading(true);
-        setFetchError("");
+        setError("");
         const response = await apiClient.get("/trainings");
-        const normalized = (response.data ?? []).map((item, index) => {
-          const apiId = item.id ?? item._id ?? item.trainingId ?? item?.identifier ?? null;
-          const clientKey = apiId ?? (item.roleName ? `${item.roleName}-${index}` : `training-${index}`);
-          return {
-            ...item,
-            apiId,
-            clientKey,
-          };
-        });
-        setTrainings(normalized.filter((t) => t.dayOneReady));
-      } catch (error) {
-        console.error("Error fetching trainings:", error);
-        setFetchError("Unable to load role ready programs. Please refresh the page.");
+        console.log("Fetched trainings", response.data);
+        const catalogue = (response.data ?? []).map((item, index) => ({
+          ...item,
+          apiId: item.id ?? item._id ?? `training-${index}`,
+        }));
+        const enriched = catalogue.map((entry) => ({
+          ...entry,
+          dayOneReady: entry.dayOneReady === undefined ? true : entry.dayOneReady,
+        }));
+        setTrainings(enriched);
+      } catch (err) {
+        console.error("Failed to load trainings", err);
+        setError("Unable to load role ready trainings right now. Please try again later.");
       } finally {
         setLoading(false);
       }
@@ -62,18 +70,39 @@ const RoleReadyFreshers = () => {
     fetchTrainings();
   }, []);
 
-  const usableTrainings = useMemo(() => trainings ?? [], [trainings]);
+  const displayTrainings = useMemo(() => {
+    const items = trainings ?? [];
+    const sorted = [...items].sort((a, b) => {
+      const aReady = a.dayOneReady ? 1 : 0;
+      const bReady = b.dayOneReady ? 1 : 0;
+      return bReady - aReady;
+    });
+    return sorted;
+  }, [trainings]);
+
+  const resetModal = () => {
+    setModal({
+      open: false,
+      mode: "existing",
+      training: null,
+      form: { ...EMPTY_FORM },
+      submitting: false,
+      status: "",
+      formError: "",
+    });
+  };
 
   const openExistingModal = (training) => {
+    console.log("Open existing modal", training);
     if (!training?.apiId) {
       setModal({
         open: true,
         mode: "existing",
         training: null,
-        form: { ...EMPTY_REQUEST },
-        error: "This training is missing an identifier. Please refresh and try again.",
-        status: "",
+        form: { ...EMPTY_FORM },
         submitting: false,
+        status: "",
+        formError: "This training is missing an identifier. Please refresh the page.",
       });
       return;
     }
@@ -83,41 +112,55 @@ const RoleReadyFreshers = () => {
       mode: "existing",
       training,
       form: {
-        ...EMPTY_REQUEST,
-        numberOfCandidates: "15",
+        ...EMPTY_FORM,
+        numberOfCandidates: String(training.totalStudentsAllowed ?? 20),
+        desiredSkills: training.skillsCovered?.slice(0, 5).join(", ") ?? "",
+        specificRole: training.roleName ?? "",
+        targetIndustry: training.industry ?? "",
+        packageAfterSelection: training.packageAfterTraining ?? "",
+        stipendDetails: training.stipendIncluded
+          ? `Stipend ₹${training.stipendAmount}`
+          : "No stipend",
+        exampleCompany: training.trainingProvider ?? "",
       },
-      error: "",
-      status: "",
       submitting: false,
+      status: "",
+      formError: "",
     });
   };
 
-  const openCustomModal = () => {
+  const openCustomModal = (training) => {
+    console.log("Open custom modal", training);
     setModal({
       open: true,
       mode: "custom",
-      training: null,
-      form: { ...EMPTY_REQUEST },
-      error: "",
-      status: "",
+      training,
+      form: {
+        ...EMPTY_FORM,
+        customRoleName: training ? `${training.roleName} Specialist` : "",
+        customRequirements: training
+          ? `Adapt ${training.roleName} curriculum for ${training.industry} workflows.`
+          : "",
+        specificRole: training?.roleName ?? "",
+        targetIndustry: training?.industry ?? "",
+        packageAfterSelection: training?.packageAfterTraining ?? "",
+        stipendDetails: training
+          ? training.stipendIncluded
+            ? `Stipend ₹${training.stipendAmount}`
+            : "No stipend"
+          : "",
+        exampleCompany: training?.trainingProvider ?? "",
+      },
       submitting: false,
+      status: "",
+      formError: "",
     });
   };
 
   const closeModal = () => {
     if (modal.submitting) return;
     setModal((prev) => ({ ...prev, open: false }));
-    setTimeout(() => {
-      setModal({
-        open: false,
-        mode: "existing",
-        training: null,
-        form: { ...EMPTY_REQUEST },
-        error: "",
-        status: "",
-        submitting: false,
-      });
-    }, 200);
+    setTimeout(() => resetModal(), 200);
   };
 
   const updateForm = (event) => {
@@ -132,30 +175,35 @@ const RoleReadyFreshers = () => {
   };
 
   const validateForm = () => {
-    const requiredFields = [
-      { name: "companyName", label: "Company Name" },
-      { name: "contactName", label: "Contact Name" },
-      { name: "contactEmail", label: "Contact Email" },
-      { name: "contactPhone", label: "Contact Phone" },
-      { name: "numberOfCandidates", label: "Number of Candidates" },
+    const requiredCommon = [
+      { key: "companyName", label: "Company Name" },
+      { key: "contactName", label: "Contact Name" },
+      { key: "contactEmail", label: "Contact Email" },
+      { key: "contactPhone", label: "Contact Phone" },
+      { key: "industryContactNumber", label: "Industry Contact Number" },
+      { key: "numberOfCandidates", label: "Number of Candidates" },
+      { key: "specificRole", label: "Specific Role" },
+      { key: "targetIndustry", label: "Industry" },
+      { key: "packageAfterSelection", label: "Package After Selection" },
+      { key: "stipendDetails", label: "Stipend" },
     ];
 
+    const fieldsToCheck = [...requiredCommon];
     if (modal.mode === "custom") {
-      requiredFields.push({ name: "customRoleName", label: "Role Name" });
+      fieldsToCheck.push({ key: "customRoleName", label: "Role Name" });
+    } else if (!modal.training?.apiId) {
+      return { valid: false, message: "Training identifier missing. Please refresh." };
     }
 
-    if (modal.mode === "existing" && !modal.training?.apiId) {
-      return { valid: false, message: "Training identifier missing. Please refresh the page." };
-    }
-
-    for (const field of requiredFields) {
-      const raw = modal.form[field.name];
+    for (const field of fieldsToCheck) {
+      const raw = modal.form[field.key];
       if (raw === undefined || String(raw).trim() === "") {
         return { valid: false, message: `Please provide ${field.label}.` };
       }
     }
 
-    if (Number.isNaN(parseInt(modal.form.numberOfCandidates, 10)) || parseInt(modal.form.numberOfCandidates, 10) <= 0) {
+    const candidates = parseInt(modal.form.numberOfCandidates, 10);
+    if (Number.isNaN(candidates) || candidates <= 0) {
       return { valid: false, message: "Number of candidates must be a positive number." };
     }
 
@@ -165,56 +213,67 @@ const RoleReadyFreshers = () => {
   const submitRequest = async () => {
     const validation = validateForm();
     if (!validation.valid) {
-      setModal((prev) => ({ ...prev, error: validation.message }));
+      setModal((prev) => ({ ...prev, formError: validation.message }));
       return;
     }
 
+    const desiredSkills = modal.form.desiredSkills
+      ? modal.form.desiredSkills
+          .split(",")
+          .map((skill) => skill.trim())
+          .filter(Boolean)
+      : [];
+
+    const payload = {
+      companyName: modal.form.companyName.trim(),
+      companyWebsite: modal.form.companyWebsite.trim() || null,
+      contactName: modal.form.contactName.trim(),
+      contactEmail: modal.form.contactEmail.trim(),
+      contactPhone: modal.form.contactPhone.trim(),
+      industryContactNumber: modal.form.industryContactNumber.trim(),
+      numberOfCandidates: parseInt(modal.form.numberOfCandidates, 10),
+      preferredStartDate: modal.form.preferredStartDate || null,
+      additionalNotes: modal.form.additionalNotes.trim() || null,
+      desiredSkills,
+      exampleCompany: modal.form.exampleCompany.trim() || null,
+      specificRole: modal.form.specificRole.trim(),
+      targetIndustry: modal.form.targetIndustry.trim(),
+      packageAfterSelection: modal.form.packageAfterSelection.trim(),
+      stipendDetails: modal.form.stipendDetails.trim(),
+      otherRequirements: modal.form.otherRequirements.trim() || null,
+    };
+
+    if (modal.mode === "existing") {
+      payload.trainingId = modal.training.apiId;
+      payload.requestType = "EXISTING";
+    } else {
+      payload.trainingId = null;
+      payload.requestType = "CUSTOM";
+      payload.customRoleName = modal.form.customRoleName.trim();
+      payload.customRequirements = modal.form.customRequirements.trim() || null;
+      // capture context about the base program for internal triage
+      if (modal.training?.roleName && !payload.additionalNotes) {
+        payload.additionalNotes = `Custom cohort inspired by ${modal.training.roleName}.`;
+      }
+    }
+
     try {
-      setModal((prev) => ({ ...prev, submitting: true, error: "", status: "" }));
-
-      const payload = {
-        companyName: modal.form.companyName.trim(),
-        companyWebsite: modal.form.companyWebsite.trim() || null,
-        contactName: modal.form.contactName.trim(),
-        contactEmail: modal.form.contactEmail.trim(),
-        contactPhone: modal.form.contactPhone.trim(),
-        numberOfCandidates: parseInt(modal.form.numberOfCandidates, 10),
-        preferredStartDate: modal.form.preferredStartDate || null,
-        additionalNotes: modal.form.additionalNotes.trim() || null,
-        customRoleName: modal.mode === "custom" ? modal.form.customRoleName.trim() : null,
-        customRequirements: modal.mode === "custom" ? modal.form.customRequirements.trim() : null,
-        desiredSkills:
-          modal.form.desiredSkills
-            ?.split(",")
-            .map((skill) => skill.trim())
-            .filter(Boolean) ?? [],
-        requestType: modal.mode === "custom" ? "CUSTOM" : "EXISTING",
-        trainingId: modal.mode === "existing" ? modal.training.apiId : null,
-      };
-
-      const response = await apiClient.post("/industry-training/apply", payload);
+      setModal((prev) => ({ ...prev, submitting: true, formError: "", status: "" }));
+      await apiClient.post("/industry-training/apply", payload);
       setModal((prev) => ({
         ...prev,
         submitting: false,
-        status: "Request submitted successfully. Our team will contact you within 24 hours.",
+        status: "Request submitted successfully. Our partnerships team will contact you soon.",
       }));
 
       setTimeout(() => {
         closeModal();
-        alert("Your training request has been submitted successfully.");
-      }, 300);
-
-      return response;
-    } catch (error) {
-      console.error("Error submitting industry training request:", error);
-      const notFound = error?.response?.status === 404;
-      setModal((prev) => ({
-        ...prev,
-        submitting: false,
-        error: notFound
-          ? "Selected training is no longer available. Please refresh and pick another program."
-          : "Unable to submit request right now. Please try again.",
-      }));
+        alert("Your request has been submitted successfully.");
+      }, 400);
+    } catch (err) {
+      console.error("Failed to submit industry request", err);
+      const message = err?.response?.data ?? "Unable to submit request right now. Please try again.";
+      setModal((prev) => ({ ...prev, submitting: false, formError: String(message) }));
     }
   };
 
@@ -222,11 +281,13 @@ const RoleReadyFreshers = () => {
     if (!modal.open) return null;
 
     const isCustom = modal.mode === "custom";
-    const title = isCustom ? "Request Custom Training" : `Request ${modal.training?.roleName ?? "Training"}`;
+    const title = isCustom
+      ? "Request Custom Training"
+      : `Apply for ${modal.training?.roleName ?? "Training"}`;
 
-    return (
+    return createPortal(
       <div
-        className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] p-4"
+        className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999] p-4"
         onClick={(event) => {
           if (event.target === event.currentTarget && !modal.submitting) {
             closeModal();
@@ -237,7 +298,7 @@ const RoleReadyFreshers = () => {
           className="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl"
           onClick={(event) => event.stopPropagation()}
         >
-          <div className="sticky top-0 bg-white border-b p-4 flex justify-between items-center z-10">
+          <div className="sticky top-0 bg-white border-b p-4 flex justify-between items-center">
             <div>
               <h2 className="text-2xl font-bold">{title}</h2>
               {modal.training?.dayOneSummary && !isCustom && (
@@ -245,15 +306,15 @@ const RoleReadyFreshers = () => {
                   Day-one promise: {modal.training.dayOneSummary}
                 </p>
               )}
-              {modal.error && <p className="text-sm text-red-600 mt-1">{modal.error}</p>}
-              {modal.status && <p className="text-sm text-green-600 mt-1">{modal.status}</p>}
+              {modal.formError && <p className="text-sm text-red-600 mt-2">{modal.formError}</p>}
+              {modal.status && <p className="text-sm text-green-600 mt-2">{modal.status}</p>}
             </div>
             <Button
+              type="button"
               variant="ghost"
               size="icon"
-              onClick={closeModal}
               className="h-8 w-8"
-              type="button"
+              onClick={closeModal}
               disabled={modal.submitting}
             >
               <X className="h-4 w-4" />
@@ -322,6 +383,18 @@ const RoleReadyFreshers = () => {
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">
+                  Industry Contact Number <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  name="industryContactNumber"
+                  value={modal.form.industryContactNumber}
+                  onChange={updateForm}
+                  placeholder="Operations or plant SPOC"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">
                   Number of Candidates <span className="text-red-500">*</span>
                 </label>
                 <Input
@@ -329,8 +402,8 @@ const RoleReadyFreshers = () => {
                   name="numberOfCandidates"
                   value={modal.form.numberOfCandidates}
                   onChange={updateForm}
-                  placeholder="e.g., 20"
                   min="1"
+                  placeholder="e.g., 20"
                   required
                 />
               </div>
@@ -350,6 +423,65 @@ const RoleReadyFreshers = () => {
                   value={modal.form.desiredSkills}
                   onChange={updateForm}
                   placeholder="SQL, Salesforce, Communication"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Example Company
+                </label>
+                <Input
+                  name="exampleCompany"
+                  value={modal.form.exampleCompany}
+                  onChange={updateForm}
+                  placeholder="Reference brand or cohort benchmark"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Specific Role <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  name="specificRole"
+                  value={modal.form.specificRole}
+                  onChange={updateForm}
+                  placeholder="e.g., Salesforce SDR, BMS Engineer"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Industry <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  name="targetIndustry"
+                  value={modal.form.targetIndustry}
+                  onChange={updateForm}
+                  placeholder="e.g., SaaS Sales, Facilities Management"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Package After Selection <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  name="packageAfterSelection"
+                  value={modal.form.packageAfterSelection}
+                  onChange={updateForm}
+                  placeholder="e.g., ₹6 LPA + incentives"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Stipend <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  name="stipendDetails"
+                  value={modal.form.stipendDetails}
+                  onChange={updateForm}
+                  placeholder="e.g., ₹10k monthly stipend"
+                  required
                 />
               </div>
             </div>
@@ -374,7 +506,7 @@ const RoleReadyFreshers = () => {
                     name="customRequirements"
                     value={modal.form.customRequirements}
                     onChange={updateForm}
-                    placeholder="Describe role expectations, tools, success metrics..."
+                    placeholder="Describe tech stack, SOPs, KPIs, ramp timeline..."
                     rows={4}
                   />
                 </div>
@@ -385,8 +517,8 @@ const RoleReadyFreshers = () => {
               <div className="space-y-2">
                 <h3 className="text-lg font-semibold">Day-One Deliverables</h3>
                 <ul className="list-disc list-inside text-sm space-y-1">
-                  {modal.training.dayOneDeliverables.map((item, index) => (
-                    <li key={index}>{item}</li>
+                  {modal.training.dayOneDeliverables.map((deliverable, idx) => (
+                    <li key={idx}>{deliverable}</li>
                   ))}
                 </ul>
               </div>
@@ -398,33 +530,40 @@ const RoleReadyFreshers = () => {
                 name="additionalNotes"
                 value={modal.form.additionalNotes}
                 onChange={updateForm}
-                placeholder="Share onboarding timelines, assessment expectations, or other details"
+                placeholder="Share onboarding expectations, compliance requirements, or other details"
                 rows={4}
               />
             </div>
 
-            <div className="flex flex-wrap justify-end gap-3 border-t pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={closeModal}
-                disabled={modal.submitting}
-              >
+            <div>
+              <label className="block text-sm font-medium mb-1">Other Requirements</label>
+              <Textarea
+                name="otherRequirements"
+                value={modal.form.otherRequirements}
+                onChange={updateForm}
+                placeholder="Assessments, certifications, language proficiency, etc."
+                rows={3}
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 border-t pt-4">
+              <Button type="button" variant="outline" onClick={closeModal} disabled={modal.submitting}>
                 Cancel
               </Button>
-              <Button
-                type="button"
-                onClick={submitRequest}
-                disabled={modal.submitting}
-              >
+              <Button type="button" onClick={submitRequest} disabled={modal.submitting}>
                 {modal.submitting ? "Submitting..." : "Submit Request"}
               </Button>
             </div>
           </div>
         </div>
-      </div>
+      </div>,
+      document.body
     );
   };
+
+  useEffect(() => {
+    console.log("Modal state", modal);
+  }, [modal]);
 
   if (loading) {
     return (
@@ -444,30 +583,44 @@ const RoleReadyFreshers = () => {
             <div>
               <h1 className="text-3xl font-bold">Role Ready Freshers</h1>
               <p className="text-muted-foreground max-w-2xl">
-                Access day-one ready talent pipelines or request bespoke training for niche roles. Candidates graduate
-                with hands-on deliverables aligned to your tech stack and SOPs.
+                Access day-one ready talent pipelines or tailor a bespoke training cohort for niche roles. Each program
+                is benchmarked to deliver candidates who can contribute from day one.
               </p>
-              {fetchError && <p className="text-sm text-red-600 mt-2">{fetchError}</p>}
+              {error && <p className="text-sm text-red-600 mt-2">{error}</p>}
             </div>
-            <Button type="button" onClick={openCustomModal}>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                openCustomModal(null);
+              }}
+            >
               Request Custom Training
             </Button>
           </div>
 
-          {usableTrainings.length === 0 ? (
+          {displayTrainings.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-lg text-muted-foreground">
-                No day-one ready programs available yet. Request a custom training to get started.
+                No day-one ready programs available yet. Check back soon or speak with our partnerships team.
               </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {usableTrainings.map((training) => (
-                <Card key={training.clientKey} className="flex flex-col hover:shadow-lg transition-shadow">
+              {displayTrainings.map((training) => (
+                <Card key={training.apiId} className="flex flex-col">
                   <CardHeader>
                     <CardTitle className="text-xl flex items-center justify-between gap-2">
                       {training.roleName}
-                      <span className="text-xs font-semibold uppercase text-green-600">Day-One Ready</span>
+                      <span
+                        className={`text-xs font-semibold uppercase ${
+                          training.dayOneReady ? "text-green-600" : "text-amber-600"
+                        }`}
+                      >
+                        {training.dayOneReady ? "Day-One Ready" : "In Ramp-Up"}
+                      </span>
                     </CardTitle>
                     <CardDescription className="line-clamp-3">{training.roleDescription}</CardDescription>
                   </CardHeader>
@@ -482,7 +635,7 @@ const RoleReadyFreshers = () => {
                       <span className="font-semibold">Duration:</span> {training.trainingDuration}
                     </div>
                     <div>
-                      <span className="font-semibold">Candidate Intake:</span> {training.totalStudentsAllowed}
+                      <span className="font-semibold">Intake Capacity:</span> {training.totalStudentsAllowed}
                     </div>
                     <div>
                       <span className="font-semibold">Day-One Summary:</span> {training.dayOneSummary}
@@ -511,15 +664,29 @@ const RoleReadyFreshers = () => {
                       </ul>
                     </div>
                   </CardContent>
-                  <CardFooter>
+                  <CardFooter className="grid grid-cols-1 gap-2">
                     <Button
                       type="button"
-                      onClick={() => openExistingModal(training)}
-                      className="w-full"
+                      onClick={(event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        openExistingModal(training);
+                      }}
                       disabled={!training.apiId}
                       title={!training.apiId ? "Training identifier missing. Please refresh." : undefined}
                     >
-                      Request Candidates
+                      Apply for Cohort
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={(event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        openCustomModal(training);
+                      }}
+                    >
+                      Request Custom Training
                     </Button>
                   </CardFooter>
                 </Card>
@@ -535,3 +702,5 @@ const RoleReadyFreshers = () => {
 };
 
 export default RoleReadyFreshers;
+
+

@@ -9,3 +9,4 @@ public interface IndustryTrainingRequestRepository extends MongoRepository<Indus
     List<IndustryTrainingRequest> findByTrainingId(String trainingId);
     List<IndustryTrainingRequest> findByContactEmail(String contactEmail);
 }
+

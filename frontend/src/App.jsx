@@ -27,8 +27,8 @@ import Workshops from "./pages/institutes/Workshops";
 import StudentTrainingRoleReady from "./pages/institutes/StudentTrainingRoleReady";
 import ResumeAccess from "./pages/industry/ResumeAccess";
 import PostJobs from "./pages/industry/PostJobs";
-import AiInterview from "./pages/industry/AiInterview";
 import RoleReadyFreshers from "./pages/industry/RoleReadyFreshers";
+import AiInterview from "./pages/industry/AiInterview";
 import AdminDashboard from "./pages/AdminDashboard";
 import ResumeReview from "./pages/admin/ResumeReview";
 

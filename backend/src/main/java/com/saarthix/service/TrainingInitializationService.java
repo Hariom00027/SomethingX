@@ -17,12 +17,15 @@ public class TrainingInitializationService implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        if (trainingRepository.count() > 0) {
-            return;
-        }
-        trainingRepository.saveAll(sampleTrainings());
+        // Removed hardcoded training data - trainings should be added through admin interface or database
+        // if (trainingRepository.count() > 0) {
+        //     return;
+        // }
+        // trainingRepository.saveAll(sampleTrainings());
     }
 
+    // Removed hardcoded training data - kept method for reference but not used
+    @SuppressWarnings("unused")
     private List<Training> sampleTrainings() {
         Training t1 = new Training();
         t1.setRoleName("BMS Engineer");

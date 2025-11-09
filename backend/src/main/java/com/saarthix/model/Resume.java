@@ -46,6 +46,17 @@ public class Resume {
         private String phone;
         private String location;
         private String title;
+        private String profileImage; // URL or base64 encoded image
+        private ProfileImageStyle profileImageStyle; // Style for image positioning and sizing
+        
+        @Data
+        public static class ProfileImageStyle {
+            private String width;
+            private String height;
+            private String left;
+            private String top;
+            private String position;
+        }
     }
 
     @Data

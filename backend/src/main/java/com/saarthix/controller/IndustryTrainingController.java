@@ -24,23 +24,50 @@ public class IndustryTrainingController {
     private IndustryTrainingRequestRepository requestRepository;
 
     @PostMapping("/apply")
-    public ResponseEntity<?> applyForTraining(@RequestBody IndustryTrainingRequest payload) {
+    public ResponseEntity<?> apply(@RequestBody IndustryTrainingRequest payload) {
         payload.setId(null);
         payload.setCreatedAt(Instant.now());
 
-        if (payload.getTrainingId() != null && !payload.getTrainingId().isBlank()) {
+        boolean hasTrainingId = payload.getTrainingId() != null && !payload.getTrainingId().isBlank();
+
+        if (hasTrainingId) {
             Optional<Training> trainingOpt = trainingRepository.findById(payload.getTrainingId());
             if (trainingOpt.isEmpty()) {
                 return ResponseEntity.notFound().build();
             }
+
             Training training = trainingOpt.get();
+            if (!training.isDayOneReady()) {
+                return ResponseEntity.badRequest().body("Selected training is not certified day-one ready.");
+            }
+
             payload.setTrainingRoleName(training.getRoleName());
-            payload.setRequestType(payload.getRequestType() == null ? "EXISTING" : payload.getRequestType());
+            payload.setRequestType(payload.getRequestType() == null || payload.getRequestType().isBlank()
+                    ? "EXISTING"
+                    : payload.getRequestType());
+            if (payload.getSpecificRole() == null || payload.getSpecificRole().isBlank()) {
+                payload.setSpecificRole(training.getRoleName());
+            }
+            if (payload.getTargetIndustry() == null || payload.getTargetIndustry().isBlank()) {
+                payload.setTargetIndustry(training.getIndustry());
+            }
+            if (payload.getPackageAfterSelection() == null || payload.getPackageAfterSelection().isBlank()) {
+                payload.setPackageAfterSelection(training.getPackageAfterTraining());
+            }
+            if (payload.getStipendDetails() == null || payload.getStipendDetails().isBlank()) {
+                payload.setStipendDetails(training.isStipendIncluded()
+                        ? String.format("Stipend ₹%d", training.getStipendAmount())
+                        : "No stipend");
+            }
         } else {
             payload.setTrainingId(null);
+            payload.setTrainingRoleName(null);
             payload.setRequestType("CUSTOM");
             if (payload.getCustomRoleName() == null || payload.getCustomRoleName().isBlank()) {
                 return ResponseEntity.badRequest().body("customRoleName is required for custom requests");
+            }
+            if (payload.getSpecificRole() == null || payload.getSpecificRole().isBlank()) {
+                payload.setSpecificRole(payload.getCustomRoleName());
             }
         }
 
@@ -49,8 +76,9 @@ public class IndustryTrainingController {
     }
 
     @GetMapping("/requests")
-    public List<IndustryTrainingRequest> listRequests(@RequestParam(required = false) String trainingId,
-                                                      @RequestParam(required = false) String contactEmail) {
+    public List<IndustryTrainingRequest> listRequests(
+            @RequestParam(required = false) String trainingId,
+            @RequestParam(required = false) String contactEmail) {
         if (trainingId != null && !trainingId.isBlank()) {
             return requestRepository.findByTrainingId(trainingId);
         }
@@ -60,3 +88,4 @@ public class IndustryTrainingController {
         return requestRepository.findAll();
     }
 }
+

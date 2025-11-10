@@ -30,6 +30,7 @@ public class Resume {
     private List<String> links;
     private List<String> sectionOrder;
     private Colors colors;
+    private java.util.Map<String, String> sectionTitles; // Custom section titles
     private Boolean mentorReviewRequested = false;
 
     @Data

@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
-import { api, getTemplateThumbnail } from "@/lib/utils";
+import { api } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   DndContext,
@@ -173,6 +173,7 @@ const emptyResume = (studentId, templateId) => ({
     { name: "Spanish", proficiency: "Intermediate" }
   ],
   links: [],
+  customSections: [],
   sectionOrder: [
     'personalInfo',
     'summary', 
@@ -223,7 +224,16 @@ const SortableSection = ({ id, children, isEditing, onEdit, onDelete, onColorCha
   };
 
   return (
-    <div ref={setNodeRef} style={style} className="relative group">
+    <div 
+      ref={setNodeRef} 
+      style={{
+        ...style,
+        pageBreakInside: 'avoid',
+        breakInside: 'avoid',
+        WebkitColumnBreakInside: 'avoid'
+      }} 
+      className="relative group"
+    >
       <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto z-10">
         <div className="absolute top-2 right-2 flex gap-2 bg-white rounded-lg shadow-lg border border-gray-200 p-1">
           <button
@@ -295,11 +305,6 @@ const A4Page = ({ children, pageNumber, totalPages }) => {
       }}
     >
       {children}
-      {totalPages > 1 && (
-        <div className="absolute bottom-4 right-4 text-xs text-gray-400">
-          Page {pageNumber} of {totalPages}
-        </div>
-      )}
     </div>
   );
 };
@@ -331,44 +336,38 @@ const EditableSectionTitle = ({ sectionId, title, isEditing, onUpdate, defaultTi
     }
   };
 
+  // When not in edit mode, show non-editable title
   if (!isEditing) {
     return <div className="section-title">{title || defaultTitle}</div>;
   }
 
-  if (isEditingTitle) {
-    return (
-      <input
-        type="text"
-        value={editValue}
-        onChange={(e) => setEditValue(e.target.value)}
-        onBlur={handleBlur}
-        onKeyDown={handleKeyDown}
-        className="section-title-editable"
-        style={{
-          width: '100%',
-          fontSize: 'inherit',
-          fontWeight: 'inherit',
-          fontFamily: 'inherit',
-          color: 'inherit',
-          background: 'rgba(59, 130, 246, 0.1)',
-          border: '1px solid #3b82f6',
-          borderRadius: '4px',
-          padding: '2px 6px',
-          outline: 'none'
-        }}
-        autoFocus
-      />
-    );
-  }
-
+  // When in edit mode, show editable input directly (no click needed)
   return (
-    <div 
-      className="section-title cursor-pointer hover:bg-blue-50 rounded px-1 transition-colors"
-      onClick={() => setIsEditingTitle(true)}
-      title="Click to edit title"
-    >
-      {title || defaultTitle}
-    </div>
+    <input
+      type="text"
+      value={editValue}
+      onChange={(e) => setEditValue(e.target.value)}
+      onBlur={handleBlur}
+      onKeyDown={handleKeyDown}
+      onFocus={() => setIsEditingTitle(true)}
+      className="section-title-editable"
+      style={{
+        width: '100%',
+        fontSize: 'inherit',
+        fontWeight: 'inherit',
+        fontFamily: 'inherit',
+        color: 'inherit',
+        background: 'rgba(59, 130, 246, 0.1)',
+        border: '1px solid #3b82f6',
+        borderRadius: '4px',
+        padding: '2px 6px',
+        outline: 'none',
+        cursor: 'text',
+        pointerEvents: 'auto',
+        zIndex: 10,
+        position: 'relative'
+      }}
+    />
   );
 };
 
@@ -629,11 +628,48 @@ const ResumePreview = ({ resume, template, isEditing, onEdit, onDelete, onColorC
         );
       
       default:
+        // Check if it's a custom section
+        if (sectionId.startsWith('custom_')) {
+          const customSection = resume.customSections?.find(s => s.id === sectionId);
+          if (customSection) {
+            return (
+              <div className="section">
+                <EditableSectionTitle
+                  sectionId={sectionId}
+                  title={customSection.title}
+                  isEditing={isEditing}
+                  onUpdate={(newTitle) => {
+                    // Call the parent handler to update custom section title
+                    if (onSectionTitleUpdate) {
+                      onSectionTitleUpdate(sectionId, newTitle);
+                    }
+                  }}
+                  defaultTitle={customSection.title || "Custom Section"}
+                />
+                <div className="section-content">
+                  {customSection.contentType === 'list' ? (
+                    <ul className="bullet-list">
+                      {customSection.items?.map((item, index) => (
+                        <li key={index}>{item}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div>{customSection.content}</div>
+                  )}
+                </div>
+              </div>
+            );
+          }
+        }
         return null;
     }
   };
 
   const visibleSections = resume.sectionOrder.filter(sectionId => {
+    // Include custom sections
+    if (sectionId.startsWith('custom_')) {
+      return resume.customSections?.some(s => s.id === sectionId);
+    }
     const content = getSectionContent(sectionId);
     return content !== null;
   });
@@ -648,11 +684,13 @@ const ResumePreview = ({ resume, template, isEditing, onEdit, onDelete, onColorC
       case 'bio':
         return resume.bio ? Math.max(80, (resume.bio.length / 100) * 20) : 0;
       case 'experience':
-        return resume.experience ? resume.experience.length * 120 : 0;
+        // More conservative estimate: 140px per experience (includes margins, padding, achievements)
+        return resume.experience ? resume.experience.length * 140 : 0;
       case 'education':
         return resume.education ? resume.education.length * 80 : 0;
       case 'projects':
-        return resume.projects ? resume.projects.length * 100 : 0;
+        // More conservative estimate: 120px per project (includes margins, padding, description, tags)
+        return resume.projects ? resume.projects.length * 120 : 0;
       case 'skills':
         return resume.skills ? Math.max(60, Math.ceil(resume.skills.length / 8) * 40) : 0;
       case 'achievements':
@@ -664,26 +702,58 @@ const ResumePreview = ({ resume, template, isEditing, onEdit, onDelete, onColorC
       case 'hobbies':
         return resume.hobbies ? Math.max(60, Math.ceil(resume.hobbies.length / 8) * 40) : 0;
       default:
+        // Check if it's a custom section
+        if (sectionId.startsWith('custom_')) {
+          const customSection = resume.customSections?.find(s => s.id === sectionId);
+          if (customSection) {
+            if (customSection.contentType === 'list') {
+              return customSection.items ? customSection.items.length * 30 + 60 : 100;
+            } else {
+              return customSection.content ? Math.max(80, (customSection.content.length / 100) * 20) : 100;
+            }
+          }
+        }
         return 100;
     }
   };
 
   // Split content into pages based on estimated heights
+  // Ensures sections never break across pages - if a section doesn't fit, it moves entirely to next page
   const splitIntoPages = (sections) => {
     const pages = [];
     let currentPage = [];
     let currentHeight = 0;
     const A4_CONTENT_HEIGHT = 1123 - 80; // A4 height minus padding (40px top + 40px bottom)
+    const SAFE_MARGIN = 60; // Extra margin to ensure sections don't get cut off (increased for safety)
+    const MAX_PAGE_HEIGHT = A4_CONTENT_HEIGHT - SAFE_MARGIN;
 
     sections.forEach((sectionId) => {
-      const sectionHeight = getSectionHeight(sectionId);
+      // Get section height and add extra buffer for margins/padding
+      let sectionHeight = getSectionHeight(sectionId);
+      // Add buffer for section margins (32px bottom + 20px padding = ~52px, but we'll add 40px to be safe)
+      sectionHeight += 40;
       
-      // If adding this section would exceed page height and we have content, start new page
-      if (currentHeight + sectionHeight > A4_CONTENT_HEIGHT && currentPage.length > 0) {
+      // Check if this section alone exceeds page height (shouldn't happen, but handle it)
+      if (sectionHeight > MAX_PAGE_HEIGHT) {
+        // If current page has content, save it first
+        if (currentPage.length > 0) {
+          pages.push([...currentPage]);
+          currentPage = [];
+          currentHeight = 0;
+        }
+        // Put the oversized section on its own page
+        pages.push([sectionId]);
+        currentPage = [];
+        currentHeight = 0;
+      }
+      // If adding this section would exceed page height, start new page
+      else if (currentHeight + sectionHeight > MAX_PAGE_HEIGHT && currentPage.length > 0) {
+        // Save current page and start new one with this section
         pages.push([...currentPage]);
         currentPage = [sectionId];
         currentHeight = sectionHeight;
       } else {
+        // Section fits on current page
         currentPage.push(sectionId);
         currentHeight += sectionHeight;
       }
@@ -711,6 +781,117 @@ const ResumePreview = ({ resume, template, isEditing, onEdit, onDelete, onColorC
   return (
     <>
       <style>{templateCss}</style>
+      <style>{`
+        .section {
+          margin-bottom: 32px !important;
+          padding-bottom: 20px !important;
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
+          -webkit-column-break-inside: avoid !important;
+          clear: both;
+          position: relative;
+          display: block;
+        }
+        .section:last-child {
+          margin-bottom: 0 !important;
+          padding-bottom: 0 !important;
+        }
+        .section-title {
+          margin-bottom: 16px !important;
+          padding-bottom: 8px !important;
+          margin-top: 0 !important;
+          display: block !important;
+          clear: both !important;
+        }
+        .section-title-editable {
+          margin-bottom: 16px !important;
+          padding-bottom: 8px !important;
+          margin-top: 0 !important;
+          display: block !important;
+          clear: both !important;
+          width: 100% !important;
+        }
+        .section-content {
+          margin-top: 12px !important;
+          margin-bottom: 8px !important;
+          clear: both !important;
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
+          -webkit-column-break-inside: avoid !important;
+        }
+        .experience-item, .education-item {
+          margin-bottom: 20px !important;
+          padding-bottom: 16px !important;
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
+          -webkit-column-break-inside: avoid !important;
+          clear: both;
+          display: block;
+        }
+        .experience-item:last-child, .education-item:last-child {
+          margin-bottom: 0 !important;
+          padding-bottom: 0 !important;
+        }
+        .header-section {
+          margin-bottom: 32px !important;
+          padding-bottom: 20px !important;
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
+          -webkit-column-break-inside: avoid !important;
+          clear: both;
+          display: block;
+        }
+        .skills-container {
+          margin-top: 12px !important;
+          margin-bottom: 12px !important;
+          clear: both;
+        }
+        .bullet-list {
+          margin-top: 12px !important;
+          margin-bottom: 12px !important;
+          padding-left: 20px !important;
+          clear: both;
+        }
+        .bullet-list li {
+          margin-bottom: 8px !important;
+          line-height: 1.6 !important;
+        }
+        .item-header {
+          margin-bottom: 8px !important;
+          clear: both;
+        }
+        .item-title {
+          margin-bottom: 4px !important;
+          clear: both;
+        }
+        .item-company {
+          margin-top: 4px !important;
+          margin-bottom: 8px !important;
+          clear: both;
+        }
+        .resume-container > * {
+          clear: both !important;
+        }
+        .resume-container .section + .section {
+          margin-top: 24px !important;
+        }
+        /* Ensure SortableSection wrapper also prevents page breaks */
+        .group {
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
+          -webkit-column-break-inside: avoid !important;
+        }
+        /* Prevent orphans and widows - keep at least 2 lines together */
+        .section-content {
+          orphans: 3 !important;
+          widows: 3 !important;
+        }
+        /* Ensure all items within a section stay together */
+        .section > .section-content > * {
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
+        }
+      `}</style>
       <div className="flex flex-col items-center" style={{ padding: '20px 0' }}>
         {pages.map((pageSections, pageIndex) => (
           <A4Page key={pageIndex} pageNumber={pageIndex + 1} totalPages={pages.length}>
@@ -770,6 +951,7 @@ const ResumeBuilder = () => {
   const [editingSection, setEditingSection] = useState(null);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [colorPickerSection, setColorPickerSection] = useState(null);
+  const [sectionTemplates, setSectionTemplates] = useState([]);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -783,6 +965,15 @@ const ResumeBuilder = () => {
 
   useEffect(() => {
     axios.get(`${api.baseURL}/resume-templates`).then((res) => setTemplates(res.data));
+    axios.get(`${api.baseURL}/section-templates`)
+      .then((res) => {
+        console.log("Section templates loaded:", res.data);
+        setSectionTemplates(res.data || []);
+      })
+      .catch(err => {
+        console.error("Error fetching section templates:", err);
+        setSectionTemplates([]);
+      });
   }, []);
 
   useEffect(() => {
@@ -913,10 +1104,17 @@ const ResumeBuilder = () => {
   };
 
   const handleDeleteSection = (sectionId) => {
-    setResume((prev) => ({
-      ...prev,
-      sectionOrder: prev.sectionOrder.filter(id => id !== sectionId)
-    }));
+    setResume((prev) => {
+      const updatedResume = {
+        ...prev,
+        sectionOrder: prev.sectionOrder.filter(id => id !== sectionId)
+      };
+      // If it's a custom section, also remove it from customSections
+      if (sectionId.startsWith('custom_')) {
+        updatedResume.customSections = (prev.customSections || []).filter(s => s.id !== sectionId);
+      }
+      return updatedResume;
+    });
     if (editingSection === sectionId) {
       setEditingSection(null);
     }
@@ -1288,6 +1486,123 @@ const ResumeBuilder = () => {
         );
       
       default:
+        // Check if it's a custom section
+        if (editingSection.startsWith('custom_')) {
+          const customSection = resume.customSections?.find(s => s.id === editingSection);
+          if (customSection) {
+            return (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Custom Section</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-semibold mb-2">Section Title</label>
+                    <Input
+                      value={customSection.title || ""}
+                      onChange={(e) => {
+                        const updatedSections = (resume.customSections || []).map(s =>
+                          s.id === editingSection ? { ...s, title: e.target.value } : s
+                        );
+                        onChange("customSections", updatedSections);
+                      }}
+                      placeholder="Enter section title"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold mb-2">Content Type</label>
+                    <select
+                      className="w-full px-3 py-2 border rounded"
+                      value={customSection.contentType || "text"}
+                      onChange={(e) => {
+                        const updatedSections = (resume.customSections || []).map(s =>
+                          s.id === editingSection ? { ...s, contentType: e.target.value } : s
+                        );
+                        onChange("customSections", updatedSections);
+                      }}
+                    >
+                      <option value="text">Text/Paragraph</option>
+                      <option value="list">Bullet List</option>
+                    </select>
+                  </div>
+                  {customSection.contentType === "list" ? (
+                    <div>
+                      <label className="block text-sm font-semibold mb-2">List Items (one per line)</label>
+                      <Textarea
+                        rows={6}
+                        value={(customSection.items || []).join("\n")}
+                        onChange={(e) => {
+                          const items = e.target.value.split("\n").filter(Boolean);
+                          const updatedSections = (resume.customSections || []).map(s =>
+                            s.id === editingSection ? { ...s, items } : s
+                          );
+                          onChange("customSections", updatedSections);
+                        }}
+                        placeholder="Enter list items, one per line"
+                      />
+                    </div>
+                  ) : (
+                    <div>
+                      <label className="block text-sm font-semibold mb-2">Content</label>
+                      <Textarea
+                        rows={6}
+                        value={customSection.content || ""}
+                        onChange={(e) => {
+                          const updatedSections = (resume.customSections || []).map(s =>
+                            s.id === editingSection ? { ...s, content: e.target.value } : s
+                          );
+                          onChange("customSections", updatedSections);
+                        }}
+                      placeholder="Enter section content"
+                    />
+                  </div>
+                  )}
+                  
+                  {/* Section Template Buttons - Always show this section */}
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <label className="block text-sm font-semibold mb-3">Quick Add Templates</label>
+                    {sectionTemplates.length > 0 ? (
+                      <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto">
+                        {sectionTemplates.map((template) => (
+                          <Button
+                            key={template.id}
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              // Determine if content should be list or text based on newlines
+                              const hasBullets = template.content.includes('\n-') || template.content.startsWith('-');
+                              const contentType = hasBullets ? 'list' : 'text';
+                              const items = hasBullets ? template.content.split('\n').filter(line => line.trim().startsWith('-')).map(line => line.replace(/^-\s*/, '').trim()) : [];
+                              
+                              const updatedSections = (resume.customSections || []).map(s =>
+                                s.id === editingSection ? {
+                                  ...s,
+                                  title: template.title,
+                                  contentType: contentType,
+                                  content: contentType === 'text' ? template.content : '',
+                                  items: contentType === 'list' ? items : []
+                                } : s
+                              );
+                              onChange("customSections", updatedSections);
+                            }}
+                            className="text-left justify-start h-auto py-2 px-3 hover:bg-blue-50"
+                          >
+                            <div className="flex flex-col items-start">
+                              <span className="font-medium text-xs">{template.title}</span>
+                              <span className="text-xs text-gray-500 mt-1 line-clamp-1">{template.content.substring(0, 50)}...</span>
+                            </div>
+                          </Button>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-xs text-gray-500 py-2">Loading templates...</div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          }
+        }
         return null;
     }
   };
@@ -1392,53 +1707,29 @@ const ResumeBuilder = () => {
           </Card>
         )}
 
-        {/* Add a New Section Button - Prominent */}
+        {/* Add Custom Section Button - Prominent */}
         <Button
           onClick={() => {
-            // Find the first available section that's not added
-            const sectionOrder = resume.sectionOrder || [];
-            const firstAvailable = availableSections.find(s => !sectionOrder.includes(s.id));
-            if (firstAvailable) {
-              setResume((prev) => {
-                const currentSectionOrder = prev.sectionOrder || [];
-                const updatedResume = {
-                  ...prev,
-                  sectionOrder: [...currentSectionOrder, firstAvailable.id]
-                };
-                // Initialize empty data
-                if (firstAvailable.id === 'experience' && (!prev.experience || prev.experience.length === 0)) {
-                  updatedResume.experience = [{ role: "", company: "", startDate: "", endDate: "", achievements: [] }];
-                } else if (firstAvailable.id === 'education' && (!prev.education || prev.education.length === 0)) {
-                  updatedResume.education = [{ degree: "", institution: "", fieldOfStudy: "", startDate: "", endDate: "" }];
-                } else if (firstAvailable.id === 'projects' && (!prev.projects || prev.projects.length === 0)) {
-                  updatedResume.projects = [{ name: "", description: "", link: "", technologies: [], startDate: "", endDate: "" }];
-                } else if (firstAvailable.id === 'certificates' && (!prev.certificates || prev.certificates.length === 0)) {
-                  updatedResume.certificates = [{ name: "", issuer: "", issueDate: "" }];
-                } else if (firstAvailable.id === 'languages' && (!prev.languages || prev.languages.length === 0)) {
-                  updatedResume.languages = [{ name: "", proficiency: "" }];
-                } else if (firstAvailable.id === 'summary' && !prev.summary) {
-                  updatedResume.summary = "";
-                } else if (firstAvailable.id === 'bio' && !prev.bio) {
-                  updatedResume.bio = "";
-                } else if (firstAvailable.id === 'skills' && (!prev.skills || prev.skills.length === 0)) {
-                  updatedResume.skills = [];
-                } else if (firstAvailable.id === 'achievements' && (!prev.achievements || prev.achievements.length === 0)) {
-                  updatedResume.achievements = [];
-                } else if (firstAvailable.id === 'hobbies' && (!prev.hobbies || prev.hobbies.length === 0)) {
-                  updatedResume.hobbies = [];
-                } else if (firstAvailable.id === 'personalInfo' && !prev.personalInfo) {
-                  updatedResume.personalInfo = { fullName: "", email: "", phone: "", location: "", title: "", profileImage: "", profileImageStyle: {} };
-                }
-                return updatedResume;
-              });
-              setEditingSection(firstAvailable.id);
-            }
+            const newSectionId = `custom_${Date.now()}`;
+            const newCustomSection = {
+              id: newSectionId,
+              title: "New Section",
+              contentType: "text",
+              content: "",
+              items: []
+            };
+            setResume((prev) => ({
+              ...prev,
+              customSections: [...(prev.customSections || []), newCustomSection],
+              sectionOrder: [...(prev.sectionOrder || []), newSectionId]
+            }));
+            setEditingSection(newSectionId);
           }}
           className="w-full mb-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 shadow-lg"
           size="lg"
         >
           <Plus className="w-5 h-5 mr-2" />
-          Add a New Section
+          Add Custom Section
         </Button>
 
         {/* Add Section Button */}
@@ -1677,7 +1968,7 @@ const ResumeBuilder = () => {
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 px-8 max-w-7xl mx-auto">
               {templates.map((t, index) => {
-                const thumbnailPath = getTemplateThumbnail(t.name) || t.previewUrl;
+                const thumbnailPath = t.thumbnailUrl || t.previewUrl;
                 // Vibrant color schemes for each card
                 const cardColors = [
                   { bg: 'from-purple-500 to-pink-500', border: 'border-purple-400', accent: 'bg-purple-500' },
@@ -1924,11 +2215,19 @@ const ResumeBuilder = () => {
                       colors={resume.colors}
                       onImageStyleUpdate={(style) => onChange("personalInfo.profileImageStyle", style)}
                       onSectionTitleUpdate={(sectionId, newTitle) => {
-                        const currentTitles = resume.sectionTitles || {};
-                        onChange("sectionTitles", {
-                          ...currentTitles,
-                          [sectionId]: newTitle
-                        });
+                        // Handle custom sections differently
+                        if (sectionId.startsWith('custom_')) {
+                          const updatedSections = (resume.customSections || []).map(s =>
+                            s.id === sectionId ? { ...s, title: newTitle } : s
+                          );
+                          onChange("customSections", updatedSections);
+                        } else {
+                          const currentTitles = resume.sectionTitles || {};
+                          onChange("sectionTitles", {
+                            ...currentTitles,
+                            [sectionId]: newTitle
+                          });
+                        }
                       }}
                     />
                   </SortableContext>

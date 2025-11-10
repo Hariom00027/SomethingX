@@ -25,6 +25,7 @@ public class ResumeTemplate {
     private String templateJson; // JSON document structure template
     private boolean hasProfileImage; // Whether this template supports profile images
     private String layoutType; // "single-column", "two-column", "sidebar", "modern", "classic"
+    private String thumbnailUrl; // URL/path to the template thumbnail image
 }
 
 

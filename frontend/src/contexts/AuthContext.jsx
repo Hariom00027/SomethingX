@@ -67,6 +67,26 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const adminLogin = async (username, password) => {
+    try {
+      const response = await apiClient.post('/auth/admin/login', {
+        username,
+        password
+      });
+
+      const { token: newToken, user: userData } = response.data;
+      
+      setToken(newToken);
+      setUser(userData);
+      localStorage.setItem('token', newToken);
+      
+      return { success: true, user: userData };
+    } catch (error) {
+      console.error('Admin login failed:', error);
+      return { success: false, error: error.response?.data?.message || error.message };
+    }
+  };
+
   const logout = () => {
     setUser(null);
     setToken(null);
@@ -89,6 +109,7 @@ export const AuthProvider = ({ children }) => {
     token,
     loading,
     login,
+    adminLogin,
     logout,
     updateProfile,
     isAuthenticated: !!user

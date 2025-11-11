@@ -32,6 +32,7 @@ import RoleReadyFreshersRequest from "./pages/industry/RoleReadyFreshersRequest"
 import AiInterview from "./pages/industry/AiInterview";
 import AdminDashboard from "./pages/AdminDashboard";
 import ResumeReview from "./pages/admin/ResumeReview";
+import IndustryTrainingRequests from "./pages/admin/IndustryTrainingRequests";
 
 function App() {
   return (
@@ -185,6 +186,7 @@ function App() {
           {/* Admin */}
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/resume-review" element={<ResumeReview />} />
+          <Route path="/admin/industry-training" element={<IndustryTrainingRequests />} />
         </Routes>
       </Router>
     </AuthProvider>

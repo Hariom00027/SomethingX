@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -45,31 +45,41 @@ const RoleReadyFreshers = () => {
     fetchTrainings();
   }, []);
 
-  useEffect(() => {
-    const loadRequestsAndNotifications = async () => {
-      if (!user?.email) {
-        return;
-      }
-      try {
-        setRequestsLoading(true);
-        setRequestsError("");
-        const params = { params: { contactEmail: user.email } };
-        const [requestsResponse, notificationsResponse] = await Promise.all([
-          apiClient.get("/industry-training/requests", params),
-          apiClient.get("/industry-training/notifications", params),
-        ]);
-        setRequests(requestsResponse.data ?? []);
-        setNotifications(notificationsResponse.data ?? []);
-      } catch (err) {
-        console.error("Failed to load training requests or notifications", err);
-        setRequestsError("Unable to load your training requests right now.");
-      } finally {
-        setRequestsLoading(false);
-      }
-    };
-
-    loadRequestsAndNotifications();
+  const loadRequestsAndNotifications = useCallback(async () => {
+    if (!user?.email) {
+      return;
+    }
+    try {
+      setRequestsLoading(true);
+      setRequestsError("");
+      const params = { params: { contactEmail: user.email } };
+      const [requestsResponse, notificationsResponse] = await Promise.all([
+        apiClient.get("/industry-training/requests", params),
+        apiClient.get("/industry-training/notifications", params),
+      ]);
+      setRequests(requestsResponse.data ?? []);
+      setNotifications(notificationsResponse.data ?? []);
+    } catch (err) {
+      console.error("Failed to load training requests or notifications", err);
+      setRequestsError("Unable to load your training requests right now.");
+    } finally {
+      setRequestsLoading(false);
+    }
   }, [user?.email]);
+
+  useEffect(() => {
+    loadRequestsAndNotifications();
+  }, [loadRequestsAndNotifications]);
+
+  useEffect(() => {
+    if (!user?.email) {
+      return;
+    }
+    const interval = setInterval(() => {
+      loadRequestsAndNotifications();
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [user?.email, loadRequestsAndNotifications]);
 
   const markNotificationAsRead = async (notificationId) => {
     try {
@@ -126,7 +136,13 @@ const RoleReadyFreshers = () => {
             <Button
               type="button"
               variant="outline"
-              onClick={() => setShowNotifications((prev) => !prev)}
+              onClick={async () => {
+                const nextValue = !showNotifications;
+                setShowNotifications(nextValue);
+                if (!showNotifications) {
+                  await loadRequestsAndNotifications();
+                }
+              }}
               className="relative"
             >
               <Bell className="mr-2 h-4 w-4" />

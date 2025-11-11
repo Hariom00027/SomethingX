@@ -40,7 +40,21 @@ public class IndustryTrainingRequest {
     private String otherRequirements;
 
     private String additionalNotes;
+
     private String status = "PENDING";
     private Instant createdAt = Instant.now();
+    private Instant updatedAt = Instant.now();
+
+    private String adminPricingDetails;
+    private String adminContactName;
+    private String adminContactEmail;
+    private String adminContactPhone;
+    private String adminMessage;
+    private String adminResourceLink;
+    private String adminSchedule;
+    private Instant adminRespondedAt;
+
+    private Boolean notificationSent = Boolean.FALSE;
+    private Instant notificationSentAt;
 }
 

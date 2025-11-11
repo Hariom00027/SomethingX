@@ -154,11 +154,9 @@ public class TemplateInitializationService implements CommandLineRunner {
                 return;
             }
 
-            // Check if templates already exist
-            if (sectionTemplateRepository.count() > 0) {
-                System.out.println("Section templates already exist. Skipping initialization.");
-                return;
-            }
+            // Get all existing sections to check for duplicates
+            List<SectionTemplate> existingSections = sectionTemplateRepository.findAll();
+            long initialCount = existingSections.size();
 
             InputStream inputStream = resource.getInputStream();
             List<Map<String, Object>> sectionDataList = objectMapper.readValue(
@@ -166,18 +164,41 @@ public class TemplateInitializationService implements CommandLineRunner {
                     new TypeReference<List<Map<String, Object>>>() {}
             );
 
+            int addedCount = 0;
+            int skippedCount = 0;
+
             // Process each section template from JSON
             for (Map<String, Object> sectionData : sectionDataList) {
+                String title = (String) sectionData.get("title");
+                
+                // Check if section with this title already exists
+                boolean exists = existingSections.stream()
+                        .anyMatch(s -> title != null && title.equals(s.getTitle()));
+                
+                if (exists) {
+                    System.out.println("Section template already exists, skipping: " + title);
+                    skippedCount++;
+                    continue;
+                }
+
+                // Create new section template
                 SectionTemplate template = new SectionTemplate();
-                template.setTitle((String) sectionData.get("title"));
+                template.setTitle(title);
                 template.setContent((String) sectionData.get("content"));
+                template.setContentType("text"); // Default to text type
+                template.setIcon("📄"); // Default icon
+                template.setColor("bg-gray-100 hover:bg-gray-200"); // Default color
                 template.setActive(true);
 
                 sectionTemplateRepository.save(template);
                 System.out.println("Created section template: " + template.getTitle());
+                addedCount++;
             }
 
-            System.out.println("Section template initialization completed. Total templates: " + sectionTemplateRepository.count());
+            System.out.println("Section template initialization completed.");
+            System.out.println("Initial sections: " + initialCount);
+            System.out.println("Added: " + addedCount + ", Skipped: " + skippedCount);
+            System.out.println("Total templates: " + sectionTemplateRepository.count());
         } catch (Exception e) {
             System.err.println("Error initializing section templates: " + e.getMessage());
             e.printStackTrace();

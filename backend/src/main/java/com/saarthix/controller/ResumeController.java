@@ -4,22 +4,26 @@ import com.saarthix.model.Resume;
 import com.saarthix.repository.ResumeRepository;
 import com.saarthix.repository.ResumeTemplateRepository;
 import com.saarthix.service.PdfRenderService;
+import com.saarthix.service.ResumeParsingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/resumes")
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5173"})
 @RequiredArgsConstructor
 public class ResumeController {
 
     private final ResumeRepository resumeRepository;
     private final ResumeTemplateRepository templateRepository;
     private final PdfRenderService pdfRenderService;
+    private final ResumeParsingService resumeParsingService;
 
     @PostMapping
     public Resume createResume(@RequestBody Resume resume) {
@@ -63,5 +67,35 @@ public class ResumeController {
         var template = templateRepository.findById(resume.getTemplateId()).orElse(null);
         if (template == null) return "<html><body><h1>Template not found</h1></body></html>";
         return pdfRenderService.generateHtmlContent(resume, template);
+    }
+
+    @PostMapping(value = "/parse", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> parseResume(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("templateId") String templateId,
+            @RequestParam("studentId") String studentId) {
+        try {
+            if (file == null || file.isEmpty()) {
+                return ResponseEntity.badRequest().body(java.util.Map.of("error", "File is empty or null"));
+            }
+
+            System.out.println("Parsing resume - File: " + file.getOriginalFilename() + ", Size: " + file.getSize());
+            System.out.println("TemplateId: " + templateId + ", StudentId: " + studentId);
+
+            Resume parsedResume = resumeParsingService.parseResume(file, templateId, studentId);
+            
+            System.out.println("Parsed resume successfully. PersonalInfo: " + (parsedResume.getPersonalInfo() != null ? "present" : "null"));
+            System.out.println("Experience count: " + (parsedResume.getExperience() != null ? parsedResume.getExperience().size() : 0));
+            System.out.println("Education count: " + (parsedResume.getEducation() != null ? parsedResume.getEducation().size() : 0));
+            
+            return ResponseEntity.ok(parsedResume);
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.err.println("Error parsing resume: " + e.getMessage());
+            return ResponseEntity.status(500).body(java.util.Map.of(
+                "error", "Failed to parse resume",
+                "message", e.getMessage() != null ? e.getMessage() : "Unknown error"
+            ));
+        }
     }
 }

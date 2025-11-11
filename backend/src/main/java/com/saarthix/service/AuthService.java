@@ -3,6 +3,8 @@ package com.saarthix.service;
 import com.saarthix.model.User;
 import com.saarthix.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -15,6 +17,7 @@ public class AuthService {
     
     private final UserRepository userRepository;
     private final JwtUtil jwtUtil;
+    private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
     
     public User createOrUpdateUser(String googleId, String email, String name, String picture) {
         Optional<User> existingUser = userRepository.findByGoogleId(googleId);
@@ -72,6 +75,30 @@ public class AuthService {
     
     public Optional<User> getUserByEmail(String email) {
         return userRepository.findByEmail(email);
+    }
+    
+    public Optional<User> getUserByUsername(String username) {
+        return userRepository.findByUsername(username);
+    }
+    
+    public User authenticateAdmin(String username, String password) {
+        Optional<User> userOpt = userRepository.findByUsername(username);
+        if (userOpt.isPresent()) {
+            User user = userOpt.get();
+            // Check if user has ADMIN role
+            if (user.getRoles() != null && user.getRoles().contains("ADMIN")) {
+                // Verify password
+                if (user.getPassword() != null && passwordEncoder.matches(password, user.getPassword())) {
+                    user.setLastLoginAt(LocalDateTime.now());
+                    return userRepository.save(user);
+                }
+            }
+        }
+        return null;
+    }
+    
+    public String hashPassword(String plainPassword) {
+        return passwordEncoder.encode(plainPassword);
     }
     
     public User updateUserProfile(String userId, User updatedUser) {

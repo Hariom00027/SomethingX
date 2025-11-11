@@ -184,9 +184,21 @@ function App() {
           } />
           
           {/* Admin */}
-          <Route path="/admin/dashboard" element={<AdminDashboard />} />
-          <Route path="/admin/resume-review" element={<ResumeReview />} />
-          <Route path="/admin/industry-training" element={<IndustryTrainingRequests />} />
+          <Route path="/admin/dashboard" element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <AdminDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/resume-review" element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <ResumeReview />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/industry-training" element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <IndustryTrainingRequests />
+            </ProtectedRoute>
+          } />
         </Routes>
       </Router>
     </AuthProvider>

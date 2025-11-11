@@ -1240,7 +1240,11 @@ const ResumeBuilder = () => {
 
   useEffect(() => {
     axios.get(`${api.baseURL}/resume-templates`).then((res) => setTemplates(res.data));
-    axios.get(`${api.baseURL}/section-templates`)
+    // Fetch pre-made section templates
+    const sectionTemplatesUrl = api.baseURL 
+      ? `${api.baseURL}/api/admin/section-templates`
+      : '/api/admin/section-templates';
+    axios.get(sectionTemplatesUrl)
       .then((res) => {
         console.log("Section templates loaded:", res.data);
         setSectionTemplates(res.data || []);
@@ -2088,6 +2092,55 @@ const ResumeBuilder = () => {
                     <div className="flex items-center gap-2">
                       <span className="text-sm">{section.icon}</span>
                       <span className="font-medium">{section.label}</span>
+                    </div>
+                    {isAdded && (
+                      <span className="text-xs bg-green-500 text-white px-1.5 py-0.5 rounded">Added</span>
+                    )}
+                  </Button>
+                );
+              })}
+              
+              {/* Pre-made Sections from Database */}
+              {sectionTemplates.filter(template => template.isActive).map(template => {
+                const sectionOrder = resume.sectionOrder || [];
+                const customSections = resume.customSections || [];
+                const templateSectionId = `template_${template.id}`;
+                const isAdded = customSections.some(s => s.id === templateSectionId);
+                
+                return (
+                  <Button
+                    key={template.id}
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      // Add pre-made section as custom section if not already added
+                      if (!isAdded) {
+                        const newSectionId = templateSectionId;
+                        const newCustomSection = {
+                          id: newSectionId,
+                          title: template.title,
+                          contentType: template.contentType || 'text',
+                          content: template.content || '',
+                          items: template.items || []
+                        };
+                        setResume((prev) => ({
+                          ...prev,
+                          customSections: [...(prev.customSections || []), newCustomSection],
+                          sectionOrder: [...(prev.sectionOrder || []), newSectionId]
+                        }));
+                        setEditingSection(newSectionId);
+                      } else {
+                        // If already added, just edit it
+                        setEditingSection(templateSectionId);
+                      }
+                    }}
+                    className={`flex items-center justify-between transition-all ${template.color || 'bg-gray-100 hover:bg-gray-200'} border-0 text-xs ${isAdded ? 'opacity-75' : ''}`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm">{template.icon || '📄'}</span>
+                      <span className="font-medium">{template.title}</span>
                     </div>
                     {isAdded && (
                       <span className="text-xs bg-green-500 text-white px-1.5 py-0.5 rounded">Added</span>

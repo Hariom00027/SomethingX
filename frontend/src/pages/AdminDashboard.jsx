@@ -8,7 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 const AdminDashboard = () => {
-  const [activeSection, setActiveSection] = useState('blueprint'); // 'blueprint' or 'resume-review'
+  const [activeSection, setActiveSection] = useState(null); // null, 'blueprint', 'resume-sections', or 'resume-review'
   const [blueprints, setBlueprints] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [showMappingManager, setShowMappingManager] = useState(false);
@@ -23,9 +23,25 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
+  // Section Templates state
+  const [sectionTemplates, setSectionTemplates] = useState([]);
+  const [showSectionForm, setShowSectionForm] = useState(false);
+  const [editingSectionTemplate, setEditingSectionTemplate] = useState(null);
+  const [sectionFormData, setSectionFormData] = useState({
+    title: '',
+    contentType: 'text',
+    content: '',
+    items: [],
+    icon: '📄',
+    color: 'bg-gray-100 hover:bg-gray-200',
+    isActive: true
+  });
+
   useEffect(() => {
     if (activeSection === 'blueprint') {
       fetchBlueprints();
+    } else if (activeSection === 'resume-sections') {
+      fetchSectionTemplates();
     }
   }, [activeSection]);
 
@@ -137,6 +153,110 @@ const AdminDashboard = () => {
     }
   };
 
+  // Section Templates functions
+  const fetchSectionTemplates = async () => {
+    try {
+      const response = await axios.get('http://localhost:8080/api/admin/section-templates/all');
+      setSectionTemplates(response.data);
+    } catch (error) {
+      console.error('Error fetching section templates:', error);
+    }
+  };
+
+  const handleSectionInputChange = (e) => {
+    const { name, value } = e.target;
+    setSectionFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const addSectionItem = () => {
+    setSectionFormData(prev => ({
+      ...prev,
+      items: [...(prev.items || []), '']
+    }));
+  };
+
+  const updateSectionItem = (index, value) => {
+    setSectionFormData(prev => ({
+      ...prev,
+      items: prev.items.map((item, i) => i === index ? value : item)
+    }));
+  };
+
+  const removeSectionItem = (index) => {
+    setSectionFormData(prev => ({
+      ...prev,
+      items: prev.items.filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleSectionSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      if (editingSectionTemplate) {
+        await axios.put(`http://localhost:8080/api/admin/section-templates/${editingSectionTemplate.id}`, sectionFormData);
+      } else {
+        await axios.post('http://localhost:8080/api/admin/section-templates', sectionFormData);
+      }
+      
+      setShowSectionForm(false);
+      setEditingSectionTemplate(null);
+      setSectionFormData({
+        title: '',
+        contentType: 'text',
+        content: '',
+        items: [],
+        icon: '📄',
+        color: 'bg-gray-100 hover:bg-gray-200',
+        isActive: true
+      });
+      fetchSectionTemplates();
+    } catch (error) {
+      console.error('Error saving section template:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSectionEdit = (template) => {
+    setEditingSectionTemplate(template);
+    setSectionFormData({
+      title: template.title || '',
+      contentType: template.contentType || 'text',
+      content: template.content || '',
+      items: template.items || [],
+      icon: template.icon || '📄',
+      color: template.color || 'bg-gray-100 hover:bg-gray-200',
+      isActive: template.isActive !== undefined ? template.isActive : true
+    });
+    setShowSectionForm(true);
+  };
+
+  const handleSectionDelete = async (id) => {
+    if (window.confirm('Are you sure you want to delete this section template?')) {
+      try {
+        await axios.delete(`http://localhost:8080/api/admin/section-templates/${id}`);
+        fetchSectionTemplates();
+      } catch (error) {
+        console.error('Error deleting section template:', error);
+      }
+    }
+  };
+
+  const toggleSectionActive = async (template) => {
+    try {
+      const updatedTemplate = { ...template, isActive: !template.isActive };
+      await axios.put(`http://localhost:8080/api/admin/section-templates/${template.id}`, updatedTemplate);
+      fetchSectionTemplates();
+    } catch (error) {
+      console.error('Error updating section template:', error);
+    }
+  };
+
   return (
     <div className="container mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
@@ -151,6 +271,13 @@ const AdminDashboard = () => {
           className="text-lg px-6 py-3"
         >
           Blueprint Settings
+        </Button>
+        <Button
+          onClick={() => setActiveSection('resume-sections')}
+          variant={activeSection === 'resume-sections' ? 'default' : 'outline'}
+          className="text-lg px-6 py-3"
+        >
+          Resume Sections
         </Button>
         <Button
           onClick={() => navigate('/admin/resume-review')}
@@ -383,6 +510,199 @@ const AdminDashboard = () => {
         ))}
       </div>
       </>
+      )}
+
+      {activeSection === 'resume-sections' && (
+        <>
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-semibold">Pre-made Resume Sections</h2>
+            <Button onClick={() => setShowSectionForm(true)}>
+              Create New Section
+            </Button>
+          </div>
+
+          {showSectionForm && (
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle>{editingSectionTemplate ? 'Edit Section Template' : 'Create New Section Template'}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleSectionSubmit} className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Title</label>
+                      <Input
+                        name="title"
+                        value={sectionFormData.title}
+                        onChange={handleSectionInputChange}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Content Type</label>
+                      <select
+                        name="contentType"
+                        value={sectionFormData.contentType}
+                        onChange={handleSectionInputChange}
+                        className="w-full p-2 border border-gray-300 rounded-md"
+                        required
+                      >
+                        <option value="text">Text</option>
+                        <option value="list">List</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Icon (Emoji)</label>
+                      <Input
+                        name="icon"
+                        value={sectionFormData.icon}
+                        onChange={handleSectionInputChange}
+                        placeholder="📄"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Color Class</label>
+                      <Input
+                        name="color"
+                        value={sectionFormData.color}
+                        onChange={handleSectionInputChange}
+                        placeholder="bg-gray-100 hover:bg-gray-200"
+                      />
+                    </div>
+                  </div>
+
+                  {sectionFormData.contentType === 'text' ? (
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Content</label>
+                      <Textarea
+                        name="content"
+                        value={sectionFormData.content}
+                        onChange={handleSectionInputChange}
+                        rows={4}
+                      />
+                    </div>
+                  ) : (
+                    <div>
+                      <div className="flex justify-between items-center mb-2">
+                        <label className="block text-sm font-medium">List Items</label>
+                        <Button type="button" onClick={addSectionItem} variant="outline">
+                          Add Item
+                        </Button>
+                      </div>
+                      {sectionFormData.items.map((item, index) => (
+                        <div key={index} className="flex gap-2 mb-2">
+                          <Input
+                            value={item}
+                            onChange={(e) => updateSectionItem(index, e.target.value)}
+                            placeholder={`Item ${index + 1}`}
+                          />
+                          <Button
+                            type="button"
+                            onClick={() => removeSectionItem(index)}
+                            variant="destructive"
+                            size="sm"
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="isActive"
+                      checked={sectionFormData.isActive}
+                      onChange={(e) => setSectionFormData(prev => ({ ...prev, isActive: e.target.checked }))}
+                      className="w-4 h-4"
+                    />
+                    <label htmlFor="isActive" className="text-sm font-medium">Active</label>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button type="submit" disabled={loading}>
+                      {loading ? 'Saving...' : (editingSectionTemplate ? 'Update' : 'Create')}
+                    </Button>
+                    <Button type="button" variant="outline" onClick={() => {
+                      setShowSectionForm(false);
+                      setEditingSectionTemplate(null);
+                      setSectionFormData({
+                        title: '',
+                        contentType: 'text',
+                        content: '',
+                        items: [],
+                        icon: '📄',
+                        color: 'bg-gray-100 hover:bg-gray-200',
+                        isActive: true
+                      });
+                    }}>
+                      Cancel
+                    </Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {sectionTemplates.map((template) => (
+              <Card key={template.id}>
+                <CardHeader>
+                  <CardTitle className="flex justify-between items-center">
+                    <span className="flex items-center gap-2">
+                      <span>{template.icon}</span>
+                      {template.title}
+                    </span>
+                    <span className={`px-2 py-1 text-xs rounded-full ${
+                      template.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                    }`}>
+                      {template.isActive ? 'Active' : 'Inactive'}
+                    </span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-xs text-gray-500 mb-2">Type: {template.contentType}</p>
+                  {template.contentType === 'text' ? (
+                    <p className="text-sm text-gray-600 mb-4 line-clamp-2">{template.content}</p>
+                  ) : (
+                    <p className="text-sm text-gray-600 mb-4">{template.items?.length || 0} items</p>
+                  )}
+                  
+                  <div className="space-y-2">
+                    <Button
+                      onClick={() => handleSectionEdit(template)}
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      onClick={() => toggleSectionActive(template)}
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                    >
+                      {template.isActive ? 'Deactivate' : 'Activate'}
+                    </Button>
+                    <Button
+                      onClick={() => handleSectionDelete(template.id)}
+                      variant="destructive"
+                      size="sm"
+                      className="w-full"
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </>
       )}
     </div>
   );

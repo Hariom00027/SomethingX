@@ -8,5 +8,6 @@ import java.util.List;
 public interface IndustryTrainingRequestRepository extends MongoRepository<IndustryTrainingRequest, String> {
     List<IndustryTrainingRequest> findByTrainingId(String trainingId);
     List<IndustryTrainingRequest> findByContactEmail(String contactEmail);
+    List<IndustryTrainingRequest> findByStatus(String status);
 }
 

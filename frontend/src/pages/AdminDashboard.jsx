@@ -159,6 +159,13 @@ const AdminDashboard = () => {
         >
           Resume Review
         </Button>
+        <Button
+          onClick={() => navigate('/admin/industry-training')}
+          variant="outline"
+          className="text-lg px-6 py-3"
+        >
+          Industry Training
+        </Button>
       </div>
 
       {activeSection === 'blueprint' && (

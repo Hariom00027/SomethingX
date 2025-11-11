@@ -5,7 +5,7 @@ import { Input } from '../components/ui/input';
 import { Textarea } from '../components/ui/textarea';
 import RoleMappingManager from '../components/admin/RoleMappingManager';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import apiClient from '../lib/apiClient';
 
 const AdminDashboard = () => {
   const [activeSection, setActiveSection] = useState(null); // null, 'blueprint', 'resume-sections', or 'resume-review'
@@ -47,7 +47,7 @@ const AdminDashboard = () => {
 
   const fetchBlueprints = async () => {
     try {
-      const response = await axios.get('http://localhost:8080/api/admin/blueprints');
+      const response = await apiClient.get('/admin/blueprints');
       setBlueprints(response.data);
     } catch (error) {
       console.error('Error fetching blueprints:', error);
@@ -98,9 +98,9 @@ const AdminDashboard = () => {
 
     try {
       if (editingBlueprint) {
-        await axios.put(`http://localhost:8080/api/admin/blueprints/${editingBlueprint.id}`, formData);
+        await apiClient.put(`/admin/blueprints/${editingBlueprint.id}`, formData);
       } else {
-        await axios.post('http://localhost:8080/api/admin/blueprints', formData);
+        await apiClient.post('/admin/blueprints', formData);
       }
       
       setShowForm(false);
@@ -135,7 +135,7 @@ const AdminDashboard = () => {
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this blueprint?')) {
       try {
-        await axios.delete(`http://localhost:8080/api/admin/blueprints/${id}`);
+        await apiClient.delete(`/admin/blueprints/${id}`);
         fetchBlueprints();
       } catch (error) {
         console.error('Error deleting blueprint:', error);
@@ -146,7 +146,7 @@ const AdminDashboard = () => {
   const toggleActive = async (blueprint) => {
     try {
       const updatedBlueprint = { ...blueprint, isActive: !blueprint.isActive };
-      await axios.put(`http://localhost:8080/api/admin/blueprints/${blueprint.id}`, updatedBlueprint);
+      await apiClient.put(`/admin/blueprints/${blueprint.id}`, updatedBlueprint);
       fetchBlueprints();
     } catch (error) {
       console.error('Error updating blueprint:', error);
@@ -156,7 +156,7 @@ const AdminDashboard = () => {
   // Section Templates functions
   const fetchSectionTemplates = async () => {
     try {
-      const response = await axios.get('http://localhost:8080/api/admin/section-templates/all');
+      const response = await apiClient.get('/admin/section-templates/all');
       setSectionTemplates(response.data);
     } catch (error) {
       console.error('Error fetching section templates:', error);
@@ -198,9 +198,9 @@ const AdminDashboard = () => {
 
     try {
       if (editingSectionTemplate) {
-        await axios.put(`http://localhost:8080/api/admin/section-templates/${editingSectionTemplate.id}`, sectionFormData);
+        await apiClient.put(`/admin/section-templates/${editingSectionTemplate.id}`, sectionFormData);
       } else {
-        await axios.post('http://localhost:8080/api/admin/section-templates', sectionFormData);
+        await apiClient.post('/admin/section-templates', sectionFormData);
       }
       
       setShowSectionForm(false);
@@ -239,7 +239,7 @@ const AdminDashboard = () => {
   const handleSectionDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this section template?')) {
       try {
-        await axios.delete(`http://localhost:8080/api/admin/section-templates/${id}`);
+        await apiClient.delete(`/admin/section-templates/${id}`);
         fetchSectionTemplates();
       } catch (error) {
         console.error('Error deleting section template:', error);
@@ -250,7 +250,7 @@ const AdminDashboard = () => {
   const toggleSectionActive = async (template) => {
     try {
       const updatedTemplate = { ...template, isActive: !template.isActive };
-      await axios.put(`http://localhost:8080/api/admin/section-templates/${template.id}`, updatedTemplate);
+      await apiClient.put(`/admin/section-templates/${template.id}`, updatedTemplate);
       fetchSectionTemplates();
     } catch (error) {
       console.error('Error updating section template:', error);

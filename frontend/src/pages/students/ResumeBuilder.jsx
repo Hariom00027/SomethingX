@@ -25,7 +25,7 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, Edit3, Eye, Palette, Save, Download, EyeOff, ArrowLeft, FileText, Sparkles, X, CheckCircle2, Loader2, Plus, Trash2, Image as ImageIcon, Move, Maximize2 } from "lucide-react";
+import { GripVertical, Edit3, Eye, Palette, Save, Download, EyeOff, ArrowLeft, FileText, Sparkles, X, CheckCircle2, Loader2, Plus, Trash2, Image as ImageIcon, Move, Maximize2, Upload, File } from "lucide-react";
 
 // Draggable and Resizable Image Component
 const DraggableResizableImage = ({ src, onUpdate, style, isEditing }) => {
@@ -368,6 +368,279 @@ const EditableSectionTitle = ({ sectionId, title, isEditing, onUpdate, defaultTi
         position: 'relative'
       }}
     />
+  );
+};
+
+// Resume Upload Component
+const ResumeUploadComponent = ({ templateId, studentId, onResumeParsed, onCancel, uploading, setUploading }) => {
+  const [dragActive, setDragActive] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [error, setError] = useState("");
+
+  const handleDrag = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFile(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handleFileInput = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      handleFile(e.target.files[0]);
+    }
+  };
+
+  const handleFile = (file) => {
+    // Validate file type
+    const validTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/msword'];
+    const validExtensions = ['.pdf', '.docx', '.doc'];
+    
+    const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+    const isValidType = validTypes.includes(file.type) || validExtensions.includes(fileExtension);
+
+    if (!isValidType) {
+      setError("Please upload a PDF or DOCX file");
+      return;
+    }
+
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      setError("File size must be less than 10MB");
+      return;
+    }
+
+    setError("");
+    setSelectedFile(file);
+  };
+
+  const uploadAndParse = async () => {
+    if (!selectedFile) {
+      setError("Please select a file first");
+      return;
+    }
+
+    setUploading(true);
+    setError("");
+
+    try {
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+      formData.append('templateId', templateId);
+      formData.append('studentId', studentId);
+
+      // When baseURL is empty (dev mode), use /api prefix for proxy
+      // When baseURL is set (production), use it directly
+      const parseUrl = api.baseURL 
+        ? `${api.baseURL}/resumes/parse` 
+        : '/api/resumes/parse';
+      
+      console.log("Uploading resume for parsing...", {
+        fileName: selectedFile.name,
+        fileSize: selectedFile.size,
+        templateId,
+        studentId,
+        url: parseUrl,
+        baseURL: api.baseURL
+      });
+
+      const response = await axios.post(parseUrl, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      console.log("Parse response received:", response);
+      console.log("Parsed resume data:", response.data);
+
+      if (response.data) {
+        // Ensure the resume has all required fields
+        const parsedResume = {
+          ...response.data,
+          studentId: response.data.studentId || studentId,
+          templateId: response.data.templateId || templateId,
+          // Ensure arrays are initialized
+          education: response.data.education || [],
+          experience: response.data.experience || [],
+          projects: response.data.projects || [],
+          skills: response.data.skills || [],
+          achievements: response.data.achievements || [],
+          certificates: response.data.certificates || [],
+          languages: response.data.languages || [],
+          hobbies: response.data.hobbies || [],
+          links: response.data.links || [],
+          customSections: response.data.customSections || [],
+          sectionOrder: response.data.sectionOrder || [
+            'personalInfo',
+            'summary', 
+            'bio',
+            'experience',
+            'education',
+            'projects',
+            'skills',
+            'achievements',
+            'certificates',
+            'languages',
+            'hobbies'
+          ],
+          colors: response.data.colors || {
+            primary: '#2563eb',
+            secondary: '#64748b',
+            accent: '#3b82f6'
+          },
+          sectionTitles: response.data.sectionTitles || {},
+          personalInfo: {
+            ...(response.data.personalInfo || {}),
+            profileImage: response.data.personalInfo?.profileImage || "",
+            profileImageStyle: response.data.personalInfo?.profileImageStyle || {}
+          }
+        };
+
+        console.log("Final parsed resume to set:", parsedResume);
+        onResumeParsed(parsedResume);
+      } else {
+        setError("Failed to parse resume. No data received from server.");
+      }
+    } catch (err) {
+      console.error("Error parsing resume:", err);
+      console.error("Error response:", err.response);
+      const errorMessage = err.response?.data?.message || 
+                           err.response?.data?.error || 
+                           err.message || 
+                           "Failed to parse resume. Please try again or use manual entry.";
+      setError(errorMessage);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <DashboardLayout>
+      <div className="min-h-screen bg-gradient-to-br from-violet-400 via-purple-400 via-pink-400 to-orange-400 py-12 relative overflow-hidden">
+        <div className="relative z-10 max-w-3xl mx-auto px-4">
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-br from-yellow-400 via-pink-500 to-purple-600 mb-6 shadow-2xl">
+              <Upload className="w-12 h-12 text-white" />
+            </div>
+            <h2 className="text-4xl font-extrabold mb-4 text-white drop-shadow-lg">
+              Upload Your Resume
+            </h2>
+            <p className="text-white/90 text-lg font-semibold drop-shadow-md">
+              Upload your existing resume and we'll extract the information for you
+            </p>
+          </div>
+
+          <Card className="bg-white/95 backdrop-blur-sm shadow-2xl border-0">
+            <CardContent className="p-8">
+              {/* Drag and Drop Area */}
+              <div
+                onDragEnter={handleDrag}
+                onDragLeave={handleDrag}
+                onDragOver={handleDrag}
+                onDrop={handleDrop}
+                className={`border-2 border-dashed rounded-xl p-12 text-center transition-all duration-300 ${
+                  dragActive
+                    ? 'border-blue-500 bg-blue-50'
+                    : selectedFile
+                    ? 'border-green-500 bg-green-50'
+                    : 'border-gray-300 bg-gray-50 hover:border-blue-400 hover:bg-blue-50'
+                }`}
+              >
+                {uploading ? (
+                  <div className="flex flex-col items-center">
+                    <Loader2 className="w-16 h-16 text-blue-600 animate-spin mb-4" />
+                    <p className="text-lg font-semibold text-gray-700">Parsing your resume...</p>
+                    <p className="text-sm text-gray-500 mt-2">This may take a few moments</p>
+                  </div>
+                ) : selectedFile ? (
+                  <div className="flex flex-col items-center">
+                    <CheckCircle2 className="w-16 h-16 text-green-600 mb-4" />
+                    <p className="text-lg font-semibold text-gray-700 mb-2">{selectedFile.name}</p>
+                    <p className="text-sm text-gray-500 mb-4">
+                      {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                    </p>
+                    <div className="flex gap-3">
+                      <Button
+                        onClick={uploadAndParse}
+                        className="bg-blue-600 hover:bg-blue-700"
+                      >
+                        <FileText className="w-4 h-4 mr-2" />
+                        Parse Resume
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setSelectedFile(null);
+                          setError("");
+                        }}
+                      >
+                        <X className="w-4 h-4 mr-2" />
+                        Remove
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center">
+                    <Upload className="w-16 h-16 text-gray-400 mb-4" />
+                    <p className="text-lg font-semibold text-gray-700 mb-2">
+                      Drag and drop your resume here
+                    </p>
+                    <p className="text-sm text-gray-500 mb-4">or</p>
+                    <label className="cursor-pointer">
+                      <input
+                        type="file"
+                        accept=".pdf,.doc,.docx"
+                        onChange={handleFileInput}
+                        className="hidden"
+                      />
+                      <Button variant="outline" className="bg-blue-600 hover:bg-blue-700 text-white border-0">
+                        <File className="w-4 h-4 mr-2" />
+                        Browse Files
+                      </Button>
+                    </label>
+                    <p className="text-xs text-gray-400 mt-4">
+                      Supported formats: PDF, DOCX, DOC (Max 10MB)
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {error && (
+                <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <X className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
+                    <p className="text-sm text-red-700">{error}</p>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex justify-center gap-4 mt-6">
+                <Button
+                  onClick={onCancel}
+                  variant="outline"
+                  disabled={uploading}
+                >
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </DashboardLayout>
   );
 };
 
@@ -952,6 +1225,8 @@ const ResumeBuilder = () => {
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [colorPickerSection, setColorPickerSection] = useState(null);
   const [sectionTemplates, setSectionTemplates] = useState([]);
+  const [dataEntryMode, setDataEntryMode] = useState(null); // null, 'manual', or 'upload'
+  const [uploading, setUploading] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -977,9 +1252,26 @@ const ResumeBuilder = () => {
   }, []);
 
   useEffect(() => {
-    if (!selectedTemplateId) return;
-    setResume(emptyResume(studentId, selectedTemplateId));
-  }, [selectedTemplateId]);
+    if (!selectedTemplateId) {
+      setDataEntryMode(null);
+      return;
+    }
+    // Only create empty resume if manual mode is selected and resume doesn't exist
+    if (dataEntryMode === 'manual' && !resume) {
+      setResume(emptyResume(studentId, selectedTemplateId));
+    }
+  }, [selectedTemplateId, dataEntryMode]);
+
+  // Debug: Log when resume state changes
+  useEffect(() => {
+    console.log("Resume state changed:", {
+      hasResume: !!resume,
+      selectedTemplateId,
+      dataEntryMode,
+      personalInfo: resume?.personalInfo,
+      experienceCount: resume?.experience?.length || 0
+    });
+  }, [resume, selectedTemplateId, dataEntryMode]);
 
   const onChange = (path, value) => {
     setResume((prev) => {
@@ -1942,6 +2234,148 @@ const ResumeBuilder = () => {
         </h1>
         <p className="text-gray-600">Create a professional resume that stands out</p>
       </div>
+
+      {/* Data Entry Mode Selection - shown after template selection */}
+      {selectedTemplateId && !dataEntryMode && (
+        <div className="min-h-screen bg-gradient-to-br from-violet-400 via-purple-400 via-pink-400 to-orange-400 py-12 relative overflow-hidden flex items-center justify-center">
+          {/* Animated background elements */}
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute top-20 left-10 w-72 h-72 bg-yellow-300 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob"></div>
+            <div className="absolute top-40 right-10 w-72 h-72 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-2000"></div>
+            <div className="absolute -bottom-8 left-1/2 w-72 h-72 bg-blue-300 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-4000"></div>
+          </div>
+          
+          <div className="relative z-10 max-w-4xl mx-auto px-4">
+            <div className="text-center mb-12">
+              <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-br from-yellow-400 via-pink-500 to-purple-600 mb-6 shadow-2xl">
+                <FileText className="w-12 h-12 text-white" />
+              </div>
+              <h2 className="text-5xl font-extrabold mb-4 text-white drop-shadow-lg">
+                Choose Your Data Entry Method
+              </h2>
+              <p className="text-white/90 text-xl max-w-2xl mx-auto font-semibold drop-shadow-md">
+                Select how you want to populate your resume data
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* Manual Data Filling Option */}
+              <div
+                onClick={() => setDataEntryMode('manual')}
+                className="group relative cursor-pointer"
+              >
+                <div className="relative bg-gradient-to-br from-blue-500 to-cyan-500 rounded-3xl shadow-2xl hover:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] transition-all duration-500 overflow-hidden border-4 border-blue-400 transform hover:-translate-y-4 hover:scale-105 p-8">
+                  <div className="text-center">
+                    <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm mb-6">
+                      <Edit3 className="w-10 h-10 text-white" />
+                    </div>
+                    <h3 className="text-2xl font-extrabold text-white drop-shadow-lg mb-4">
+                      Manual Data Filling
+                    </h3>
+                    <p className="text-white/90 text-base mb-6 font-medium">
+                      Fill in your resume information manually step by step. Perfect for creating a new resume from scratch.
+                    </p>
+                    <div className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-white/20 backdrop-blur-md text-white shadow-xl group-hover:shadow-2xl transition-all duration-300 transform group-hover:scale-110">
+                      <span className="text-sm font-bold">Start Manual Entry</span>
+                      <svg className="w-5 h-5 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </div>
+                  </div>
+                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none overflow-hidden rounded-3xl">
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+                  </div>
+                </div>
+                <div className="absolute -inset-2 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-3xl opacity-0 group-hover:opacity-50 blur-2xl transition-opacity duration-500 -z-10"></div>
+              </div>
+
+              {/* Upload Existing Resume Option */}
+              <div
+                onClick={() => setDataEntryMode('upload')}
+                className="group relative cursor-pointer"
+              >
+                <div className="relative bg-gradient-to-br from-purple-500 to-pink-500 rounded-3xl shadow-2xl hover:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] transition-all duration-500 overflow-hidden border-4 border-purple-400 transform hover:-translate-y-4 hover:scale-105 p-8">
+                  <div className="text-center">
+                    <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm mb-6">
+                      <Download className="w-10 h-10 text-white" />
+                    </div>
+                    <h3 className="text-2xl font-extrabold text-white drop-shadow-lg mb-4">
+                      Upload Existing Resume
+                    </h3>
+                    <p className="text-white/90 text-base mb-6 font-medium">
+                      Upload your existing resume (PDF or DOCX) and we'll automatically extract and fill in your information.
+                    </p>
+                    <div className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-white/20 backdrop-blur-md text-white shadow-xl group-hover:shadow-2xl transition-all duration-300 transform group-hover:scale-110">
+                      <span className="text-sm font-bold">Upload Resume</span>
+                      <svg className="w-5 h-5 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </div>
+                  </div>
+                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none overflow-hidden rounded-3xl">
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+                  </div>
+                </div>
+                <div className="absolute -inset-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-3xl opacity-0 group-hover:opacity-50 blur-2xl transition-opacity duration-500 -z-10"></div>
+              </div>
+            </div>
+
+            <div className="text-center mt-8">
+              <Button
+                onClick={() => {
+                  setSelectedTemplateId("");
+                  setDataEntryMode(null);
+                }}
+                variant="outline"
+                className="bg-white/20 backdrop-blur-sm text-white border-white/30 hover:bg-white/30"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Templates
+              </Button>
+            </div>
+          </div>
+          
+          {/* Add animation keyframes via style tag */}
+          <style>{`
+            @keyframes blob {
+              0% { transform: translate(0px, 0px) scale(1); }
+              33% { transform: translate(30px, -50px) scale(1.1); }
+              66% { transform: translate(-20px, 20px) scale(0.9); }
+              100% { transform: translate(0px, 0px) scale(1); }
+            }
+            .animate-blob {
+              animation: blob 7s infinite;
+            }
+            .animation-delay-2000 {
+              animation-delay: 2s;
+            }
+            .animation-delay-4000 {
+              animation-delay: 4s;
+            }
+          `}</style>
+        </div>
+      )}
+
+      {/* File Upload Component - shown when upload mode is selected and no resume yet */}
+      {selectedTemplateId && dataEntryMode === 'upload' && !resume && !uploading && (
+        <ResumeUploadComponent
+          templateId={selectedTemplateId}
+          studentId={studentId}
+          onResumeParsed={(parsedResume) => {
+            console.log("Setting parsed resume in state:", parsedResume);
+            console.log("Resume has personalInfo:", parsedResume.personalInfo);
+            console.log("Resume has experience:", parsedResume.experience?.length || 0);
+            setResume(parsedResume);
+            setDataEntryMode('manual'); // Switch to manual mode to show editor
+            console.log("Resume state should be updated, dataEntryMode set to:", 'manual');
+          }}
+          onCancel={() => {
+            setDataEntryMode(null);
+          }}
+          uploading={uploading}
+          setUploading={setUploading}
+        />
+      )}
 
       {/* Template gallery */}
       {!selectedTemplateId && (

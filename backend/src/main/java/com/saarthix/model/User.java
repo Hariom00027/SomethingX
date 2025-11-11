@@ -24,6 +24,10 @@ public class User {
     private String firstName;
     private String lastName;
     
+    // Admin authentication fields
+    private String username; // For admin login
+    private String password; // Hashed password for admin
+    
     private Set<String> roles;
     private String userType; // STUDENT, INSTITUTE, INDUSTRY
     

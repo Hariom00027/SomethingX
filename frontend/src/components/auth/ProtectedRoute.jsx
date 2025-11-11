@@ -2,7 +2,7 @@ import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 
-const ProtectedRoute = ({ children, requiredUserType = null }) => {
+const ProtectedRoute = ({ children, requiredUserType = null, requiredRole = null }) => {
   const { isAuthenticated, user, loading } = useAuth();
 
   if (loading) {
@@ -17,6 +17,20 @@ const ProtectedRoute = ({ children, requiredUserType = null }) => {
     return <Navigate to="/login" replace />;
   }
 
+  // Check for required role (e.g., ADMIN)
+  if (requiredRole) {
+    const hasRole = user?.roles && Array.isArray(user.roles) 
+      ? user.roles.includes(requiredRole)
+      : user?.roles && typeof user.roles === 'object' 
+        ? Object.values(user.roles).includes(requiredRole)
+        : false;
+    
+    if (!hasRole) {
+      return <Navigate to="/unauthorized" replace />;
+    }
+  }
+
+  // Check for required user type
   if (requiredUserType && user?.userType !== requiredUserType) {
     return <Navigate to="/unauthorized" replace />;
   }

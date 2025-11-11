@@ -30,3 +30,4 @@ The thumbnail URL is automatically generated from the template name using the pa
 
 No hardcoded mappings are needed - the system derives the path dynamically.
 
+

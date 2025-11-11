@@ -28,6 +28,7 @@ public class Resume {
     private List<String> hobbies;
     private List<Language> languages;
     private List<String> links;
+    private List<CustomSection> customSections;
     private List<String> sectionOrder;
     private Colors colors;
     private java.util.Map<String, String> sectionTitles; // Custom section titles
@@ -104,5 +105,14 @@ public class Resume {
     public static class Language {
         private String name;
         private String proficiency; // Beginner, Intermediate, Advanced, Native
+    }
+
+    @Data
+    public static class CustomSection {
+        private String id;
+        private String title;
+        private String contentType; // "text" or "list"
+        private String content;
+        private List<String> items;
     }
 }

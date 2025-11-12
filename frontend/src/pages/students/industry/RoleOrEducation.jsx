@@ -58,7 +58,7 @@ const RoleOrEducation = () => {
                 aria-label={option.title}
                 className="group"
               >
-                <Card className={`cursor-pointer h-full border-2 transition-all duration-300 hover:shadow-2xl hover:scale-105 ${option.hoverBorder} bg-white overflow-hidden`}>
+                <Card className={`cursor-pointer h-full border-2 transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] ${option.hoverBorder} bg-white overflow-hidden`}>
                   <div className={`h-2 bg-gradient-to-r ${option.gradient}`}></div>
                   <CardHeader className={`bg-gradient-to-br ${option.bgGradient} pb-4`}>
                     <div className="flex items-center justify-between mb-2">

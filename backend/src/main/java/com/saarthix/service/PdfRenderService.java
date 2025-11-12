@@ -206,6 +206,20 @@ public class PdfRenderService {
         String accentColor = resume.getColors() != null && resume.getColors().getAccent() != null 
             ? resume.getColors().getAccent() 
             : (template.getAccentColor() != null ? template.getAccentColor() : "#3b82f6");
+        String textColor = resume.getColors() != null && resume.getColors().getText() != null 
+            ? resume.getColors().getText() 
+            : "#1f2937";
+        
+        // Get typography settings
+        String fontSize = resume.getTypography() != null && resume.getTypography().getFontSize() != null
+            ? resume.getTypography().getFontSize()
+            : "12px";
+        String fontSpacing = resume.getTypography() != null && resume.getTypography().getFontSpacing() != null
+            ? resume.getTypography().getFontSpacing()
+            : "1.6";
+        String sectionSpacing = resume.getTypography() != null && resume.getTypography().getSectionSpacing() != null
+            ? resume.getTypography().getSectionSpacing()
+            : "32px";
         
         String layoutType = template.getLayoutType() != null ? template.getLayoutType() : "single-column";
         boolean hasProfileImage = template.isHasProfileImage() 
@@ -217,7 +231,7 @@ public class PdfRenderService {
         html.append("<!DOCTYPE html><html><head>");
         html.append("<meta charset='UTF-8'>");
         html.append("<style>");
-        html.append(getCompleteCss(primaryColor, secondaryColor, accentColor, layoutType));
+        html.append(getCompleteCss(primaryColor, secondaryColor, accentColor, textColor, fontSize, fontSpacing, sectionSpacing, layoutType));
         if (template.getCss() != null && !template.getCss().trim().isEmpty()) {
             html.append(template.getCss());
         }
@@ -736,7 +750,7 @@ public class PdfRenderService {
         return pages;
     }
 
-    private String getCompleteCss(String primaryColor, String secondaryColor, String accentColor, String layoutType) {
+    private String getCompleteCss(String primaryColor, String secondaryColor, String accentColor, String textColor, String fontSize, String fontSpacing, String sectionSpacing, String layoutType) {
         StringBuilder css = new StringBuilder();
         
         // Base styles
@@ -762,26 +776,26 @@ public class PdfRenderService {
         css.append(".header-section.sidebar-header { text-align: left; } ");
         css.append(".name { font-size: 24px; font-weight: bold; color: ").append(primaryColor).append("; margin: 0 0 4px 0; } ");
         css.append(".title { font-size: 16px; color: ").append(secondaryColor).append("; margin: 0 0 12px 0; font-weight: 500; } ");
-        css.append(".contact-info { font-size: 11px; color: ").append(secondaryColor).append("; display: flex; flex-wrap: wrap; gap: 8px; } ");
+        css.append(".contact-info { font-size: ").append(fontSize).append("; line-height: ").append(fontSpacing).append("; color: ").append(textColor).append("; display: flex; flex-wrap: wrap; gap: 8px; } ");
         css.append(".contact-info span { margin: 0; } ");
         css.append(".profile-image { display: block; margin-bottom: 12px; } ");
         
         // Section styles
-        css.append(".section { margin-bottom: 20px; page-break-inside: avoid; } ");
+        css.append(".section { margin-bottom: ").append(sectionSpacing).append("; page-break-inside: avoid; } ");
         css.append(".section-title { font-size: 14px; font-weight: bold; color: ").append(primaryColor).append("; margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid ").append(accentColor).append("; padding-bottom: 4px; } ");
-        css.append(".section-content { font-size: 11px; line-height: 1.6; color: #374151; } ");
+        css.append(".section-content { font-size: ").append(fontSize).append("; line-height: ").append(fontSpacing).append("; color: ").append(textColor).append("; } ");
         
         // Item styles
         css.append(".experience-item, .education-item { margin-bottom: 15px; padding-bottom: 12px; border-bottom: 1px solid #e5e7eb; } ");
         css.append(".experience-item:last-child, .education-item:last-child { border-bottom: none; } ");
         css.append(".item-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; } ");
         css.append(".item-title { font-size: 13px; font-weight: 600; color: ").append(primaryColor).append("; margin: 0; } ");
-        css.append(".item-company { font-size: 11px; color: ").append(secondaryColor).append("; font-weight: 500; margin: 2px 0; } ");
-        css.append(".item-date { font-size: 10px; color: ").append(secondaryColor).append("; font-style: italic; } ");
+        css.append(".item-company { font-size: ").append(fontSize).append("; line-height: ").append(fontSpacing).append("; color: ").append(textColor).append("; font-weight: 500; margin: 2px 0; } ");
+        css.append(".item-date { font-size: ").append(fontSize).append("; line-height: ").append(fontSpacing).append("; color: ").append(textColor).append("; font-style: italic; } ");
         
         // Lists
         css.append(".bullet-list { margin: 8px 0; padding-left: 20px; list-style-type: disc; } ");
-        css.append(".bullet-list li { margin-bottom: 4px; font-size: 11px; line-height: 1.5; } ");
+        css.append(".bullet-list li { margin-bottom: 4px; font-size: ").append(fontSize).append("; line-height: ").append(fontSpacing).append("; color: ").append(textColor).append("; } ");
         
         // Skills and tags
         css.append(".skills-container { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; } ");

@@ -31,6 +31,7 @@ public class Resume {
     private List<CustomSection> customSections;
     private List<String> sectionOrder;
     private Colors colors;
+    private TypographySettings typography;
     private java.util.Map<String, String> sectionTitles; // Custom section titles
     private Boolean mentorReviewRequested = false;
 
@@ -39,6 +40,14 @@ public class Resume {
         private String primary;
         private String secondary;
         private String accent;
+        private String text;
+    }
+
+    @Data
+    public static class TypographySettings {
+        private String fontSize; // e.g., "12px", "14px"
+        private String fontSpacing; // line-height, e.g., "1.5", "1.6"
+        private String sectionSpacing; // margin-bottom for sections, e.g., "32px", "40px"
     }
 
     @Data

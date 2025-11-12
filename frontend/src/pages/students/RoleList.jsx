@@ -112,7 +112,7 @@ const RoleList = () => {
                 key={role}
                 className="group"
               >
-                <Card className="cursor-pointer h-full border-2 border-gray-200 hover:border-green-500 transition-all duration-300 hover:shadow-xl hover:scale-105 bg-white overflow-hidden">
+                <Card className="cursor-pointer h-full border-2 border-gray-200 hover:border-green-500 transition-all duration-300 hover:shadow-xl hover:scale-[1.02] bg-white overflow-hidden">
                   <div className="h-1 bg-gradient-to-r from-green-500 to-emerald-500"></div>
                   <CardHeader className="pb-3">
                     <CardTitle className="text-xl font-bold text-gray-800 group-hover:text-green-600 transition-colors flex items-center justify-between">

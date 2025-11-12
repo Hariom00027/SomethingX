@@ -112,7 +112,7 @@ const IndustrySelection = () => {
                 key={industry}
                 className="group"
               >
-                <Card className="cursor-pointer h-full border-2 border-gray-200 hover:border-blue-500 transition-all duration-300 hover:shadow-xl hover:scale-105 bg-white overflow-hidden">
+                <Card className="cursor-pointer h-full border-2 border-gray-200 hover:border-blue-500 transition-all duration-300 hover:shadow-xl hover:scale-[1.02] bg-white overflow-hidden">
                   <div className="h-1 bg-gradient-to-r from-blue-500 to-cyan-500"></div>
                   <CardHeader className="pb-3">
                     <CardTitle className="text-xl font-bold text-gray-800 group-hover:text-blue-600 transition-colors flex items-center justify-between">

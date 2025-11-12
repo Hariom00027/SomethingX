@@ -47,19 +47,21 @@ public class Blueprint {
     public static class SkillRequirement {
         private String skillName;
         private String skillType; // "technical", "soft", "certification"
-        private int timeRequiredMonths; // Time required to master this skill
+        private int timeRequiredMonths; // Minimum time required to master this skill
         private String difficulty; // "beginner", "intermediate", "advanced"
+        private String importance; // "Essential" (P1), "Important" (P2), "Good to be" (P3)
         private String description; // Description of the skill
         private List<String> prerequisites; // Skills that should be learned before this
         
         public SkillRequirement() {}
         
         public SkillRequirement(String skillName, String skillType, int timeRequiredMonths, 
-                              String difficulty, String description, List<String> prerequisites) {
+                              String difficulty, String importance, String description, List<String> prerequisites) {
             this.skillName = skillName;
             this.skillType = skillType;
             this.timeRequiredMonths = timeRequiredMonths;
             this.difficulty = difficulty;
+            this.importance = importance;
             this.description = description;
             this.prerequisites = prerequisites;
         }
@@ -76,6 +78,9 @@ public class Blueprint {
         
         public String getDifficulty() { return difficulty; }
         public void setDifficulty(String difficulty) { this.difficulty = difficulty; }
+        
+        public String getImportance() { return importance; }
+        public void setImportance(String importance) { this.importance = importance; }
         
         public String getDescription() { return description; }
         public void setDescription(String description) { this.description = description; }

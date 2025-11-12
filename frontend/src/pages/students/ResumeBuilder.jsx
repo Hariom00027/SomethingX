@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import axios from "axios";
 import { api } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -190,7 +190,13 @@ const emptyResume = (studentId, templateId) => ({
   colors: {
     primary: '#2563eb',
     secondary: '#64748b',
-    accent: '#3b82f6'
+    accent: '#3b82f6',
+    text: '#1f2937'
+  },
+  typography: {
+    fontSize: '12px',
+    fontSpacing: '1.6',
+    sectionSpacing: '32px'
   },
   sectionTitles: {
     summary: 'Professional Summary',
@@ -498,7 +504,13 @@ const ResumeUploadComponent = ({ templateId, studentId, onResumeParsed, onCancel
           colors: response.data.colors || {
             primary: '#2563eb',
             secondary: '#64748b',
-            accent: '#3b82f6'
+            accent: '#3b82f6',
+            text: '#1f2937'
+          },
+          typography: response.data.typography || {
+            fontSize: '12px',
+            fontSpacing: '1.6',
+            sectionSpacing: '32px'
           },
           sectionTitles: response.data.sectionTitles || {},
           personalInfo: {
@@ -650,7 +662,15 @@ const ResumePreview = ({ resume, template, isEditing, onEdit, onDelete, onColorC
   const templateColors = {
     primary: colors?.primary || template?.primaryColor || '#2563eb',
     secondary: colors?.secondary || template?.secondaryColor || '#64748b',
-    accent: colors?.accent || template?.accentColor || '#3b82f6'
+    accent: colors?.accent || template?.accentColor || '#3b82f6',
+    text: colors?.text || '#1f2937'
+  };
+
+  // Get typography settings
+  const typography = resume.typography || {
+    fontSize: '12px',
+    fontSpacing: '1.6',
+    sectionSpacing: '32px'
   };
 
   // Inject template CSS
@@ -1056,7 +1076,7 @@ const ResumePreview = ({ resume, template, isEditing, onEdit, onDelete, onColorC
       <style>{templateCss}</style>
       <style>{`
         .section {
-          margin-bottom: 32px !important;
+          margin-bottom: ${typography.sectionSpacing} !important;
           padding-bottom: 20px !important;
           page-break-inside: avoid !important;
           break-inside: avoid !important;
@@ -1091,6 +1111,9 @@ const ResumePreview = ({ resume, template, isEditing, onEdit, onDelete, onColorC
           page-break-inside: avoid !important;
           break-inside: avoid !important;
           -webkit-column-break-inside: avoid !important;
+          color: ${templateColors.text} !important;
+          font-size: ${typography.fontSize} !important;
+          line-height: ${typography.fontSpacing} !important;
         }
         .experience-item, .education-item {
           margin-bottom: 20px !important;
@@ -1127,7 +1150,9 @@ const ResumePreview = ({ resume, template, isEditing, onEdit, onDelete, onColorC
         }
         .bullet-list li {
           margin-bottom: 8px !important;
-          line-height: 1.6 !important;
+          line-height: ${typography.fontSpacing} !important;
+          color: ${templateColors.text} !important;
+          font-size: ${typography.fontSize} !important;
         }
         .item-header {
           margin-bottom: 8px !important;
@@ -1141,12 +1166,15 @@ const ResumePreview = ({ resume, template, isEditing, onEdit, onDelete, onColorC
           margin-top: 4px !important;
           margin-bottom: 8px !important;
           clear: both;
+          color: ${templateColors.text} !important;
+          font-size: ${typography.fontSize} !important;
+          line-height: ${typography.fontSpacing} !important;
         }
         .resume-container > * {
           clear: both !important;
         }
         .resume-container .section + .section {
-          margin-top: 24px !important;
+          margin-top: calc(${typography.sectionSpacing} * 0.75) !important;
         }
         /* Ensure SortableSection wrapper also prevents page breaks */
         .group {
@@ -1163,6 +1191,22 @@ const ResumePreview = ({ resume, template, isEditing, onEdit, onDelete, onColorC
         .section > .section-content > * {
           page-break-inside: avoid !important;
           break-inside: avoid !important;
+        }
+        /* Apply text color to general text elements */
+        .item-date {
+          color: ${templateColors.text} !important;
+          font-size: ${typography.fontSize} !important;
+          line-height: ${typography.fontSpacing} !important;
+        }
+        .contact-info {
+          color: ${templateColors.text} !important;
+          font-size: ${typography.fontSize} !important;
+          line-height: ${typography.fontSpacing} !important;
+        }
+        .section-content > div:not(.item-title):not(.item-company):not(.item-date) {
+          color: ${templateColors.text} !important;
+          font-size: ${typography.fontSize} !important;
+          line-height: ${typography.fontSpacing} !important;
         }
       `}</style>
       <div className="flex flex-col items-center" style={{ padding: '20px 0' }}>
@@ -1227,6 +1271,7 @@ const ResumeBuilder = () => {
   const [sectionTemplates, setSectionTemplates] = useState([]);
   const [dataEntryMode, setDataEntryMode] = useState(null); // null, 'manual', or 'upload'
   const [uploading, setUploading] = useState(false);
+  const resumeDataRef = useRef(null); // Store resume data when changing templates
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -1305,6 +1350,49 @@ const ResumeBuilder = () => {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleChangeTemplate = async () => {
+    // Save resume automatically if it exists and has data
+    if (resume) {
+      // Check if resume has been edited (has data beyond just templateId)
+      const hasData = resume.personalInfo?.fullName || 
+                     resume.experience?.length > 0 || 
+                     resume.education?.length > 0 || 
+                     resume.projects?.length > 0 ||
+                     resume.skills?.length > 0 ||
+                     resume.summary ||
+                     resume.bio;
+      
+      if (hasData) {
+        // Save the resume before changing template
+        setSaving(true);
+        try {
+          if (resume.id) {
+            const { data } = await axios.put(`${api.baseURL}/resumes/${resume.id}`, resume);
+            // Store the saved resume data
+            resumeDataRef.current = { ...data };
+          } else {
+            const { data } = await axios.post(`${api.baseURL}/resumes`, resume);
+            // Store the saved resume data
+            resumeDataRef.current = { ...data };
+          }
+        } catch (error) {
+          console.error("Error saving resume before template change:", error);
+          // Still store the current resume data even if save fails
+          resumeDataRef.current = { ...resume };
+        } finally {
+          setSaving(false);
+        }
+      } else {
+        // Store resume data even if it's empty (to preserve templateId)
+        resumeDataRef.current = { ...resume };
+      }
+    }
+    
+    // Open template selection page
+    setSelectedTemplateId("");
+    setDataEntryMode(null);
   };
 
   const downloadPdf = async () => {
@@ -1428,6 +1516,16 @@ const ResumeBuilder = () => {
       colors: {
         ...prev.colors,
         [colorType]: color
+      }
+    }));
+  };
+
+  const updateTypography = (settingType, value) => {
+    setResume((prev) => ({
+      ...prev,
+      typography: {
+        ...prev.typography || { fontSize: '12px', fontSpacing: '1.6', sectionSpacing: '32px' },
+        [settingType]: value
       }
     }));
   };
@@ -2152,6 +2250,158 @@ const ResumeBuilder = () => {
           </CardContent>
         </Card>
 
+        {/* Typography & Spacing Controls */}
+        <Card className="mb-4 border-2 border-green-200">
+          <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50 p-3">
+            <CardTitle className="flex items-center gap-2 text-sm">
+              <FileText className="w-4 h-4 text-green-600" />
+              Typography & Spacing
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-3 space-y-4">
+            {/* Font Size */}
+            <div className="space-y-2">
+              <label className="block text-xs font-semibold text-gray-700">Font Size</label>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const currentSize = parseInt(resume.typography?.fontSize || '12');
+                    if (currentSize > 8) {
+                      updateTypography('fontSize', `${currentSize - 1}px`);
+                    }
+                  }}
+                  className="h-8 w-8 p-0"
+                >
+                  -
+                </Button>
+                <Input
+                  type="number"
+                  value={parseInt(resume.typography?.fontSize || '12')}
+                  onChange={(e) => {
+                    const value = parseInt(e.target.value) || 12;
+                    if (value >= 8 && value <= 20) {
+                      updateTypography('fontSize', `${value}px`);
+                    }
+                  }}
+                  min="8"
+                  max="20"
+                  className="text-center font-mono text-xs h-8"
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const currentSize = parseInt(resume.typography?.fontSize || '12');
+                    if (currentSize < 20) {
+                      updateTypography('fontSize', `${currentSize + 1}px`);
+                    }
+                  }}
+                  className="h-8 w-8 p-0"
+                >
+                  +
+                </Button>
+                <span className="text-xs text-gray-500">px</span>
+              </div>
+            </div>
+
+            {/* Font Spacing (Line Height) */}
+            <div className="space-y-2">
+              <label className="block text-xs font-semibold text-gray-700">Font Spacing (Line Height)</label>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const currentSpacing = parseFloat(resume.typography?.fontSpacing || '1.6');
+                    if (currentSpacing > 1.0) {
+                      updateTypography('fontSpacing', (currentSpacing - 0.1).toFixed(1));
+                    }
+                  }}
+                  className="h-8 w-8 p-0"
+                >
+                  -
+                </Button>
+                <Input
+                  type="number"
+                  step="0.1"
+                  value={parseFloat(resume.typography?.fontSpacing || '1.6')}
+                  onChange={(e) => {
+                    const value = parseFloat(e.target.value) || 1.6;
+                    if (value >= 1.0 && value <= 2.5) {
+                      updateTypography('fontSpacing', value.toFixed(1));
+                    }
+                  }}
+                  min="1.0"
+                  max="2.5"
+                  className="text-center font-mono text-xs h-8"
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const currentSpacing = parseFloat(resume.typography?.fontSpacing || '1.6');
+                    if (currentSpacing < 2.5) {
+                      updateTypography('fontSpacing', (currentSpacing + 0.1).toFixed(1));
+                    }
+                  }}
+                  className="h-8 w-8 p-0"
+                >
+                  +
+                </Button>
+              </div>
+            </div>
+
+            {/* Section Spacing */}
+            <div className="space-y-2">
+              <label className="block text-xs font-semibold text-gray-700">Section Spacing</label>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const currentSpacing = parseInt(resume.typography?.sectionSpacing || '32');
+                    if (currentSpacing > 16) {
+                      updateTypography('sectionSpacing', `${currentSpacing - 4}px`);
+                    }
+                  }}
+                  className="h-8 w-8 p-0"
+                >
+                  -
+                </Button>
+                <Input
+                  type="number"
+                  value={parseInt(resume.typography?.sectionSpacing || '32')}
+                  onChange={(e) => {
+                    const value = parseInt(e.target.value) || 32;
+                    if (value >= 16 && value <= 80) {
+                      updateTypography('sectionSpacing', `${value}px`);
+                    }
+                  }}
+                  min="16"
+                  max="80"
+                  className="text-center font-mono text-xs h-8"
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const currentSpacing = parseInt(resume.typography?.sectionSpacing || '32');
+                    if (currentSpacing < 80) {
+                      updateTypography('sectionSpacing', `${currentSpacing + 4}px`);
+                    }
+                  }}
+                  className="h-8 w-8 p-0"
+                >
+                  +
+                </Button>
+                <span className="text-xs text-gray-500">px</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Section Editor */}
         {editingSection ? (
           <div className="space-y-4">
@@ -2223,6 +2473,22 @@ const ResumeBuilder = () => {
                         <Input
                           value={resume.colors.accent}
                           onChange={(e) => updateColor('accent', e.target.value)}
+                          className="font-mono text-xs h-8"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="block text-xs font-semibold text-gray-700">Text Color</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={resume.colors.text || '#1f2937'}
+                          onChange={(e) => updateColor('text', e.target.value)}
+                          className="w-12 h-12 border-2 border-gray-300 rounded cursor-pointer"
+                        />
+                        <Input
+                          value={resume.colors.text || '#1f2937'}
+                          onChange={(e) => updateColor('text', e.target.value)}
                           className="font-mono text-xs h-8"
                         />
                       </div>
@@ -2472,7 +2738,22 @@ const ResumeBuilder = () => {
                   <div
                     key={t.id}
                     className="group relative cursor-pointer"
-                    onClick={() => setSelectedTemplateId(t.id)}
+                    onClick={() => {
+                      // If there's stored resume data, populate new template with it
+                      if (resumeDataRef.current) {
+                        const storedResume = resumeDataRef.current;
+                        // Create new resume with stored data but update templateId
+                        // Keep the id so it updates the existing resume when saved
+                        const newResume = {
+                          ...storedResume,
+                          templateId: t.id
+                        };
+                        setResume(newResume);
+                        setDataEntryMode('manual');
+                        resumeDataRef.current = null; // Clear the ref after using it
+                      }
+                      setSelectedTemplateId(t.id);
+                    }}
                   >
                     {/* Main Card Container - Colorful */}
                     <div className={`relative bg-gradient-to-br ${colors.bg} rounded-3xl shadow-2xl hover:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] transition-all duration-500 overflow-hidden border-4 ${colors.border} transform hover:-translate-y-4 hover:scale-105`}>
@@ -2588,12 +2869,13 @@ const ResumeBuilder = () => {
           <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
             <div className="flex flex-wrap items-center gap-3">
               <Button 
-                onClick={() => setSelectedTemplateId("")} 
+                onClick={handleChangeTemplate} 
                 variant="ghost" 
                 className="gap-2"
+                disabled={saving}
               >
                 <ArrowLeft className="w-4 h-4" />
-                Back to Templates
+                {saving ? "Saving..." : "Change Template"}
               </Button>
               <div className="h-6 w-px bg-gray-300"></div>
               <Button 

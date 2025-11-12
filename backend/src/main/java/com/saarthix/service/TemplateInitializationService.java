@@ -142,6 +142,7 @@ public class TemplateInitializationService implements CommandLineRunner {
         }
         // Generate path using template name directly
         // Format: /assets/templates/thumbnails/{Template Name}.png
+        // Note: Browser will handle spaces in URLs, but we keep the name as-is to match file names
         return "/assets/templates/thumbnails/" + templateName + ".png";
     }
 

@@ -1287,7 +1287,7 @@ const ResumeBuilder = () => {
     axios.get(`${api.baseURL}/resume-templates`).then((res) => setTemplates(res.data));
     // Fetch pre-made section templates
     const sectionTemplatesUrl = api.baseURL 
-      ? `${api.baseURL}/api/admin/section-templates`
+      ? `${api.baseURL}/admin/section-templates`
       : '/api/admin/section-templates';
     axios.get(sectionTemplatesUrl)
       .then((res) => {
@@ -2721,7 +2721,16 @@ const ResumeBuilder = () => {
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 px-8 max-w-7xl mx-auto">
               {templates.map((t, index) => {
-                const thumbnailPath = t.thumbnailUrl || t.previewUrl;
+                // Handle thumbnail URL - encode spaces and special characters
+                let thumbnailPath = t.thumbnailUrl || t.previewUrl;
+                if (thumbnailPath && !thumbnailPath.startsWith('http') && !thumbnailPath.startsWith('data:')) {
+                  // Encode the path properly, but keep the structure
+                  const parts = thumbnailPath.split('/');
+                  const fileName = parts[parts.length - 1];
+                  const dirPath = parts.slice(0, -1).join('/');
+                  // Encode only the filename part to handle spaces
+                  thumbnailPath = dirPath + '/' + encodeURIComponent(fileName);
+                }
                 // Vibrant color schemes for each card
                 const cardColors = [
                   { bg: 'from-purple-500 to-pink-500', border: 'border-purple-400', accent: 'bg-purple-500' },
@@ -2766,10 +2775,15 @@ const ResumeBuilder = () => {
                               alt={t.name}
                               className="w-full h-full object-contain p-2 transition-transform duration-700 group-hover:scale-110"
                               onError={(e) => {
+                                // Try previewUrl if thumbnail fails
                                 if (t.previewUrl && e.target.src !== t.previewUrl) {
                                   e.target.src = t.previewUrl;
+                                } else {
+                                  // If both fail, hide the image to prevent repeated 404s
+                                  e.target.style.display = 'none';
                                 }
                               }}
+                              loading="lazy"
                             />
                             {/* Hover overlay */}
                             <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-start justify-end p-4">

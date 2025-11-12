@@ -1,15 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
-import { GraduationCap, ArrowRight, Loader2, AlertCircle, ArrowLeft } from 'lucide-react';
+import { GraduationCap, ArrowRight, Loader2, AlertCircle, ArrowLeft, Search } from 'lucide-react';
 import { Button } from '../../../components/ui/button';
+import { Input } from '../../../components/ui/input';
 import axios from 'axios';
 
 const EducationSelection = () => {
   const { industryName } = useParams();
   const [educationPaths, setEducationPaths] = useState([]);
+  const [filteredEducationPaths, setFilteredEducationPaths] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     // Reset error and loading when industryName changes
@@ -19,6 +22,7 @@ const EducationSelection = () => {
     axios.get(`http://localhost:8080/api/blueprint/industry/${industryName}/education`)
       .then(response => {
         setEducationPaths(response.data);
+        setFilteredEducationPaths(response.data);
         setLoading(false);
       })
       .catch(error => {
@@ -27,6 +31,17 @@ const EducationSelection = () => {
         console.error('Error fetching education paths:', error);
       });
   }, [industryName]);
+
+  useEffect(() => {
+    if (searchQuery.trim() === '') {
+      setFilteredEducationPaths(educationPaths);
+    } else {
+      const filtered = educationPaths.filter(edu =>
+        edu.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      setFilteredEducationPaths(filtered);
+    }
+  }, [searchQuery, educationPaths]);
 
   if (loading) {
     return (
@@ -87,15 +102,34 @@ const EducationSelection = () => {
           </p>
         </div>
 
+        {/* Search Bar */}
+        <div className="max-w-2xl mx-auto mb-8">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <Input
+              type="text"
+              placeholder="Search education paths..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 py-6 text-lg border-2 border-gray-200 focus:border-blue-500 rounded-lg"
+            />
+          </div>
+        </div>
+
         {/* Education Paths Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-          {educationPaths.map(edu => (
+        {filteredEducationPaths.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-gray-600 text-lg">No education paths found matching your search.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+            {filteredEducationPaths.map(edu => (
             <Link 
               to={`/students/career-blueprint/education/${edu}`} 
               key={edu}
               className="group"
             >
-              <Card className="cursor-pointer h-full border-2 border-gray-200 hover:border-blue-500 transition-all duration-300 hover:shadow-xl hover:scale-105 bg-white overflow-hidden">
+              <Card className="cursor-pointer h-full border-2 border-gray-200 hover:border-blue-500 transition-all duration-300 hover:shadow-xl hover:scale-[1.02] bg-white overflow-hidden">
                 <div className="h-1 bg-gradient-to-r from-blue-500 to-cyan-500"></div>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-xl font-bold text-gray-800 group-hover:text-blue-600 transition-colors flex items-center justify-between">
@@ -111,7 +145,8 @@ const EducationSelection = () => {
               </Card>
             </Link>
           ))}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

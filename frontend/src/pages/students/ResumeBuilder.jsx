@@ -2916,6 +2916,8 @@ const ResumeBuilder = () => {
           `}</style>
         </div>
 
+      )}
+
       {/* Editor */}
       {selectedTemplateId && resume && (
         <div className="space-y-6">
@@ -3120,8 +3122,8 @@ const ResumeBuilder = () => {
             }
           }}
         >
-          <div 
-            className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl"
+          <Card
+            className="max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl"
             style={{ 
               backgroundColor: 'white', 
               borderRadius: '8px',
@@ -3131,7 +3133,7 @@ const ResumeBuilder = () => {
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="sticky top-0 bg-white border-b p-4 flex justify-between items-center z-10">
+            <CardHeader className="sticky top-0 bg-white border-b p-4 flex justify-between items-center z-10">
               <div className="flex items-center gap-3">
                 <Sparkles className="w-6 h-6 text-purple-600" />
                 <h2 className="text-2xl font-bold text-gray-800">AI Resume Review</h2>
@@ -3144,11 +3146,8 @@ const ResumeBuilder = () => {
               >
                 <X className="h-4 w-4" />
               </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-            <div className="p-6 space-y-6">
+            </CardHeader>
+            <CardContent className="p-6 space-y-6">
               {/* Rating */}
               {aiReview.rating && (
                 <div className="flex items-center gap-3">
@@ -3209,43 +3208,9 @@ const ResumeBuilder = () => {
                     <p className="text-gray-700 whitespace-pre-wrap">{aiReview.others}</p>
                   </div>
                 </div>
-                <div className="absolute -inset-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-3xl opacity-0 group-hover:opacity-50 blur-2xl transition-opacity duration-500 -z-10"></div>
-              </div>
-            </div>
-
-            <div className="text-center mt-8">
-              <Button
-                onClick={() => {
-                  setSelectedTemplateId("");
-                  setDataEntryMode(null);
-                }}
-                variant="outline"
-                className="bg-white/20 backdrop-blur-sm text-white border-white/30 hover:bg-white/30"
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Templates
-              </Button>
-            </div>
-          </div>
-          
-          {/* Add animation keyframes via style tag */}
-          <style>{`
-            @keyframes blob {
-              0% { transform: translate(0px, 0px) scale(1); }
-              33% { transform: translate(30px, -50px) scale(1.1); }
-              66% { transform: translate(-20px, 20px) scale(0.9); }
-              100% { transform: translate(0px, 0px) scale(1); }
-            }
-            .animate-blob {
-              animation: blob 7s infinite;
-            }
-            .animation-delay-2000 {
-              animation-delay: 2s;
-            }
-            .animation-delay-4000 {
-              animation-delay: 4s;
-            }
-          `}</style>
+              )}
+            </CardContent>
+          </Card>
         </div>
       )}
 

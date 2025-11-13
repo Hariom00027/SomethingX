@@ -151,7 +151,16 @@ const AdminDashboard = () => {
       } else {
         response = await apiClient.post('/admin/blueprints', formData);
         // After creation, show mapping section
-        setCreatedBlueprint({ ...formData, id: response.data?.id || formData.name });
+        // Use response.data to ensure we have the exact blueprint as stored in backend
+        const created = response.data || formData;
+        setCreatedBlueprint({
+          id: created.id || created.name,
+          name: created.name || formData.name,
+          type: created.type || formData.type,
+          description: created.description || formData.description,
+          category: created.category || formData.category,
+          skillRequirements: created.skillRequirements || formData.skillRequirements
+        });
         setShowMappingSection(true);
         // Keep form open but show mapping section
       }
@@ -188,14 +197,33 @@ const AdminDashboard = () => {
     
     try {
       const blueprintName = createdBlueprint.name;
-      const endpoint = `/blueprint/${createdBlueprint.type}/${blueprintName}/map-education?educationName=${encodeURIComponent(mappingSelections.education)}`;
+      if (!blueprintName) {
+        setMappingMessage('Error: Blueprint name is missing');
+        return;
+      }
+      
+      // Construct endpoint based on blueprint type
+      let endpoint;
+      if (createdBlueprint.type === 'role') {
+        endpoint = `/blueprint/role/${encodeURIComponent(blueprintName)}/map-education?educationName=${encodeURIComponent(mappingSelections.education)}`;
+      } else if (createdBlueprint.type === 'industry') {
+        endpoint = `/blueprint/industry/${encodeURIComponent(blueprintName)}/map-education?educationName=${encodeURIComponent(mappingSelections.education)}`;
+      } else if (createdBlueprint.type === 'specialization') {
+        endpoint = `/blueprint/specialization/${encodeURIComponent(blueprintName)}/map-education?educationName=${encodeURIComponent(mappingSelections.education)}`;
+      } else {
+        setMappingMessage(`Error: Unsupported blueprint type: ${createdBlueprint.type}`);
+        return;
+      }
+      
       await apiClient.post(endpoint);
       setMappingMessage(`Successfully mapped ${blueprintName} to ${mappingSelections.education}`);
       setMappingSelections(prev => ({ ...prev, education: '' }));
       fetchMappingOptions();
+      fetchBlueprints(); // Refresh blueprint list to show updated mappings
     } catch (error) {
-      setMappingMessage('Error mapping to education');
-      console.error('Error:', error);
+      const errorMsg = error.response?.data?.message || error.message || 'Unknown error';
+      setMappingMessage(`Error mapping to education: ${errorMsg}`);
+      console.error('Mapping error details:', error.response?.data || error);
     } finally {
       setMappingLoading(false);
     }
@@ -212,20 +240,28 @@ const AdminDashboard = () => {
     
     try {
       const blueprintName = createdBlueprint.name;
+      if (!blueprintName) {
+        setMappingMessage('Error: Blueprint name is missing');
+        return;
+      }
+      
       // For roles, map role to industry
       if (createdBlueprint.type === 'role') {
-        await apiClient.post(`/blueprint/role/${blueprintName}/map-industry?industryName=${encodeURIComponent(mappingSelections.industry)}`);
+        await apiClient.post(`/blueprint/role/${encodeURIComponent(blueprintName)}/map-industry?industryName=${encodeURIComponent(mappingSelections.industry)}`);
+        setMappingMessage(`Successfully mapped ${blueprintName} to ${mappingSelections.industry}`);
+        setMappingSelections(prev => ({ ...prev, industry: '' }));
+        fetchMappingOptions();
+        fetchBlueprints(); // Refresh blueprint list to show updated mappings
       } else if (createdBlueprint.type === 'industry') {
         // Industry to industry mapping doesn't exist, skip
         setMappingMessage('Industry to industry mapping is not available');
-        return;
+      } else {
+        setMappingMessage(`Error: Cannot map ${createdBlueprint.type} to industry`);
       }
-      setMappingMessage(`Successfully mapped ${blueprintName} to ${mappingSelections.industry}`);
-      setMappingSelections(prev => ({ ...prev, industry: '' }));
-      fetchMappingOptions();
     } catch (error) {
-      setMappingMessage('Error mapping to industry');
-      console.error('Error:', error);
+      const errorMsg = error.response?.data?.message || error.message || 'Unknown error';
+      setMappingMessage(`Error mapping to industry: ${errorMsg}`);
+      console.error('Mapping error details:', error.response?.data || error);
     } finally {
       setMappingLoading(false);
     }
@@ -242,17 +278,35 @@ const AdminDashboard = () => {
     
     try {
       const blueprintName = createdBlueprint.name;
-      if (createdBlueprint.type === 'role') {
-        await apiClient.post(`/blueprint/role/${blueprintName}/map-specialization?specializationName=${encodeURIComponent(mappingSelections.specialization)}`);
-      } else if (createdBlueprint.type === 'specialization') {
-        await apiClient.post(`/blueprint/specialization/${blueprintName}/map-education?educationName=${encodeURIComponent(mappingSelections.education || '')}`);
+      if (!blueprintName) {
+        setMappingMessage('Error: Blueprint name is missing');
+        return;
       }
-      setMappingMessage(`Successfully mapped ${blueprintName} to ${mappingSelections.specialization}`);
-      setMappingSelections(prev => ({ ...prev, specialization: '' }));
-      fetchMappingOptions();
+      
+      if (createdBlueprint.type === 'role') {
+        await apiClient.post(`/blueprint/role/${encodeURIComponent(blueprintName)}/map-specialization?specializationName=${encodeURIComponent(mappingSelections.specialization)}`);
+        setMappingMessage(`Successfully mapped ${blueprintName} to ${mappingSelections.specialization}`);
+        setMappingSelections(prev => ({ ...prev, specialization: '' }));
+        fetchMappingOptions();
+        fetchBlueprints(); // Refresh blueprint list to show updated mappings
+      } else if (createdBlueprint.type === 'specialization') {
+        // Specialization to education mapping
+        if (!mappingSelections.education) {
+          setMappingMessage('Please select an education first');
+          return;
+        }
+        await apiClient.post(`/blueprint/specialization/${encodeURIComponent(blueprintName)}/map-education?educationName=${encodeURIComponent(mappingSelections.education)}`);
+        setMappingMessage(`Successfully mapped ${blueprintName} to ${mappingSelections.education}`);
+        setMappingSelections(prev => ({ ...prev, education: '', specialization: '' }));
+        fetchMappingOptions();
+        fetchBlueprints(); // Refresh blueprint list to show updated mappings
+      } else {
+        setMappingMessage(`Error: Cannot map ${createdBlueprint.type} to specialization`);
+      }
     } catch (error) {
-      setMappingMessage('Error mapping to specialization');
-      console.error('Error:', error);
+      const errorMsg = error.response?.data?.message || error.message || 'Unknown error';
+      setMappingMessage(`Error mapping to specialization: ${errorMsg}`);
+      console.error('Mapping error details:', error.response?.data || error);
     } finally {
       setMappingLoading(false);
     }

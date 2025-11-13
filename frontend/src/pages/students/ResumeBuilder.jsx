@@ -25,7 +25,7 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, Edit3, Eye, Palette, Save, Download, EyeOff, ArrowLeft, FileText, Sparkles, X, CheckCircle2, Loader2, Plus, Trash2, Image as ImageIcon, Move, Maximize2, Upload, File } from "lucide-react";
+import { GripVertical, Edit3, Eye, Palette, Save, Download, EyeOff, ArrowLeft, FileText, Sparkles, X, CheckCircle2, Loader2, Plus, Trash2, Image as ImageIcon, Move, Maximize2, Upload, File, Wand2, Copy, Check } from "lucide-react";
 
 // Draggable and Resizable Image Component
 const DraggableResizableImage = ({ src, onUpdate, style, isEditing }) => {
@@ -283,6 +283,61 @@ const SortableSection = ({ id, children, isEditing, onEdit, onDelete, onColorCha
         </div>
       </div>
       {children}
+    </div>
+  );
+};
+
+// Saathi AI Textarea Component with @saathi detection
+const SaathiTextarea = ({ value, onChange, sectionName, placeholder, rows = 4, ...props }) => {
+  const textareaRef = useRef(null);
+
+  const handleChange = (e) => {
+    onChange(e);
+  };
+
+  const handleKeyDown = (e) => {
+    // Check for Enter key (Shift+Enter allows new lines)
+    if (e.key === 'Enter' && !e.shiftKey) {
+      const text = e.target.value;
+      
+      // Check if @saathi is mentioned
+      if (text.includes('@saathi') || text.includes('@Saathi') || text.includes('@SAATHI')) {
+        e.preventDefault(); // Prevent default Enter behavior
+        
+        // Extract the question if any (text after @saathi)
+        const match = text.match(/@saathi\s*(.*)/i);
+        const question = match ? match[1].trim() : '';
+        
+        // Remove @saathi and question from the textarea, keep text before @saathi
+        const textBeforeSaathi = text.substring(0, text.toLowerCase().indexOf('@saathi')).trim();
+        onChange({ target: { value: textBeforeSaathi } });
+        
+        // Trigger AI suggestion with the user's question
+        if (window.handleSaathiRequest) {
+          window.handleSaathiRequest(sectionName, textBeforeSaathi, question);
+        }
+      }
+    }
+    // Shift+Enter will create a new line (default behavior)
+  };
+
+  return (
+    <div className="relative">
+      <Textarea
+        ref={textareaRef}
+        value={value}
+        onChange={handleChange}
+        onKeyDown={handleKeyDown}
+        placeholder={placeholder || `Type @saathi and press Enter for AI assistance...`}
+        rows={rows}
+        className="pr-20"
+        {...props}
+      />
+      <div className="absolute bottom-2 right-2 flex items-center gap-2">
+        <div className="text-xs text-gray-400 bg-gray-50 px-2 py-1 rounded border border-gray-200">
+          <span className="font-semibold text-purple-600">@saathi</span> + Enter
+        </div>
+      </div>
     </div>
   );
 };
@@ -1274,6 +1329,11 @@ const ResumeBuilder = () => {
   const [aiReview, setAiReview] = useState(null);
   const [showAiReviewPopup, setShowAiReviewPopup] = useState(false);
   const [loadingAiReview, setLoadingAiReview] = useState(false);
+  const [saathiSuggestion, setSaathiSuggestion] = useState(null);
+  const [showSaathiPopup, setShowSaathiPopup] = useState(false);
+  const [loadingSaathi, setLoadingSaathi] = useState(false);
+  const [saathiSection, setSaathiSection] = useState(null);
+  const [copied, setCopied] = useState(false);
   const resumeDataRef = useRef(null); // Store resume data when changing templates
 
   const sensors = useSensors(
@@ -1285,6 +1345,16 @@ const ResumeBuilder = () => {
 
   const { user } = useAuth();
   const studentId = user?.id || user?.googleId || user?.email || "demo-student-1";
+
+  // Expose handleSaathiRequest to window for SaathiTextarea component
+  useEffect(() => {
+    window.handleSaathiRequest = (sectionName, currentContent, userQuestion) => {
+      handleSaathiRequest(sectionName, currentContent, userQuestion);
+    };
+    return () => {
+      delete window.handleSaathiRequest;
+    };
+  }, [resume?.id]);
 
   useEffect(() => {
     axios.get(`${api.baseURL}/resume-templates`).then((res) => setTemplates(res.data));
@@ -1507,6 +1577,45 @@ const ResumeBuilder = () => {
     }
   };
 
+  const handleSaathiRequest = async (sectionName, currentContent, userQuestion = '') => {
+    if (!resume?.id) {
+      alert('Please save your resume first before using Saathi AI assistance.');
+      return;
+    }
+
+    setLoadingSaathi(true);
+    setSaathiSection(sectionName);
+    try {
+      const apiPrefix = api.baseURL ? '' : '/api';
+      const { data } = await axios.post(
+        `${api.baseURL}${apiPrefix}/resumes/${resume.id}/suggest-section`,
+        {
+          sectionName: sectionName,
+          currentContent: currentContent || '',
+          userQuestion: userQuestion || ''
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (data && data.suggestion) {
+        setSaathiSuggestion(data.suggestion);
+        setShowSaathiPopup(true);
+      } else {
+        alert('Failed to get suggestion from Saathi.');
+      }
+    } catch (error) {
+      console.error('Error requesting Saathi suggestion:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to get suggestion';
+      alert(`Failed to get suggestion: ${errorMessage}`);
+    } finally {
+      setLoadingSaathi(false);
+    }
+  };
+
   const handleDragEnd = (event) => {
     const { active, over } = event;
 
@@ -1643,7 +1752,12 @@ const ResumeBuilder = () => {
           <Card>
             <CardHeader><CardTitle>Professional Summary</CardTitle></CardHeader>
             <CardContent>
-              <Textarea rows={4} value={resume.summary} onChange={(e) => onChange("summary", e.target.value)} />
+              <SaathiTextarea 
+                rows={4} 
+                value={resume.summary || ''} 
+                onChange={(e) => onChange("summary", e.target.value)}
+                sectionName="Professional Summary"
+              />
             </CardContent>
           </Card>
         );
@@ -1653,7 +1767,12 @@ const ResumeBuilder = () => {
           <Card>
             <CardHeader><CardTitle>About Me (Bio)</CardTitle></CardHeader>
             <CardContent>
-              <Textarea rows={3} value={resume.bio} onChange={(e) => onChange("bio", e.target.value)} />
+              <SaathiTextarea 
+                rows={3} 
+                value={resume.bio || ''} 
+                onChange={(e) => onChange("bio", e.target.value)}
+                sectionName="About Me (Bio)"
+              />
             </CardContent>
           </Card>
         );
@@ -1686,11 +1805,17 @@ const ResumeBuilder = () => {
                     onChange("experience", newExp);
                   }} />
                   <div className="md:col-span-2">
-                    <Textarea placeholder="Achievements (one per line)" rows={3} value={(exp.achievements || []).join("\n")} onChange={(e) => {
-                      const newExp = [...(resume.experience || [])];
-                      newExp[index] = { ...newExp[index], achievements: e.target.value.split("\n").filter(Boolean) };
-                      onChange("experience", newExp);
-                    }} />
+                    <SaathiTextarea 
+                      placeholder="Achievements (one per line). Type @saathi for help" 
+                      rows={3} 
+                      value={(exp.achievements || []).join("\n")} 
+                      onChange={(e) => {
+                        const newExp = [...(resume.experience || [])];
+                        newExp[index] = { ...newExp[index], achievements: e.target.value.split("\n").filter(Boolean) };
+                        onChange("experience", newExp);
+                      }}
+                      sectionName={`Experience: ${exp.role || 'Position'} at ${exp.company || 'Company'}`}
+                    />
                   </div>
                   <div className="flex gap-2">
                     <Button variant="outline" size="sm" onClick={() => {
@@ -2915,6 +3040,7 @@ const ResumeBuilder = () => {
             }
           `}</style>
         </div>
+      )}
 
       )}
 
@@ -3586,6 +3712,151 @@ const ResumeBuilder = () => {
             <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
             <p className="text-lg font-medium text-gray-800">Generating AI Review...</p>
             <p className="text-sm text-gray-600">This may take a few moments</p>
+          </div>
+        </div>
+      )}
+
+      {/* Saathi AI Suggestion Popup */}
+      {showSaathiPopup && saathiSuggestion && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4 backdrop-blur-sm"
+          style={{ 
+            position: 'fixed', 
+            top: 0, 
+            left: 0, 
+            right: 0, 
+            bottom: 0,
+            zIndex: 9999
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowSaathiPopup(false);
+            }
+          }}
+        >
+          <div 
+            className="bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 rounded-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto shadow-2xl border-2 border-purple-200"
+            style={{ 
+              borderRadius: '16px',
+              maxWidth: '42rem',
+              width: '100%',
+              maxHeight: '85vh'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="sticky top-0 bg-gradient-to-r from-purple-600 to-pink-600 text-white p-6 rounded-t-2xl flex justify-between items-center z-10 shadow-lg">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                  <Wand2 className="w-6 h-6" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold">Saathi AI Suggestion</h2>
+                  <p className="text-sm text-white/90">{saathiSection}</p>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowSaathiPopup(false)}
+                className="h-8 w-8 text-white hover:bg-white/20"
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-4">
+              <div className="bg-white rounded-xl p-6 border-2 border-purple-100 shadow-lg">
+                <div className="flex items-start gap-3 mb-4">
+                  <div className="p-2 bg-purple-100 rounded-lg">
+                    <Sparkles className="w-5 h-5 text-purple-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-2">AI-Generated Suggestion</h3>
+                    <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">{saathiSuggestion}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-4 border-t border-purple-200">
+                <Button
+                  onClick={() => {
+                    // Copy to clipboard
+                    navigator.clipboard.writeText(saathiSuggestion);
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                  }}
+                  className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg"
+                >
+                  {copied ? (
+                    <>
+                      <Check className="w-4 h-4 mr-2" />
+                      Copied!
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-4 h-4 mr-2" />
+                      Copy Suggestion
+                    </>
+                  )}
+                </Button>
+                <Button
+                  onClick={() => {
+                    // Apply suggestion to the current section based on section name
+                    if (saathiSection === 'Professional Summary') {
+                      onChange("summary", saathiSuggestion);
+                    } else if (saathiSection === 'About Me (Bio)') {
+                      onChange("bio", saathiSuggestion);
+                    } else if (saathiSection && saathiSection.startsWith('Experience:')) {
+                      // For experience achievements, we need to find the right experience entry
+                      // This is handled by the user manually copying for now
+                      alert('Please copy and paste the suggestion into the experience achievements field.');
+                    }
+                    setShowSaathiPopup(false);
+                  }}
+                  variant="outline"
+                  className="flex-1 border-purple-300 text-purple-700 hover:bg-purple-50"
+                >
+                  <CheckCircle2 className="w-4 h-4 mr-2" />
+                  Use This
+                </Button>
+              </div>
+
+              {/* Tip */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="text-sm text-blue-800">
+                  <span className="font-semibold">💡 Tip:</span> You can edit the suggestion or use parts of it. Type <span className="font-mono bg-blue-100 px-2 py-1 rounded">@saathi</span> again for more suggestions!
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Loading Overlay for Saathi */}
+      {loadingSaathi && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] backdrop-blur-sm"
+          style={{ 
+            position: 'fixed', 
+            top: 0, 
+            left: 0, 
+            right: 0, 
+            bottom: 0,
+            zIndex: 9999
+          }}
+        >
+          <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-8 flex flex-col items-center gap-4 border-2 border-purple-200 shadow-2xl">
+            <div className="relative">
+              <Loader2 className="w-12 h-12 animate-spin text-purple-600" />
+              <Wand2 className="w-6 h-6 text-pink-500 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 animate-pulse" />
+            </div>
+            <div className="text-center">
+              <p className="text-lg font-semibold text-gray-800">Saathi is thinking...</p>
+              <p className="text-sm text-gray-600 mt-1">Analyzing your resume and crafting the perfect suggestion</p>
+            </div>
           </div>
         </div>
       )}

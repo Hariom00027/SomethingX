@@ -138,5 +138,62 @@ public class OpenAIService {
         
         return sb.toString();
     }
+
+    public String suggestSectionContent(Resume resume, String sectionName, String currentContent, String userQuestion) {
+        if (apiKey == null || apiKey.trim().isEmpty() || apiKey.equals("your-openai-api-key-here")) {
+            throw new RuntimeException("OpenAI API key is not configured");
+        }
+
+        try {
+            OpenAiService service = new OpenAiService(apiKey, Duration.ofSeconds(60));
+            
+            String resumeContext = convertResumeToText(resume);
+            
+            // Optimized prompt for section suggestions
+            String systemPrompt = "You are a resume writing assistant. Analyze the resume context and suggest appropriate content for the specified section. Provide concise, professional, and relevant suggestions that complement the existing resume content. Return only the suggested text, no explanations.";
+            
+            String userPrompt;
+            if (userQuestion != null && !userQuestion.trim().isEmpty()) {
+                // User has provided a specific question/request
+                userPrompt = String.format(
+                    "Resume Context:\n%s\n\nSection: %s\nCurrent Content: %s\n\nUser Request: %s\n\nBased on the user's request and the resume context, suggest professional content for this section. Be specific and actionable.",
+                    resumeContext,
+                    sectionName,
+                    currentContent != null ? currentContent : "(empty)",
+                    userQuestion
+                );
+            } else {
+                // No specific question - auto-fill the section
+                userPrompt = String.format(
+                    "Resume Context:\n%s\n\nSection: %s\nCurrent Content: %s\n\nSuggest professional content for this section that aligns with the resume. Be specific and actionable.",
+                    resumeContext,
+                    sectionName,
+                    currentContent != null ? currentContent : "(empty)"
+                );
+            }
+            
+            List<ChatMessage> messages = new ArrayList<>();
+            messages.add(new ChatMessage(ChatMessageRole.SYSTEM.value(), systemPrompt));
+            messages.add(new ChatMessage(ChatMessageRole.USER.value(), userPrompt));
+            
+            ChatCompletionRequest request = ChatCompletionRequest.builder()
+                    .model("gpt-3.5-turbo")
+                    .messages(messages)
+                    .maxTokens(300) // Limit response tokens for suggestions
+                    .temperature(0.8) // Slightly higher for creativity
+                    .build();
+            
+            String response = service.createChatCompletion(request)
+                    .getChoices()
+                    .get(0)
+                    .getMessage()
+                    .getContent();
+            
+            return response.trim();
+        } catch (Exception e) {
+            log.error("Error generating section suggestion: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to generate section suggestion: " + e.getMessage());
+        }
+    }
 }
 

@@ -274,16 +274,20 @@ public class BlueprintService {
             distributeExcessTime(tasks, excessTime, totalMonths);
         }
         
-        // Add project/internship phase in the last portion of the timeline
-        int projectStartMonth = Math.max(1, totalMonths - Math.min(6, totalMonths / 3));
-        Map<String, Object> projectPhase = new HashMap<>();
-        projectPhase.put("id", "project_phase");
-        projectPhase.put("name", "Projects & Internships");
-        projectPhase.put("start", projectStartMonth);
-        projectPhase.put("end", totalMonths);
-        projectPhase.put("type", "project");
-        projectPhase.put("progress", 0);
-        tasks.add(projectPhase);
+        // Check if there's spare time after all skills are completed
+        int maxEndMonth = tasks.stream()
+                .mapToInt(t -> (Integer) t.get("end"))
+                .max()
+                .orElse(0);
+        
+        boolean hasSpareTime = maxEndMonth < totalMonths && totalTimeRequired < totalMonths;
+        if (hasSpareTime) {
+            int spareMonths = totalMonths - maxEndMonth;
+            ganttData.put("hasSpareTime", true);
+            ganttData.put("spareMonths", spareMonths);
+        } else {
+            ganttData.put("hasSpareTime", false);
+        }
         
         ganttData.put("labels", labels);
         ganttData.put("tasks", tasks);

@@ -143,59 +143,89 @@ const JobDescription = () => {
           <CardContent>
             {jobDetails.skillRequirements && jobDetails.skillRequirements.length > 0 ? (
               <div>
-                <h3 className="text-lg font-semibold mb-4">Skill Requirements:</h3>
-                <div className="space-y-4">
-                  {jobDetails.skillRequirements.map((skill, index) => {
-                    const skillTypeColors = {
-                      technical: 'from-blue-500 to-cyan-500',
-                      soft: 'from-green-500 to-emerald-500',
-                      certification: 'from-yellow-500 to-orange-500'
-                    };
-                    const difficultyColors = {
-                      beginner: 'bg-green-100 text-green-800 border-green-300',
-                      intermediate: 'bg-yellow-100 text-yellow-800 border-yellow-300',
-                      advanced: 'bg-red-100 text-red-800 border-red-300'
-                    };
-                    const importanceColors = {
-                      'Essential': 'bg-red-100 text-red-800 border-red-300',
-                      'Important': 'bg-orange-100 text-orange-800 border-orange-300',
-                      'Good to be': 'bg-blue-100 text-blue-800 border-blue-300'
-                    };
-                    return (
-                      <div 
-                        key={index} 
-                        className="border-l-4 pl-4 py-3 rounded-r-lg bg-gradient-to-r from-gray-50 to-white hover:shadow-md transition-all duration-200"
-                        style={{ borderLeftColor: skill.skillType === 'technical' ? '#3b82f6' : skill.skillType === 'soft' ? '#10b981' : '#a855f7' }}
-                      >
-                        <div className="flex justify-between items-start gap-4">
-                          <div className="flex-1">
-                            <h4 className="font-semibold text-gray-900 mb-1">{skill.skillName}</h4>
-                            <p className="text-sm text-gray-600 leading-relaxed">{skill.description}</p>
-                          </div>
-                          <div className="flex flex-col items-end gap-2">
-                            <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${
-                              skill.skillType === 'technical' ? 'bg-blue-100 text-blue-800 border-blue-300' :
-                              skill.skillType === 'soft' ? 'bg-green-100 text-green-800 border-green-300' :
-                              'bg-purple-100 text-purple-800 border-purple-300'
-                            }`}>
-                              {skill.skillType}
-                            </span>
-                            <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${importanceColors[skill.importance] || importanceColors['Good to be']}`}>
-                              {skill.importance || 'Good to be'}
-                            </span>
-                            <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${difficultyColors[skill.difficulty] || difficultyColors.beginner}`}>
-                              {skill.difficulty}
-                            </span>
-                            <div className="flex items-center gap-1 text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-full">
-                              <Calendar className="w-3 h-3" />
-                              <span className="font-medium">{skill.timeRequiredMonths} month{skill.timeRequiredMonths !== 1 ? 's' : ''}</span>
-                            </div>
+                {/* Separate Technical and Non-Technical Skills */}
+                {(() => {
+                  const technicalSkills = jobDetails.skillRequirements.filter(skill => 
+                    skill.skillType === 'technical' || skill.skillType === 'Technical'
+                  );
+                  const nonTechnicalSkills = jobDetails.skillRequirements.filter(skill => 
+                    skill.skillType !== 'technical' && skill.skillType !== 'Technical'
+                  );
+                  
+                  const difficultyColors = {
+                    beginner: 'bg-green-100 text-green-800 border-green-300',
+                    intermediate: 'bg-yellow-100 text-yellow-800 border-yellow-300',
+                    advanced: 'bg-red-100 text-red-800 border-red-300'
+                  };
+                  const importanceColors = {
+                    'Essential': 'bg-red-100 text-red-800 border-red-300',
+                    'Important': 'bg-orange-100 text-orange-800 border-orange-300',
+                    'Good to be': 'bg-blue-100 text-blue-800 border-blue-300'
+                  };
+                  
+                  const renderSkill = (skill, index) => (
+                    <div 
+                      key={index} 
+                      className="border-l-4 pl-4 py-3 rounded-r-lg bg-gradient-to-r from-gray-50 to-white hover:shadow-md transition-all duration-200"
+                      style={{ borderLeftColor: skill.skillType === 'technical' || skill.skillType === 'Technical' ? '#3b82f6' : '#10b981' }}
+                    >
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-semibold text-gray-900 mb-1">{skill.skillName}</h4>
+                          {skill.description && (
+                            <p className="text-sm text-gray-600 leading-relaxed line-clamp-2">{skill.description}</p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <span className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${
+                            skill.skillType === 'technical' || skill.skillType === 'Technical' 
+                              ? 'bg-blue-100 text-blue-800 border-blue-300' 
+                              : 'bg-green-100 text-green-800 border-green-300'
+                          }`}>
+                            {skill.skillType === 'technical' || skill.skillType === 'Technical' ? 'Technical' : 'Non-Technical'}
+                          </span>
+                          <span className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${importanceColors[skill.importance] || importanceColors['Good to be']}`}>
+                            {skill.importance || 'Good to be'}
+                          </span>
+                          <span className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${difficultyColors[skill.difficulty] || difficultyColors.beginner}`}>
+                            {skill.difficulty}
+                          </span>
+                          <div className="flex items-center gap-1 text-xs text-gray-600 bg-gray-100 px-2.5 py-1 rounded-full">
+                            <Calendar className="w-3 h-3" />
+                            <span className="font-medium">{skill.timeRequiredMonths}M</span>
                           </div>
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
+                    </div>
+                  );
+                  
+                  return (
+                    <div className="space-y-6">
+                      {technicalSkills.length > 0 && (
+                        <div>
+                          <h3 className="text-lg font-semibold mb-3 text-blue-700 flex items-center gap-2">
+                            <div className="w-1 h-6 bg-blue-500 rounded"></div>
+                            Technical Skills
+                          </h3>
+                          <div className="space-y-3">
+                            {technicalSkills.map((skill, index) => renderSkill(skill, index))}
+                          </div>
+                        </div>
+                      )}
+                      {nonTechnicalSkills.length > 0 && (
+                        <div>
+                          <h3 className="text-lg font-semibold mb-3 text-green-700 flex items-center gap-2">
+                            <div className="w-1 h-6 bg-green-500 rounded"></div>
+                            Non-Technical Skills
+                          </h3>
+                          <div className="space-y-3">
+                            {nonTechnicalSkills.map((skill, index) => renderSkill(skill, index))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             ) : jobDetails.skills ? (
               <div>
@@ -266,6 +296,24 @@ const JobDescription = () => {
                 </div>
               )}
               <GanttChart data={jobDetails.plan} totalMonths={totalMonths} />
+              {jobDetails.plan?.hasSpareTime && jobDetails.plan.spareMonths > 0 && (
+                <div className="mt-6 p-5 bg-gradient-to-r from-emerald-50 via-teal-50 to-cyan-50 border-l-4 border-emerald-500 rounded-lg shadow-md">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-full bg-emerald-500 text-white mt-0.5 flex-shrink-0">
+                      <Sparkles className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-emerald-800 mb-2 text-lg">Additional Practice Time Available</h4>
+                      <p className="text-emerald-700 leading-relaxed">
+                        Great news! You have <span className="font-bold">{jobDetails.plan.spareMonths} month{jobDetails.plan.spareMonths !== 1 ? 's' : ''}</span> of additional time after completing all required skills. 
+                        Use this extra time to deepen your expertise, work on advanced projects, build a strong portfolio, 
+                        and gain hands-on experience through internships or personal projects. This will significantly strengthen 
+                        your profile and make you stand out to employers.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">

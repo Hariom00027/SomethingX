@@ -3,6 +3,7 @@ package com.saarthix.controller;
 import com.saarthix.model.Resume;
 import com.saarthix.repository.ResumeRepository;
 import com.saarthix.repository.ResumeTemplateRepository;
+import com.saarthix.service.OpenAIService;
 import com.saarthix.service.PdfRenderService;
 import com.saarthix.service.ResumeParsingService;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +25,7 @@ public class ResumeController {
     private final ResumeTemplateRepository templateRepository;
     private final PdfRenderService pdfRenderService;
     private final ResumeParsingService resumeParsingService;
+    private final OpenAIService openAIService;
 
     @PostMapping
     public Resume createResume(@RequestBody Resume resume) {
@@ -94,6 +96,34 @@ public class ResumeController {
             System.err.println("Error parsing resume: " + e.getMessage());
             return ResponseEntity.status(500).body(java.util.Map.of(
                 "error", "Failed to parse resume",
+                "message", e.getMessage() != null ? e.getMessage() : "Unknown error"
+            ));
+        }
+    }
+
+    @PostMapping("/{id}/suggest-section")
+    public ResponseEntity<?> suggestSectionContent(
+            @PathVariable String id,
+            @RequestBody java.util.Map<String, String> request) {
+        try {
+            Resume resume = resumeRepository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Resume not found"));
+            
+            String sectionName = request.get("sectionName");
+            String currentContent = request.get("currentContent");
+            String userQuestion = request.get("userQuestion");
+            
+            if (sectionName == null || sectionName.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body(java.util.Map.of("error", "Section name is required"));
+            }
+            
+            String suggestion = openAIService.suggestSectionContent(resume, sectionName, currentContent, userQuestion);
+            
+            return ResponseEntity.ok(java.util.Map.of("suggestion", suggestion));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(java.util.Map.of(
+                "error", "Failed to generate suggestion",
                 "message", e.getMessage() != null ? e.getMessage() : "Unknown error"
             ));
         }

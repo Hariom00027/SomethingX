@@ -1271,6 +1271,9 @@ const ResumeBuilder = () => {
   const [sectionTemplates, setSectionTemplates] = useState([]);
   const [dataEntryMode, setDataEntryMode] = useState(null); // null, 'manual', or 'upload'
   const [uploading, setUploading] = useState(false);
+  const [aiReview, setAiReview] = useState(null);
+  const [showAiReviewPopup, setShowAiReviewPopup] = useState(false);
+  const [loadingAiReview, setLoadingAiReview] = useState(false);
   const resumeDataRef = useRef(null); // Store resume data when changing templates
 
   const sensors = useSensors(
@@ -1435,6 +1438,44 @@ const ResumeBuilder = () => {
       return;
     }
     
+    // Handle AI review differently
+    if (type === "AI") {
+      setLoadingAiReview(true);
+      try {
+        const apiPrefix = api.baseURL ? '' : '/api';
+        const { data } = await axios.post(
+          `${api.baseURL}${apiPrefix}/reviews`,
+          { 
+            resumeId: resume.id, 
+            studentId: resume.studentId || studentId,
+            type 
+          },
+          {
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+        
+        if (data && data.id) {
+          setAiReview(data);
+          setShowAiReviewPopup(true);
+          setFeedback('AI review completed!');
+        } else {
+          alert('AI review completed, but did not receive review data.');
+        }
+      } catch (error) {
+        console.error('Error requesting AI review:', error);
+        const errorMessage = error.response?.data?.message || error.message || 'Failed to generate AI review';
+        alert(`Failed to generate AI review: ${errorMessage}`);
+        setFeedback('Error generating AI review. Please try again.');
+      } finally {
+        setLoadingAiReview(false);
+      }
+      return;
+    }
+    
+    // Handle HUMAN (mentor) review
     try {
       const apiPrefix = api.baseURL ? '' : '/api';
       const { data } = await axios.post(
@@ -2948,12 +2989,21 @@ const ResumeBuilder = () => {
               <div className="h-6 w-px bg-gray-300"></div>
               <Button 
                 onClick={() => requestReview("AI")} 
-                disabled={!resume?.id}
+                disabled={!resume?.id || loadingAiReview}
                 variant="outline"
                 className="gap-2 border-purple-200 text-purple-700 hover:bg-purple-50"
               >
-                <Sparkles className="w-4 h-4" />
-                AI Review
+                {loadingAiReview ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4" />
+                    AI Review
+                  </>
+                )}
               </Button>
               <Button 
                 onClick={() => requestReview("HUMAN")} 
@@ -3050,6 +3100,147 @@ const ResumeBuilder = () => {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* AI Review Popup */}
+      {showAiReviewPopup && aiReview && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4"
+          style={{ 
+            position: 'fixed', 
+            top: 0, 
+            left: 0, 
+            right: 0, 
+            bottom: 0,
+            zIndex: 9999
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowAiReviewPopup(false);
+            }
+          }}
+        >
+          <div 
+            className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl"
+            style={{ 
+              backgroundColor: 'white', 
+              borderRadius: '8px',
+              maxWidth: '56rem',
+              width: '100%',
+              maxHeight: '90vh'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="sticky top-0 bg-white border-b p-4 flex justify-between items-center z-10">
+              <div className="flex items-center gap-3">
+                <Sparkles className="w-6 h-6 text-purple-600" />
+                <h2 className="text-2xl font-bold text-gray-800">AI Resume Review</h2>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowAiReviewPopup(false)}
+                className="h-8 w-8"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Rating */}
+              {aiReview.rating && (
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-medium text-gray-700">Overall Rating:</span>
+                  <div className="flex items-center gap-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <span
+                        key={star}
+                        className={`text-2xl ${
+                          star <= aiReview.rating
+                            ? 'text-yellow-400'
+                            : 'text-gray-300'
+                        }`}
+                      >
+                        ★
+                      </span>
+                    ))}
+                  </div>
+                  <span className="text-sm text-gray-600">({aiReview.rating}/5)</span>
+                </div>
+              )}
+
+              {/* Review Text */}
+              {aiReview.review && (
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-800 mb-2">Review</h3>
+                  <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <p className="text-gray-700 whitespace-pre-wrap">{aiReview.review}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Strengths and Weaknesses */}
+              {aiReview.feedback && (
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-800 mb-2">Analysis</h3>
+                  <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <p className="text-gray-700 whitespace-pre-wrap">{aiReview.feedback}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Suggestions */}
+              {aiReview.suggestions && (
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-800 mb-2">Suggestions for Improvement</h3>
+                  <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                    <p className="text-gray-700 whitespace-pre-wrap">{aiReview.suggestions}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Additional Comments */}
+              {aiReview.others && (
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-800 mb-2">Additional Comments</h3>
+                  <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <p className="text-gray-700 whitespace-pre-wrap">{aiReview.others}</p>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex justify-end pt-4 border-t">
+                <Button
+                  onClick={() => setShowAiReviewPopup(false)}
+                  className="bg-purple-600 hover:bg-purple-700"
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Loading Overlay for AI Review */}
+      {loadingAiReview && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]"
+          style={{ 
+            position: 'fixed', 
+            top: 0, 
+            left: 0, 
+            right: 0, 
+            bottom: 0,
+            zIndex: 9999
+          }}
+        >
+          <div className="bg-white rounded-lg p-8 flex flex-col items-center gap-4">
+            <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
+            <p className="text-lg font-medium text-gray-800">Generating AI Review...</p>
+            <p className="text-sm text-gray-600">This may take a few moments</p>
+          </div>
         </div>
       )}
     </DashboardLayout>

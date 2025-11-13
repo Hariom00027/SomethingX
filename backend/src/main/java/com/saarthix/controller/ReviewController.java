@@ -4,17 +4,23 @@ import com.saarthix.model.ReviewRequest;
 import com.saarthix.model.Resume;
 import com.saarthix.repository.ReviewRequestRepository;
 import com.saarthix.repository.ResumeRepository;
+import com.saarthix.service.OpenAIService;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.CrossOrigin;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @RestController
 @RequestMapping("/reviews")
 @CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5173"})
@@ -22,10 +28,11 @@ import java.util.Map;
 public class ReviewController {
     private final ReviewRequestRepository reviewRepository;
     private final ResumeRepository resumeRepository;
+    private final OpenAIService openAIService;
+    private final ObjectMapper objectMapper;
 
     @PostMapping
-    public ReviewRequest request(@RequestBody ReviewRequest req) {
-        req.setStatus("PENDING");
+    public ResponseEntity<?> request(@RequestBody ReviewRequest req) {
         req.setRequestedAt(Instant.now());
         
         // Ensure studentId is set from resume if not provided
@@ -37,8 +44,79 @@ public class ReviewController {
             }
         }
         
-        // If it's a mentor review, mark the resume accordingly
+        // Handle AI review - process immediately
+        if ("AI".equals(req.getType())) {
+            try {
+                Resume resume = resumeRepository.findById(req.getResumeId())
+                        .orElseThrow(() -> new RuntimeException("Resume not found"));
+                
+                // Generate AI review
+                String aiResponse = openAIService.reviewResume(resume);
+                
+                // Parse JSON response
+                try {
+                    JsonNode jsonNode = objectMapper.readTree(aiResponse);
+                    
+                    // Extract structured data
+                    if (jsonNode.has("rating")) {
+                        req.setRating(jsonNode.get("rating").asInt());
+                    }
+                    if (jsonNode.has("review")) {
+                        req.setReview(jsonNode.get("review").asText());
+                    }
+                    if (jsonNode.has("suggestions")) {
+                        List<String> suggestionsList = new ArrayList<>();
+                        jsonNode.get("suggestions").forEach(node -> suggestionsList.add(node.asText()));
+                        req.setSuggestions(String.join("\n• ", suggestionsList));
+                        if (!req.getSuggestions().isEmpty()) {
+                            req.setSuggestions("• " + req.getSuggestions());
+                        }
+                    }
+                    if (jsonNode.has("strengths")) {
+                        List<String> strengthsList = new ArrayList<>();
+                        jsonNode.get("strengths").forEach(node -> strengthsList.add(node.asText()));
+                        String strengths = String.join("\n• ", strengthsList);
+                        if (!strengths.isEmpty()) {
+                            strengths = "• " + strengths;
+                        }
+                        // Store strengths in feedback field
+                        req.setFeedback("Strengths:\n" + strengths);
+                    }
+                    if (jsonNode.has("weaknesses")) {
+                        List<String> weaknessesList = new ArrayList<>();
+                        jsonNode.get("weaknesses").forEach(node -> weaknessesList.add(node.asText()));
+                        String weaknesses = String.join("\n• ", weaknessesList);
+                        if (!weaknesses.isEmpty()) {
+                            weaknesses = "• " + weaknesses;
+                        }
+                        // Append weaknesses to feedback
+                        if (req.getFeedback() != null && !req.getFeedback().isEmpty()) {
+                            req.setFeedback(req.getFeedback() + "\n\nWeaknesses:\n" + weaknesses);
+                        } else {
+                            req.setFeedback("Weaknesses:\n" + weaknesses);
+                        }
+                    }
+                } catch (Exception e) {
+                    log.warn("Failed to parse AI response as JSON, storing as plain text: {}", e.getMessage());
+                    req.setReview(aiResponse);
+                }
+                
+                req.setStatus("COMPLETED");
+                req.setReviewedAt(Instant.now());
+                
+                ReviewRequest saved = reviewRepository.save(req);
+                return ResponseEntity.ok(saved);
+            } catch (Exception e) {
+                log.error("Error processing AI review: {}", e.getMessage(), e);
+                Map<String, String> error = new HashMap<>();
+                error.put("message", "Failed to generate AI review: " + e.getMessage());
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+            }
+        }
+        
+        // Handle HUMAN (mentor) review
         if ("HUMAN".equals(req.getType())) {
+            req.setStatus("PENDING");
             Resume resume = resumeRepository.findById(req.getResumeId())
                     .orElse(null);
             if (resume != null) {
@@ -49,9 +127,11 @@ public class ReviewController {
                 }
                 resumeRepository.save(resume);
             }
+        } else {
+            req.setStatus("PENDING");
         }
         
-        return reviewRepository.save(req);
+        return ResponseEntity.ok(reviewRepository.save(req));
     }
 
     @GetMapping("/resume/{resumeId}")

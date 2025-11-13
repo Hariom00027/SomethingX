@@ -15,10 +15,13 @@ services:
       - "8080:8080"
     depends_on:
       - mongodb
+    env_file:
+      - .env
     environment:
       - JWT_SECRET=default-secret-key-change-in-production
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
   mongodb:
     image: mongo:6
     ports:

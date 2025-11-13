@@ -25,7 +25,7 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, Edit3, Eye, Palette, Save, Download, EyeOff, ArrowLeft, FileText, Sparkles, X, CheckCircle2, Loader2, Plus, Trash2, Image as ImageIcon, Move, Maximize2, Upload, File } from "lucide-react";
+import { GripVertical, Edit3, Eye, Palette, Save, Download, EyeOff, ArrowLeft, FileText, Sparkles, X, CheckCircle2, Loader2, Plus, Trash2, Image as ImageIcon, Move, Maximize2, Upload, File, Wand2, Copy, Check } from "lucide-react";
 
 // Draggable and Resizable Image Component
 const DraggableResizableImage = ({ src, onUpdate, style, isEditing }) => {
@@ -283,6 +283,61 @@ const SortableSection = ({ id, children, isEditing, onEdit, onDelete, onColorCha
         </div>
       </div>
       {children}
+    </div>
+  );
+};
+
+// Saathi AI Textarea Component with @saathi detection
+const SaathiTextarea = ({ value, onChange, sectionName, placeholder, rows = 4, ...props }) => {
+  const textareaRef = useRef(null);
+
+  const handleChange = (e) => {
+    onChange(e);
+  };
+
+  const handleKeyDown = (e) => {
+    // Check for Enter key (Shift+Enter allows new lines)
+    if (e.key === 'Enter' && !e.shiftKey) {
+      const text = e.target.value;
+      
+      // Check if @saathi is mentioned
+      if (text.includes('@saathi') || text.includes('@Saathi') || text.includes('@SAATHI')) {
+        e.preventDefault(); // Prevent default Enter behavior
+        
+        // Extract the question if any (text after @saathi)
+        const match = text.match(/@saathi\s*(.*)/i);
+        const question = match ? match[1].trim() : '';
+        
+        // Remove @saathi and question from the textarea, keep text before @saathi
+        const textBeforeSaathi = text.substring(0, text.toLowerCase().indexOf('@saathi')).trim();
+        onChange({ target: { value: textBeforeSaathi } });
+        
+        // Trigger AI suggestion with the user's question
+        if (window.handleSaathiRequest) {
+          window.handleSaathiRequest(sectionName, textBeforeSaathi, question);
+        }
+      }
+    }
+    // Shift+Enter will create a new line (default behavior)
+  };
+
+  return (
+    <div className="relative">
+      <Textarea
+        ref={textareaRef}
+        value={value}
+        onChange={handleChange}
+        onKeyDown={handleKeyDown}
+        placeholder={placeholder || `Type @saathi and press Enter for AI assistance...`}
+        rows={rows}
+        className="pr-20"
+        {...props}
+      />
+      <div className="absolute bottom-2 right-2 flex items-center gap-2">
+        <div className="text-xs text-gray-400 bg-gray-50 px-2 py-1 rounded border border-gray-200">
+          <span className="font-semibold text-purple-600">@saathi</span> + Enter
+        </div>
+      </div>
     </div>
   );
 };
@@ -1274,6 +1329,11 @@ const ResumeBuilder = () => {
   const [aiReview, setAiReview] = useState(null);
   const [showAiReviewPopup, setShowAiReviewPopup] = useState(false);
   const [loadingAiReview, setLoadingAiReview] = useState(false);
+  const [saathiSuggestion, setSaathiSuggestion] = useState(null);
+  const [showSaathiPopup, setShowSaathiPopup] = useState(false);
+  const [loadingSaathi, setLoadingSaathi] = useState(false);
+  const [saathiSection, setSaathiSection] = useState(null);
+  const [copied, setCopied] = useState(false);
   const resumeDataRef = useRef(null); // Store resume data when changing templates
 
   const sensors = useSensors(
@@ -1285,6 +1345,16 @@ const ResumeBuilder = () => {
 
   const { user } = useAuth();
   const studentId = user?.id || user?.googleId || user?.email || "demo-student-1";
+
+  // Expose handleSaathiRequest to window for SaathiTextarea component
+  useEffect(() => {
+    window.handleSaathiRequest = (sectionName, currentContent, userQuestion) => {
+      handleSaathiRequest(sectionName, currentContent, userQuestion);
+    };
+    return () => {
+      delete window.handleSaathiRequest;
+    };
+  }, [resume?.id]);
 
   useEffect(() => {
     axios.get(`${api.baseURL}/resume-templates`).then((res) => setTemplates(res.data));
@@ -1507,6 +1577,45 @@ const ResumeBuilder = () => {
     }
   };
 
+  const handleSaathiRequest = async (sectionName, currentContent, userQuestion = '') => {
+    if (!resume?.id) {
+      alert('Please save your resume first before using Saathi AI assistance.');
+      return;
+    }
+
+    setLoadingSaathi(true);
+    setSaathiSection(sectionName);
+    try {
+      const apiPrefix = api.baseURL ? '' : '/api';
+      const { data } = await axios.post(
+        `${api.baseURL}${apiPrefix}/resumes/${resume.id}/suggest-section`,
+        {
+          sectionName: sectionName,
+          currentContent: currentContent || '',
+          userQuestion: userQuestion || ''
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (data && data.suggestion) {
+        setSaathiSuggestion(data.suggestion);
+        setShowSaathiPopup(true);
+      } else {
+        alert('Failed to get suggestion from Saathi.');
+      }
+    } catch (error) {
+      console.error('Error requesting Saathi suggestion:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to get suggestion';
+      alert(`Failed to get suggestion: ${errorMessage}`);
+    } finally {
+      setLoadingSaathi(false);
+    }
+  };
+
   const handleDragEnd = (event) => {
     const { active, over } = event;
 
@@ -1643,7 +1752,12 @@ const ResumeBuilder = () => {
           <Card>
             <CardHeader><CardTitle>Professional Summary</CardTitle></CardHeader>
             <CardContent>
-              <Textarea rows={4} value={resume.summary} onChange={(e) => onChange("summary", e.target.value)} />
+              <SaathiTextarea 
+                rows={4} 
+                value={resume.summary || ''} 
+                onChange={(e) => onChange("summary", e.target.value)}
+                sectionName="Professional Summary"
+              />
             </CardContent>
           </Card>
         );
@@ -1653,7 +1767,12 @@ const ResumeBuilder = () => {
           <Card>
             <CardHeader><CardTitle>About Me (Bio)</CardTitle></CardHeader>
             <CardContent>
-              <Textarea rows={3} value={resume.bio} onChange={(e) => onChange("bio", e.target.value)} />
+              <SaathiTextarea 
+                rows={3} 
+                value={resume.bio || ''} 
+                onChange={(e) => onChange("bio", e.target.value)}
+                sectionName="About Me (Bio)"
+              />
             </CardContent>
           </Card>
         );
@@ -1686,11 +1805,17 @@ const ResumeBuilder = () => {
                     onChange("experience", newExp);
                   }} />
                   <div className="md:col-span-2">
-                    <Textarea placeholder="Achievements (one per line)" rows={3} value={(exp.achievements || []).join("\n")} onChange={(e) => {
-                      const newExp = [...(resume.experience || [])];
-                      newExp[index] = { ...newExp[index], achievements: e.target.value.split("\n").filter(Boolean) };
-                      onChange("experience", newExp);
-                    }} />
+                    <SaathiTextarea 
+                      placeholder="Achievements (one per line). Type @saathi for help" 
+                      rows={3} 
+                      value={(exp.achievements || []).join("\n")} 
+                      onChange={(e) => {
+                        const newExp = [...(resume.experience || [])];
+                        newExp[index] = { ...newExp[index], achievements: e.target.value.split("\n").filter(Boolean) };
+                        onChange("experience", newExp);
+                      }}
+                      sectionName={`Experience: ${exp.role || 'Position'} at ${exp.company || 'Company'}`}
+                    />
                   </div>
                   <div className="flex gap-2">
                     <Button variant="outline" size="sm" onClick={() => {
@@ -2915,6 +3040,7 @@ const ResumeBuilder = () => {
             }
           `}</style>
         </div>
+      )}
 
       {/* Editor */}
       {selectedTemplateId && resume && (
@@ -3145,8 +3271,6 @@ const ResumeBuilder = () => {
                 <X className="h-4 w-4" />
               </Button>
             </div>
-          </CardContent>
-        </Card>
 
             <div className="p-6 space-y-6">
               {/* Rating */}
@@ -3209,22 +3333,177 @@ const ResumeBuilder = () => {
                     <p className="text-gray-700 whitespace-pre-wrap">{aiReview.others}</p>
                   </div>
                 </div>
-                <div className="absolute -inset-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-3xl opacity-0 group-hover:opacity-50 blur-2xl transition-opacity duration-500 -z-10"></div>
+              )}
+
+              <div className="flex justify-end pt-4 border-t">
+                <Button
+                  onClick={() => setShowAiReviewPopup(false)}
+                  className="bg-purple-600 hover:bg-purple-700"
+                >
+                  Close
+                </Button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
 
-            <div className="text-center mt-8">
-              <Button
-                onClick={() => {
-                  setSelectedTemplateId("");
-                  setDataEntryMode(null);
-                }}
-                variant="outline"
-                className="bg-white/20 backdrop-blur-sm text-white border-white/30 hover:bg-white/30"
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Templates
-              </Button>
+      {/* Template gallery */}
+      {!selectedTemplateId && (
+        <div className="min-h-screen bg-gradient-to-br from-violet-400 via-purple-400 via-pink-400 to-orange-400 py-12 relative overflow-hidden">
+          {/* Animated background elements */}
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute top-20 left-10 w-72 h-72 bg-yellow-300 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob"></div>
+            <div className="absolute top-40 right-10 w-72 h-72 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-2000"></div>
+            <div className="absolute -bottom-8 left-1/2 w-72 h-72 bg-blue-300 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-4000"></div>
+          </div>
+          
+          <div className="relative z-10">
+            <div className="text-center mb-12 px-4">
+              <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-br from-yellow-400 via-pink-500 to-purple-600 mb-6 shadow-2xl transform hover:scale-110 transition-transform duration-300">
+                <FileText className="w-12 h-12 text-white" />
+              </div>
+              <h2 className="text-5xl font-extrabold mb-4 text-white drop-shadow-lg">
+                Choose Your Resume Template
+              </h2>
+              <p className="text-white/90 text-xl max-w-2xl mx-auto font-semibold drop-shadow-md">
+                Select a professional template that matches your style. Hover over any template to preview it.
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 px-8 max-w-7xl mx-auto">
+              {templates.map((t, index) => {
+                // Handle thumbnail URL - encode spaces and special characters
+                let thumbnailPath = t.thumbnailUrl || t.previewUrl;
+                if (thumbnailPath && !thumbnailPath.startsWith('http') && !thumbnailPath.startsWith('data:')) {
+                  // Encode the path properly, but keep the structure
+                  const parts = thumbnailPath.split('/');
+                  const fileName = parts[parts.length - 1];
+                  const dirPath = parts.slice(0, -1).join('/');
+                  // Encode only the filename part to handle spaces
+                  thumbnailPath = dirPath + '/' + encodeURIComponent(fileName);
+                }
+                // Vibrant color schemes for each card
+                const cardColors = [
+                  { bg: 'from-purple-500 to-pink-500', border: 'border-purple-400', accent: 'bg-purple-500' },
+                  { bg: 'from-blue-500 to-cyan-500', border: 'border-blue-400', accent: 'bg-blue-500' },
+                  { bg: 'from-orange-500 to-red-500', border: 'border-orange-400', accent: 'bg-orange-500' },
+                  { bg: 'from-green-500 to-emerald-500', border: 'border-green-400', accent: 'bg-green-500' },
+                  { bg: 'from-indigo-500 to-purple-500', border: 'border-indigo-400', accent: 'bg-indigo-500' },
+                  { bg: 'from-pink-500 to-rose-500', border: 'border-pink-400', accent: 'bg-pink-500' },
+                  { bg: 'from-yellow-500 to-orange-500', border: 'border-yellow-400', accent: 'bg-yellow-500' },
+                ];
+                const colors = cardColors[index % cardColors.length];
+                
+                return (
+                  <div
+                    key={t.id}
+                    className="group relative cursor-pointer"
+                    onClick={() => {
+                      // If there's stored resume data, populate new template with it
+                      if (resumeDataRef.current) {
+                        const storedResume = resumeDataRef.current;
+                        // Create new resume with stored data but update templateId
+                        // Keep the id so it updates the existing resume when saved
+                        const newResume = {
+                          ...storedResume,
+                          templateId: t.id
+                        };
+                        setResume(newResume);
+                        setDataEntryMode('manual');
+                        resumeDataRef.current = null; // Clear the ref after using it
+                      }
+                      setSelectedTemplateId(t.id);
+                    }}
+                  >
+                    {/* Main Card Container - Colorful */}
+                    <div className={`relative bg-gradient-to-br ${colors.bg} rounded-3xl shadow-2xl hover:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] transition-all duration-500 overflow-hidden border-4 ${colors.border} transform hover:-translate-y-4 hover:scale-105`}>
+                      {/* Image Card Wrapper */}
+                      <div className="relative p-5 bg-white/20 backdrop-blur-sm">
+                        <Card className="overflow-hidden border-4 border-white/50 shadow-xl bg-white rounded-xl">
+                          <div className="relative overflow-hidden bg-white" style={{ aspectRatio: '3/4', height: '280px' }}>
+                            <img 
+                              src={thumbnailPath} 
+                              alt={t.name}
+                              className="w-full h-full object-contain p-2 transition-transform duration-700 group-hover:scale-110"
+                              onError={(e) => {
+                                // Try previewUrl if thumbnail fails
+                                if (t.previewUrl && e.target.src !== t.previewUrl) {
+                                  e.target.src = t.previewUrl;
+                                } else {
+                                  // If both fail, hide the image to prevent repeated 404s
+                                  e.target.style.display = 'none';
+                                }
+                              }}
+                              loading="lazy"
+                            />
+                            {/* Hover overlay */}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-start justify-end p-4">
+                              <div className="bg-white rounded-full px-4 py-2 shadow-2xl flex items-center gap-2 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-500">
+                                <Eye className="w-4 h-4 text-purple-600" />
+                                <span className="text-sm font-bold text-purple-600">Preview</span>
+                              </div>
+                            </div>
+                          </div>
+                        </Card>
+                      </div>
+                      
+                      {/* Template Details Below Image - Colorful */}
+                      <div className="p-6 bg-white/10 backdrop-blur-md">
+                        {/* Template Name */}
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className={`w-2 h-8 rounded-full ${colors.accent} shadow-lg`}></div>
+                          <h3 className="text-xl font-extrabold text-white drop-shadow-lg">
+                            {t.name}
+                          </h3>
+                        </div>
+                        
+                        {/* Description */}
+                        {t.description && (
+                          <p className="text-sm text-white/90 mb-4 font-medium overflow-hidden" style={{
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical'
+                          }}>
+                            {t.description}
+                          </p>
+                        )}
+                        
+                        {/* Category Badge */}
+                        {t.category && (
+                          <div className="flex items-center gap-2 mb-5">
+                            <span className={`px-4 py-2 rounded-full text-xs font-bold ${colors.accent} text-white shadow-lg`}>
+                              {t.category.toUpperCase()}
+                            </span>
+                          </div>
+                        )}
+                        
+                        {/* Action Button */}
+                        <div className="flex items-center justify-between pt-4 border-t-2 border-white/30">
+                          <div className="flex items-center gap-2 text-white/80">
+                            <Sparkles className="w-5 h-5" />
+                            <span className="text-sm font-semibold">Click to Select</span>
+                          </div>
+                          <div className={`flex items-center gap-2 px-5 py-2.5 rounded-xl ${colors.accent} text-white shadow-xl group-hover:shadow-2xl transition-all duration-300 transform group-hover:scale-110`}>
+                            <span className="text-sm font-bold">Use Template</span>
+                            <svg className="w-5 h-5 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                            </svg>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Shine effect on hover */}
+                      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none overflow-hidden rounded-3xl">
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+                      </div>
+                    </div>
+                    
+                    {/* Enhanced Colorful Glow effect */}
+                    <div className={`absolute -inset-2 bg-gradient-to-r ${colors.bg} rounded-3xl opacity-0 group-hover:opacity-50 blur-2xl transition-opacity duration-500 -z-10`}></div>
+                  </div>
+                );
+              })}
             </div>
           </div>
           
@@ -3621,6 +3900,151 @@ const ResumeBuilder = () => {
             <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
             <p className="text-lg font-medium text-gray-800">Generating AI Review...</p>
             <p className="text-sm text-gray-600">This may take a few moments</p>
+          </div>
+        </div>
+      )}
+
+      {/* Saathi AI Suggestion Popup */}
+      {showSaathiPopup && saathiSuggestion && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4 backdrop-blur-sm"
+          style={{ 
+            position: 'fixed', 
+            top: 0, 
+            left: 0, 
+            right: 0, 
+            bottom: 0,
+            zIndex: 9999
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowSaathiPopup(false);
+            }
+          }}
+        >
+          <div 
+            className="bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 rounded-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto shadow-2xl border-2 border-purple-200"
+            style={{ 
+              borderRadius: '16px',
+              maxWidth: '42rem',
+              width: '100%',
+              maxHeight: '85vh'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="sticky top-0 bg-gradient-to-r from-purple-600 to-pink-600 text-white p-6 rounded-t-2xl flex justify-between items-center z-10 shadow-lg">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                  <Wand2 className="w-6 h-6" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold">Saathi AI Suggestion</h2>
+                  <p className="text-sm text-white/90">{saathiSection}</p>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowSaathiPopup(false)}
+                className="h-8 w-8 text-white hover:bg-white/20"
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-4">
+              <div className="bg-white rounded-xl p-6 border-2 border-purple-100 shadow-lg">
+                <div className="flex items-start gap-3 mb-4">
+                  <div className="p-2 bg-purple-100 rounded-lg">
+                    <Sparkles className="w-5 h-5 text-purple-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-2">AI-Generated Suggestion</h3>
+                    <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">{saathiSuggestion}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-4 border-t border-purple-200">
+                <Button
+                  onClick={() => {
+                    // Copy to clipboard
+                    navigator.clipboard.writeText(saathiSuggestion);
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                  }}
+                  className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg"
+                >
+                  {copied ? (
+                    <>
+                      <Check className="w-4 h-4 mr-2" />
+                      Copied!
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-4 h-4 mr-2" />
+                      Copy Suggestion
+                    </>
+                  )}
+                </Button>
+                <Button
+                  onClick={() => {
+                    // Apply suggestion to the current section based on section name
+                    if (saathiSection === 'Professional Summary') {
+                      onChange("summary", saathiSuggestion);
+                    } else if (saathiSection === 'About Me (Bio)') {
+                      onChange("bio", saathiSuggestion);
+                    } else if (saathiSection && saathiSection.startsWith('Experience:')) {
+                      // For experience achievements, we need to find the right experience entry
+                      // This is handled by the user manually copying for now
+                      alert('Please copy and paste the suggestion into the experience achievements field.');
+                    }
+                    setShowSaathiPopup(false);
+                  }}
+                  variant="outline"
+                  className="flex-1 border-purple-300 text-purple-700 hover:bg-purple-50"
+                >
+                  <CheckCircle2 className="w-4 h-4 mr-2" />
+                  Use This
+                </Button>
+              </div>
+
+              {/* Tip */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="text-sm text-blue-800">
+                  <span className="font-semibold">💡 Tip:</span> You can edit the suggestion or use parts of it. Type <span className="font-mono bg-blue-100 px-2 py-1 rounded">@saathi</span> again for more suggestions!
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Loading Overlay for Saathi */}
+      {loadingSaathi && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] backdrop-blur-sm"
+          style={{ 
+            position: 'fixed', 
+            top: 0, 
+            left: 0, 
+            right: 0, 
+            bottom: 0,
+            zIndex: 9999
+          }}
+        >
+          <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-8 flex flex-col items-center gap-4 border-2 border-purple-200 shadow-2xl">
+            <div className="relative">
+              <Loader2 className="w-12 h-12 animate-spin text-purple-600" />
+              <Wand2 className="w-6 h-6 text-pink-500 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 animate-pulse" />
+            </div>
+            <div className="text-center">
+              <p className="text-lg font-semibold text-gray-800">Saathi is thinking...</p>
+              <p className="text-sm text-gray-600 mt-1">Analyzing your resume and crafting the perfect suggestion</p>
+            </div>
           </div>
         </div>
       )}

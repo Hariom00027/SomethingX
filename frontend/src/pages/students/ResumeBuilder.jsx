@@ -3042,6 +3042,8 @@ const ResumeBuilder = () => {
         </div>
       )}
 
+      )}
+
       {/* Editor */}
       {selectedTemplateId && resume && (
         <div className="space-y-6">
@@ -3246,8 +3248,8 @@ const ResumeBuilder = () => {
             }
           }}
         >
-          <div 
-            className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl"
+          <Card
+            className="max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl"
             style={{ 
               backgroundColor: 'white', 
               borderRadius: '8px',
@@ -3257,7 +3259,7 @@ const ResumeBuilder = () => {
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="sticky top-0 bg-white border-b p-4 flex justify-between items-center z-10">
+            <CardHeader className="sticky top-0 bg-white border-b p-4 flex justify-between items-center z-10">
               <div className="flex items-center gap-3">
                 <Sparkles className="w-6 h-6 text-purple-600" />
                 <h2 className="text-2xl font-bold text-gray-800">AI Resume Review</h2>
@@ -3270,9 +3272,8 @@ const ResumeBuilder = () => {
               >
                 <X className="h-4 w-4" />
               </Button>
-            </div>
-
-            <div className="p-6 space-y-6">
+            </CardHeader>
+            <CardContent className="p-6 space-y-6">
               {/* Rating */}
               {aiReview.rating && (
                 <div className="flex items-center gap-3">
@@ -3334,197 +3335,8 @@ const ResumeBuilder = () => {
                   </div>
                 </div>
               )}
-
-              <div className="flex justify-end pt-4 border-t">
-                <Button
-                  onClick={() => setShowAiReviewPopup(false)}
-                  className="bg-purple-600 hover:bg-purple-700"
-                >
-                  Close
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Template gallery */}
-      {!selectedTemplateId && (
-        <div className="min-h-screen bg-gradient-to-br from-violet-400 via-purple-400 via-pink-400 to-orange-400 py-12 relative overflow-hidden">
-          {/* Animated background elements */}
-          <div className="absolute inset-0 overflow-hidden">
-            <div className="absolute top-20 left-10 w-72 h-72 bg-yellow-300 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob"></div>
-            <div className="absolute top-40 right-10 w-72 h-72 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-2000"></div>
-            <div className="absolute -bottom-8 left-1/2 w-72 h-72 bg-blue-300 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-4000"></div>
-          </div>
-          
-          <div className="relative z-10">
-            <div className="text-center mb-12 px-4">
-              <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-br from-yellow-400 via-pink-500 to-purple-600 mb-6 shadow-2xl transform hover:scale-110 transition-transform duration-300">
-                <FileText className="w-12 h-12 text-white" />
-              </div>
-              <h2 className="text-5xl font-extrabold mb-4 text-white drop-shadow-lg">
-                Choose Your Resume Template
-              </h2>
-              <p className="text-white/90 text-xl max-w-2xl mx-auto font-semibold drop-shadow-md">
-                Select a professional template that matches your style. Hover over any template to preview it.
-              </p>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 px-8 max-w-7xl mx-auto">
-              {templates.map((t, index) => {
-                // Handle thumbnail URL - encode spaces and special characters
-                let thumbnailPath = t.thumbnailUrl || t.previewUrl;
-                if (thumbnailPath && !thumbnailPath.startsWith('http') && !thumbnailPath.startsWith('data:')) {
-                  // Encode the path properly, but keep the structure
-                  const parts = thumbnailPath.split('/');
-                  const fileName = parts[parts.length - 1];
-                  const dirPath = parts.slice(0, -1).join('/');
-                  // Encode only the filename part to handle spaces
-                  thumbnailPath = dirPath + '/' + encodeURIComponent(fileName);
-                }
-                // Vibrant color schemes for each card
-                const cardColors = [
-                  { bg: 'from-purple-500 to-pink-500', border: 'border-purple-400', accent: 'bg-purple-500' },
-                  { bg: 'from-blue-500 to-cyan-500', border: 'border-blue-400', accent: 'bg-blue-500' },
-                  { bg: 'from-orange-500 to-red-500', border: 'border-orange-400', accent: 'bg-orange-500' },
-                  { bg: 'from-green-500 to-emerald-500', border: 'border-green-400', accent: 'bg-green-500' },
-                  { bg: 'from-indigo-500 to-purple-500', border: 'border-indigo-400', accent: 'bg-indigo-500' },
-                  { bg: 'from-pink-500 to-rose-500', border: 'border-pink-400', accent: 'bg-pink-500' },
-                  { bg: 'from-yellow-500 to-orange-500', border: 'border-yellow-400', accent: 'bg-yellow-500' },
-                ];
-                const colors = cardColors[index % cardColors.length];
-                
-                return (
-                  <div
-                    key={t.id}
-                    className="group relative cursor-pointer"
-                    onClick={() => {
-                      // If there's stored resume data, populate new template with it
-                      if (resumeDataRef.current) {
-                        const storedResume = resumeDataRef.current;
-                        // Create new resume with stored data but update templateId
-                        // Keep the id so it updates the existing resume when saved
-                        const newResume = {
-                          ...storedResume,
-                          templateId: t.id
-                        };
-                        setResume(newResume);
-                        setDataEntryMode('manual');
-                        resumeDataRef.current = null; // Clear the ref after using it
-                      }
-                      setSelectedTemplateId(t.id);
-                    }}
-                  >
-                    {/* Main Card Container - Colorful */}
-                    <div className={`relative bg-gradient-to-br ${colors.bg} rounded-3xl shadow-2xl hover:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] transition-all duration-500 overflow-hidden border-4 ${colors.border} transform hover:-translate-y-4 hover:scale-105`}>
-                      {/* Image Card Wrapper */}
-                      <div className="relative p-5 bg-white/20 backdrop-blur-sm">
-                        <Card className="overflow-hidden border-4 border-white/50 shadow-xl bg-white rounded-xl">
-                          <div className="relative overflow-hidden bg-white" style={{ aspectRatio: '3/4', height: '280px' }}>
-                            <img 
-                              src={thumbnailPath} 
-                              alt={t.name}
-                              className="w-full h-full object-contain p-2 transition-transform duration-700 group-hover:scale-110"
-                              onError={(e) => {
-                                // Try previewUrl if thumbnail fails
-                                if (t.previewUrl && e.target.src !== t.previewUrl) {
-                                  e.target.src = t.previewUrl;
-                                } else {
-                                  // If both fail, hide the image to prevent repeated 404s
-                                  e.target.style.display = 'none';
-                                }
-                              }}
-                              loading="lazy"
-                            />
-                            {/* Hover overlay */}
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-start justify-end p-4">
-                              <div className="bg-white rounded-full px-4 py-2 shadow-2xl flex items-center gap-2 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-500">
-                                <Eye className="w-4 h-4 text-purple-600" />
-                                <span className="text-sm font-bold text-purple-600">Preview</span>
-                              </div>
-                            </div>
-                          </div>
-                        </Card>
-                      </div>
-                      
-                      {/* Template Details Below Image - Colorful */}
-                      <div className="p-6 bg-white/10 backdrop-blur-md">
-                        {/* Template Name */}
-                        <div className="flex items-center gap-3 mb-3">
-                          <div className={`w-2 h-8 rounded-full ${colors.accent} shadow-lg`}></div>
-                          <h3 className="text-xl font-extrabold text-white drop-shadow-lg">
-                            {t.name}
-                          </h3>
-                        </div>
-                        
-                        {/* Description */}
-                        {t.description && (
-                          <p className="text-sm text-white/90 mb-4 font-medium overflow-hidden" style={{
-                            display: '-webkit-box',
-                            WebkitLineClamp: 2,
-                            WebkitBoxOrient: 'vertical'
-                          }}>
-                            {t.description}
-                          </p>
-                        )}
-                        
-                        {/* Category Badge */}
-                        {t.category && (
-                          <div className="flex items-center gap-2 mb-5">
-                            <span className={`px-4 py-2 rounded-full text-xs font-bold ${colors.accent} text-white shadow-lg`}>
-                              {t.category.toUpperCase()}
-                            </span>
-                          </div>
-                        )}
-                        
-                        {/* Action Button */}
-                        <div className="flex items-center justify-between pt-4 border-t-2 border-white/30">
-                          <div className="flex items-center gap-2 text-white/80">
-                            <Sparkles className="w-5 h-5" />
-                            <span className="text-sm font-semibold">Click to Select</span>
-                          </div>
-                          <div className={`flex items-center gap-2 px-5 py-2.5 rounded-xl ${colors.accent} text-white shadow-xl group-hover:shadow-2xl transition-all duration-300 transform group-hover:scale-110`}>
-                            <span className="text-sm font-bold">Use Template</span>
-                            <svg className="w-5 h-5 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
-                            </svg>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      {/* Shine effect on hover */}
-                      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none overflow-hidden rounded-3xl">
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-                      </div>
-                    </div>
-                    
-                    {/* Enhanced Colorful Glow effect */}
-                    <div className={`absolute -inset-2 bg-gradient-to-r ${colors.bg} rounded-3xl opacity-0 group-hover:opacity-50 blur-2xl transition-opacity duration-500 -z-10`}></div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-          
-          {/* Add animation keyframes via style tag */}
-          <style>{`
-            @keyframes blob {
-              0% { transform: translate(0px, 0px) scale(1); }
-              33% { transform: translate(30px, -50px) scale(1.1); }
-              66% { transform: translate(-20px, 20px) scale(0.9); }
-              100% { transform: translate(0px, 0px) scale(1); }
-            }
-            .animate-blob {
-              animation: blob 7s infinite;
-            }
-            .animation-delay-2000 {
-              animation-delay: 2s;
-            }
-            .animation-delay-4000 {
-              animation-delay: 4s;
-            }
-          `}</style>
+            </CardContent>
+          </Card>
         </div>
       )}
 

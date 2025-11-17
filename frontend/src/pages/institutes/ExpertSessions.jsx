@@ -13,33 +13,14 @@ import {
   Users,
   Video,
   GraduationCap,
-  Mail,
-  Phone,
-  Globe,
 } from "lucide-react";
 
-const defaultFormState = {
-  instituteName: "",
-  place: "",
-  contactNumber: "",
-  email: "",
-  contactPersonName: "",
-  contactPersonDesignation: "",
-  preferredMode: "",
-  preferredDate: "",
-  preferredTime: "",
-  expectedParticipantCount: "",
-  additionalNotes: "",
-};
-
 const ExpertSessions = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [experts, setExperts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [selectedExpert, setSelectedExpert] = useState(null);
-  const [modalMode, setModalMode] = useState(null); // "details" | "enroll"
-  const [enrollmentForm, setEnrollmentForm] = useState(defaultFormState);
-  const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState(null);
   const [enrollmentNotifications, setEnrollmentNotifications] = useState([]);
   const [refreshing, setRefreshing] = useState(false);

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card.jsx";
 import { Button } from "@/components/ui/button.jsx";
@@ -13,6 +14,7 @@ import {
   Users,
   Video,
   GraduationCap,
+  Globe,
 } from "lucide-react";
 
 const ExpertSessions = () => {
@@ -24,7 +26,6 @@ const ExpertSessions = () => {
   const [toast, setToast] = useState(null);
   const [enrollmentNotifications, setEnrollmentNotifications] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
-
   useEffect(() => {
     if (!toast) return;
     const timer = setTimeout(() => setToast(null), 4000);
@@ -37,7 +38,7 @@ const ExpertSessions = () => {
         setLoading(true);
         const [expertsResponse, enrollmentsResponse] = await Promise.all([
           apiClient.get("/expert-sessions"),
-          apiClient.get("/expert-sessions/enrollments/latest"),
+          apiClient.get("/expert-sessions/institutes/enrollments/latest"),
         ]);
         setExperts(expertsResponse.data || []);
         setEnrollmentNotifications(enrollmentsResponse.data || []);
@@ -49,12 +50,12 @@ const ExpertSessions = () => {
       }
     };
     fetchData();
-  }, []);
+  }, [location.search]);
 
   const handleRefresh = async () => {
     try {
       setRefreshing(true);
-      const response = await apiClient.get("/expert-sessions/enrollments/latest");
+      const response = await apiClient.get("/expert-sessions/institutes/enrollments/latest");
       setEnrollmentNotifications(response.data || []);
       setToast({ type: "success", message: "Latest activity fetched" });
     } catch (err) {
@@ -123,6 +124,7 @@ const ExpertSessions = () => {
     }
   };
 
+
   const totalDomains = useMemo(() => {
     const domainSet = new Set();
     experts.forEach((expert) => {
@@ -162,7 +164,12 @@ const ExpertSessions = () => {
               request that fits your schedule and delivery mode.
             </p>
           </div>
-          <Button variant="outline" onClick={handleRefresh} disabled={refreshing}>
+          <Button 
+            type="button"
+            variant="outline" 
+            onClick={handleRefresh} 
+            disabled={refreshing}
+          >
             {refreshing ? (
               <span className="flex items-center gap-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -199,7 +206,7 @@ const ExpertSessions = () => {
           </div>
         ) : (
           <>
-            <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+            <section className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
               {experts.map((expert) => (
                 <ExpertCard
                   key={expert.id}
@@ -219,19 +226,6 @@ const ExpertSessions = () => {
         )}
       </div>
 
-      {selectedExpert && (
-        <ExpertModal
-          expert={selectedExpert}
-          mode={modalMode}
-          onClose={closeModal}
-          onSwitchMode={setModalMode}
-          enrollmentForm={enrollmentForm}
-          onFormChange={onFormChange}
-          onSubmit={handleSubmit}
-          submitting={submitting}
-          formatCurrency={formatCurrency}
-        />
-      )}
     </DashboardLayout>
   );
 };
@@ -253,7 +247,13 @@ const Sidebar = ({ expertCount, domainCount, notifications, onRefresh, refreshin
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <h3 className="text-base font-semibold">Recent enrollments</h3>
-          <Button variant="ghost" size="sm" onClick={onRefresh} disabled={refreshing}>
+          <Button 
+            type="button"
+            variant="ghost" 
+            size="sm" 
+            onClick={onRefresh} 
+            disabled={refreshing}
+          >
             {refreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : "Refresh"}
           </Button>
         </div>
@@ -298,8 +298,8 @@ const StatPill = ({ icon, label, value }) => (
 
 const ExpertCard = ({ expert, onViewDetails, onEnroll, formatCurrency }) => {
   return (
-    <Card className="flex flex-col overflow-hidden">
-      <div className="relative h-40 w-full overflow-hidden bg-muted">
+    <Card className="flex flex-col overflow-hidden hover:shadow-md transition-shadow h-full">
+      <div className="relative h-24 w-full overflow-hidden bg-muted">
         <img
           src={expert.photoUrl}
           alt={expert.fullName}
@@ -307,338 +307,69 @@ const ExpertCard = ({ expert, onViewDetails, onEnroll, formatCurrency }) => {
           loading="lazy"
         />
       </div>
-      <CardHeader className="pb-4">
-        <CardTitle className="text-xl">{expert.fullName}</CardTitle>
-        <p className="text-sm text-muted-foreground">{expert.designation}</p>
+      <CardHeader className="pb-1.5 pt-2 px-2.5">
+        <CardTitle className="text-sm leading-tight line-clamp-1 font-semibold">{expert.fullName}</CardTitle>
+        <p className="text-[10px] text-muted-foreground line-clamp-1 mt-0.5">{expert.designation}</p>
         {expert.organization && (
           <p className="text-xs text-muted-foreground">{expert.organization}</p>
         )}
       </CardHeader>
-      <CardContent className="flex-1 space-y-4">
-        <div className="space-y-1">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">Domains</p>
-          <div className="flex flex-wrap gap-2">
-            {(expert.expertiseDomains || []).slice(0, 3).map((domain) => (
-              <span
-                key={domain}
-                className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary"
-              >
-                {domain}
-              </span>
-            ))}
+      <CardContent className="flex-1 space-y-1.5 px-2.5 pb-2">
+        <div className="flex flex-wrap gap-1">
+          {(expert.expertiseDomains || []).slice(0, 2).map((domain) => (
+            <span
+              key={domain}
+              className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] font-medium text-primary line-clamp-1 max-w-full"
+            >
+              {domain.length > 12 ? `${domain.slice(0, 12)}...` : domain}
+            </span>
+          ))}
+          {(expert.expertiseDomains || []).length > 2 && (
+            <span className="rounded-full bg-muted px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground">
+              +{(expert.expertiseDomains || []).length - 2}
+            </span>
+          )}
+        </div>
+        <div className="grid grid-cols-2 gap-1.5 rounded border bg-muted/30 p-1.5">
+          <div>
+            <p className="text-muted-foreground flex items-center gap-0.5 font-medium text-[9px]">
+              <Video className="h-2.5 w-2.5" /> Online
+            </p>
+            <p className="mt-0.5 font-semibold text-[10px] leading-tight">{formatCurrency(expert.pricingPerHourOnline)}</p>
+          </div>
+          <div>
+            <p className="text-muted-foreground flex items-center gap-0.5 font-medium text-[9px]">
+              <MapPin className="h-2.5 w-2.5" /> Offline
+            </p>
+            <p className="mt-0.5 font-semibold text-[10px] leading-tight">{formatCurrency(expert.pricingPerHourOffline)}</p>
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-3 rounded-md border bg-muted/30 p-3 text-xs">
-          <div>
-            <p className="text-muted-foreground flex items-center gap-1 font-medium">
-              <Video className="h-3.5 w-3.5" /> Online
-            </p>
-            <p className="mt-1 font-semibold">{formatCurrency(expert.pricingPerHourOnline)}</p>
-          </div>
-          <div>
-            <p className="text-muted-foreground flex items-center gap-1 font-medium">
-              <MapPin className="h-3.5 w-3.5" /> Offline
-            </p>
-            <p className="mt-1 font-semibold">{formatCurrency(expert.pricingPerHourOffline)}</p>
-          </div>
-        </div>
-        {expert.baseLocation && (
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <MapPin className="h-3.5 w-3.5" />
-            {expert.baseLocation}
-          </div>
-        )}
-        <div className="text-xs text-muted-foreground">
-          {(expert.summary || "").length > 140
-            ? `${expert.summary.slice(0, 140)}...`
-            : expert.summary}
+        <div className="text-[9px] text-muted-foreground line-clamp-2 leading-tight">
+          {expert.summary || ""}
         </div>
       </CardContent>
-      <CardFooter className="gap-2">
-        <Button variant="outline" className="flex-1" onClick={onViewDetails}>
-          View details
+      <CardFooter className="gap-1.5 px-2.5 pb-2 pt-0">
+        <Button 
+          type="button"
+          variant="outline" 
+          size="sm"
+          className="flex-1 text-[10px] h-7 px-2" 
+          onClick={onViewDetails}
+        >
+          Details
         </Button>
-        <Button className="flex-1" onClick={onEnroll}>
+        <Button 
+          type="button"
+          size="sm"
+          className="flex-1 text-[10px] h-7 px-2" 
+          onClick={onEnroll}
+        >
           Enroll
         </Button>
       </CardFooter>
     </Card>
   );
 };
-
-const ExpertModal = ({
-  expert,
-  mode,
-  onClose,
-  onSwitchMode,
-  enrollmentForm,
-  onFormChange,
-  onSubmit,
-  submitting,
-  formatCurrency,
-}) => {
-  if (!expert) return null;
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 py-10">
-      <div className="relative max-h-full w-full max-w-4xl overflow-hidden rounded-xl bg-white shadow-2xl">
-        <button
-          className="absolute right-4 top-4 text-muted-foreground hover:text-foreground"
-          onClick={onClose}
-          aria-label="Close modal"
-        >
-          ×
-        </button>
-        <div className="grid gap-0 md:grid-cols-[1.1fr_0.9fr]">
-          <div className="border-r bg-slate-50">
-            <div className="relative h-64 w-full overflow-hidden bg-muted">
-              <img
-                src={expert.photoUrl}
-                alt={expert.fullName}
-                className="h-full w-full object-cover"
-                loading="lazy"
-              />
-            </div>
-            <div className="space-y-6 p-6">
-              <div>
-                <h2 className="text-2xl font-semibold">{expert.fullName}</h2>
-                <p className="text-sm text-muted-foreground">
-                  {expert.designation}
-                  {expert.organization ? ` · ${expert.organization}` : ""}
-                </p>
-              </div>
-              <p className="text-sm leading-relaxed text-slate-700">{expert.summary}</p>
-              <DetailList title="Expertise domains" items={expert.expertiseDomains} />
-              <DetailList title="Session formats" items={expert.sessionFormats} icon={Video} />
-              <DetailList title="Session durations" items={expert.sessionDurations} icon={Clock} />
-              <DetailList title="Topics covered" items={expert.topicsCovered} />
-              <div className="grid gap-3 rounded-md border bg-white p-4 text-sm shadow-inner">
-                <div className="flex items-center justify-between">
-                  <span className="flex items-center gap-2 text-muted-foreground">
-                    <Video className="h-4 w-4" /> Online per hour
-                  </span>
-                  <span className="font-semibold">{formatCurrency(expert.pricingPerHourOnline)}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="flex items-center gap-2 text-muted-foreground">
-                    <MapPin className="h-4 w-4" /> Offline per hour
-                  </span>
-                  <span className="font-semibold">{formatCurrency(expert.pricingPerHourOffline)}</span>
-                </div>
-              </div>
-              <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                {expert.yearsOfExperience ? (
-                  <span className="flex items-center gap-2">
-                    <Users className="h-4 w-4" />
-                    {expert.yearsOfExperience}+ years experience
-                  </span>
-                ) : null}
-                {expert.languages?.length ? (
-                  <span className="flex items-center gap-2">
-                    <Globe className="h-4 w-4" />
-                    {expert.languages.join(", ")}
-                  </span>
-                ) : null}
-              </div>
-            </div>
-          </div>
-          <div className="flex flex-col">
-            <div className="border-b px-6 py-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold">
-                  {mode === "enroll" ? "Enroll for a session" : "Session details"}
-                </h3>
-                <div className="flex gap-2">
-                  <Button
-                    variant={mode === "details" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => onSwitchMode("details")}
-                  >
-                    Overview
-                  </Button>
-                  <Button
-                    variant={mode === "enroll" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => onSwitchMode("enroll")}
-                  >
-                    Enroll
-                  </Button>
-                </div>
-              </div>
-            </div>
-            <div className="flex-1 overflow-y-auto px-6 py-6">
-              {mode === "enroll" ? (
-                <form className="space-y-4" onSubmit={onSubmit}>
-                  <FormField
-                    label="Institute name"
-                    required
-                    value={enrollmentForm.instituteName}
-                    onChange={(event) => onFormChange("instituteName", event.target.value)}
-                  />
-                  <FormField
-                    label="City / place"
-                    required
-                    value={enrollmentForm.place}
-                    onChange={(event) => onFormChange("place", event.target.value)}
-                    icon={MapPin}
-                  />
-                  <FormField
-                    label="Primary contact number"
-                    required
-                    value={enrollmentForm.contactNumber}
-                    onChange={(event) => onFormChange("contactNumber", event.target.value)}
-                    icon={Phone}
-                  />
-                  <FormField
-                    label="Primary email"
-                    required
-                    value={enrollmentForm.email}
-                    onChange={(event) => onFormChange("email", event.target.value)}
-                    icon={Mail}
-                  />
-                  <FormField
-                    label="Contact person's name"
-                    required
-                    value={enrollmentForm.contactPersonName}
-                    onChange={(event) => onFormChange("contactPersonName", event.target.value)}
-                  />
-                  <FormField
-                    label="Contact person's designation"
-                    value={enrollmentForm.contactPersonDesignation}
-                    onChange={(event) =>
-                      onFormChange("contactPersonDesignation", event.target.value)
-                    }
-                  />
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-1.5">
-                      <label className="text-sm font-medium text-slate-700">Preferred mode</label>
-                      <select
-                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                        value={enrollmentForm.preferredMode}
-                        onChange={(event) => onFormChange("preferredMode", event.target.value)}
-                      >
-                        <option value="" disabled>
-                          Select mode
-                        </option>
-                        {(expert.sessionFormats || ["Online", "Offline"]).map((modeOption) => (
-                          <option key={modeOption} value={modeOption}>
-                            {modeOption}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <FormField
-                        label="Preferred date"
-                        required
-                        type="date"
-                        value={enrollmentForm.preferredDate}
-                        onChange={(event) => onFormChange("preferredDate", event.target.value)}
-                        icon={Calendar}
-                      />
-                      <FormField
-                        label="Preferred time"
-                        required
-                        type="time"
-                        value={enrollmentForm.preferredTime}
-                        onChange={(event) => onFormChange("preferredTime", event.target.value)}
-                        icon={Clock}
-                      />
-                    </div>
-                  </div>
-                  <FormField
-                    label="Expected number of participants"
-                    type="number"
-                    min="1"
-                    value={enrollmentForm.expectedParticipantCount}
-                    onChange={(event) => onFormChange("expectedParticipantCount", event.target.value)}
-                    icon={Users}
-                  />
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-slate-700">
-                      Additional notes (agenda, expectations, logistics)
-                    </label>
-                    <Textarea
-                      placeholder="Share specific expectations from the expert..."
-                      value={enrollmentForm.additionalNotes}
-                      onChange={(event) => onFormChange("additionalNotes", event.target.value)}
-                      rows={4}
-                    />
-                  </div>
-                  <Button type="submit" className="w-full" disabled={submitting}>
-                    {submitting ? (
-                      <span className="flex items-center justify-center gap-2">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Sending request
-                      </span>
-                    ) : (
-                      "Submit enrollment"
-                    )}
-                  </Button>
-                </form>
-              ) : (
-                <div className="space-y-4 text-sm text-slate-700">
-                  <p>
-                    Use the enrollment tab to book a tailored session with {expert.fullName}. Select
-                    the delivery mode, share institute contact details, and outline expectations so
-                    the expert team can respond quickly.
-                  </p>
-                  <div className="rounded-md border bg-muted/40 p-4">
-                    <h4 className="text-sm font-semibold text-slate-800">Session quick facts</h4>
-                    <ul className="mt-2 space-y-2 text-sm">
-                      <li className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-primary" />
-                        {expert.sessionDurations?.join(" · ") || "Flexible timelines"}
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <Video className="h-4 w-4 text-primary" />
-                        {expert.sessionFormats?.join(" · ") || "Available on request"}
-                      </li>
-                      {expert.baseLocation && (
-                        <li className="flex items-center gap-2">
-                          <MapPin className="h-4 w-4 text-primary" />
-                          Based in {expert.baseLocation}
-                        </li>
-                      )}
-                    </ul>
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-semibold text-slate-800">Suggested pre-work</h4>
-                    <ul className="mt-2 list-disc space-y-2 pl-5 text-sm">
-                      <li>Share institute context and session goals via enrollment notes.</li>
-                      <li>Confirm preferred duration and participant profile.</li>
-                      <li>Indicate audio-visual setup needs for offline engagements.</li>
-                    </ul>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const FormField = ({ label, value, onChange, type = "text", required, icon: Icon, ...rest }) => (
-  <div className="space-y-1.5">
-    <label className="text-sm font-medium text-slate-700">
-      {label}
-      {required && <span className="text-red-500"> *</span>}
-    </label>
-    <div className="relative">
-      {Icon && <Icon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />}
-      <Input
-        type={type}
-        value={value}
-        onChange={onChange}
-        required={required}
-        className={Icon ? "pl-9" : undefined}
-        {...rest}
-      />
-    </div>
-  </div>
-);
 
 const DetailList = ({ title, items, icon: Icon }) => {
   if (!items || !items.length) return null;
@@ -676,3 +407,4 @@ const formatDate = (value) => {
 };
 
 export default ExpertSessions;
+

@@ -2,7 +2,11 @@ package com.saarthix.controller;
 
 import com.saarthix.model.ExpertSession;
 import com.saarthix.model.ExpertSessionEnrollment;
+import com.saarthix.model.InstituteExpertSessionEnrollment;
+import com.saarthix.model.IndustryExpertSessionEnrollment;
 import com.saarthix.repository.ExpertSessionEnrollmentRepository;
+import com.saarthix.repository.InstituteExpertSessionEnrollmentRepository;
+import com.saarthix.repository.IndustryExpertSessionEnrollmentRepository;
 import com.saarthix.repository.ExpertSessionRepository;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +25,8 @@ public class ExpertSessionController {
 
     private final ExpertSessionRepository expertSessionRepository;
     private final ExpertSessionEnrollmentRepository enrollmentRepository;
+    private final InstituteExpertSessionEnrollmentRepository instituteEnrollmentRepository;
+    private final IndustryExpertSessionEnrollmentRepository industryEnrollmentRepository;
 
     @GetMapping
     public List<ExpertSession> getExpertSessions() {
@@ -39,6 +45,81 @@ public class ExpertSessionController {
         return enrollmentRepository.findTop10ByOrderBySubmittedAtDesc();
     }
 
+    // Institute-specific endpoints
+    @GetMapping("/institutes/enrollments/latest")
+    public List<InstituteExpertSessionEnrollment> getLatestInstituteEnrollments() {
+        return instituteEnrollmentRepository.findTop10ByOrderBySubmittedAtDesc();
+    }
+
+    @PostMapping("/institutes/{id}/enroll")
+    public ResponseEntity<?> enrollInstitute(@PathVariable String id, @RequestBody EnrollRequest request) {
+        var expertSession = expertSessionRepository.findById(id).orElse(null);
+        if (expertSession == null) {
+            return ResponseEntity.status(404).body(Map.of("error", "Expert session not found"));
+        }
+
+        var validationError = validateRequest(request);
+        if (validationError != null) {
+            return ResponseEntity.badRequest().body(Map.of("error", validationError));
+        }
+
+        var enrollment = new InstituteExpertSessionEnrollment();
+        enrollment.setExpertSessionId(expertSession.getId());
+        enrollment.setExpertNameSnapshot(expertSession.getFullName());
+        enrollment.setInstituteName(request.getInstituteName());
+        enrollment.setPlace(request.getPlace());
+        enrollment.setContactNumber(request.getContactNumber());
+        enrollment.setEmail(request.getEmail());
+        enrollment.setContactPersonName(request.getContactPersonName());
+        enrollment.setContactPersonDesignation(request.getContactPersonDesignation());
+        enrollment.setPreferredMode(request.getPreferredMode());
+        enrollment.setPreferredDate(request.getPreferredDate());
+        enrollment.setPreferredTime(request.getPreferredTime());
+        enrollment.setExpectedParticipantCount(request.getExpectedParticipantCount());
+        enrollment.setAdditionalNotes(request.getAdditionalNotes());
+
+        var saved = instituteEnrollmentRepository.save(enrollment);
+        return ResponseEntity.ok(saved);
+    }
+
+    // Industry-specific endpoints
+    @GetMapping("/industry/enrollments/latest")
+    public List<IndustryExpertSessionEnrollment> getLatestIndustryEnrollments() {
+        return industryEnrollmentRepository.findTop10ByOrderBySubmittedAtDesc();
+    }
+
+    @PostMapping("/industry/{id}/enroll")
+    public ResponseEntity<?> enrollIndustry(@PathVariable String id, @RequestBody EnrollRequest request) {
+        var expertSession = expertSessionRepository.findById(id).orElse(null);
+        if (expertSession == null) {
+            return ResponseEntity.status(404).body(Map.of("error", "Expert session not found"));
+        }
+
+        var validationError = validateRequest(request);
+        if (validationError != null) {
+            return ResponseEntity.badRequest().body(Map.of("error", validationError));
+        }
+
+        var enrollment = new IndustryExpertSessionEnrollment();
+        enrollment.setExpertSessionId(expertSession.getId());
+        enrollment.setExpertNameSnapshot(expertSession.getFullName());
+        enrollment.setInstituteName(request.getInstituteName());
+        enrollment.setPlace(request.getPlace());
+        enrollment.setContactNumber(request.getContactNumber());
+        enrollment.setEmail(request.getEmail());
+        enrollment.setContactPersonName(request.getContactPersonName());
+        enrollment.setContactPersonDesignation(request.getContactPersonDesignation());
+        enrollment.setPreferredMode(request.getPreferredMode());
+        enrollment.setPreferredDate(request.getPreferredDate());
+        enrollment.setPreferredTime(request.getPreferredTime());
+        enrollment.setExpectedParticipantCount(request.getExpectedParticipantCount());
+        enrollment.setAdditionalNotes(request.getAdditionalNotes());
+
+        var saved = industryEnrollmentRepository.save(enrollment);
+        return ResponseEntity.ok(saved);
+    }
+
+    // Legacy endpoint for backward compatibility
     @PostMapping("/{id}/enroll")
     public ResponseEntity<?> enroll(@PathVariable String id, @RequestBody EnrollRequest request) {
         var expertSession = expertSessionRepository.findById(id).orElse(null);

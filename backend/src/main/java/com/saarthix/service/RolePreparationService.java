@@ -9,7 +9,6 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 public class RolePreparationService {
@@ -115,6 +114,15 @@ public class RolePreparationService {
 
     public List<RolePreparation> getAllPreparations(String studentId) {
         return rolePreparationRepository.findByStudentId(studentId);
+    }
+
+    public void deletePreparation(String studentId, String roleName) {
+        Optional<RolePreparation> prepOpt = rolePreparationRepository.findByStudentIdAndRoleName(studentId, roleName);
+        if (prepOpt.isEmpty()) {
+            throw new RuntimeException("Preparation not found for role: " + roleName);
+        }
+        RolePreparation preparation = prepOpt.get();
+        rolePreparationRepository.delete(preparation);
     }
 
     public Map<String, Object> getAnalytics(String studentId, String roleName) {

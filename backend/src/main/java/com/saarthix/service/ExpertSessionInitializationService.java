@@ -26,9 +26,11 @@ public class ExpertSessionInitializationService implements CommandLineRunner {
 
     private void initializeExpertSessions() {
         try {
-            if (expertSessionRepository.count() > 0) {
-                System.out.println("Expert sessions already loaded. Skipping seeding.");
-                return;
+            // Clear existing expert sessions before seeding
+            long existingCount = expertSessionRepository.count();
+            if (existingCount > 0) {
+                expertSessionRepository.deleteAll();
+                System.out.printf("Cleared %d existing expert sessions.%n", existingCount);
             }
 
             var resource = new ClassPathResource("expert-sessions.json");

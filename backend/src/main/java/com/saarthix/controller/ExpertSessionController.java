@@ -89,13 +89,13 @@ public class ExpertSessionController {
     }
 
     @PostMapping("/industry/{id}/enroll")
-    public ResponseEntity<?> enrollIndustry(@PathVariable String id, @RequestBody EnrollRequest request) {
+    public ResponseEntity<?> enrollIndustry(@PathVariable String id, @RequestBody IndustryEnrollRequest request) {
         var expertSession = expertSessionRepository.findById(id).orElse(null);
         if (expertSession == null) {
             return ResponseEntity.status(404).body(Map.of("error", "Expert session not found"));
         }
 
-        var validationError = validateRequest(request);
+        var validationError = validateIndustryRequest(request);
         if (validationError != null) {
             return ResponseEntity.badRequest().body(Map.of("error", validationError));
         }
@@ -103,7 +103,8 @@ public class ExpertSessionController {
         var enrollment = new IndustryExpertSessionEnrollment();
         enrollment.setExpertSessionId(expertSession.getId());
         enrollment.setExpertNameSnapshot(expertSession.getFullName());
-        enrollment.setInstituteName(request.getInstituteName());
+        enrollment.setCompanyName(request.getCompanyName());
+        enrollment.setIndustryType(request.getIndustryType());
         enrollment.setPlace(request.getPlace());
         enrollment.setContactNumber(request.getContactNumber());
         enrollment.setEmail(request.getEmail());
@@ -179,6 +180,34 @@ public class ExpertSessionController {
         return null;
     }
 
+    private String validateIndustryRequest(IndustryEnrollRequest request) {
+        if (!StringUtils.hasText(request.getCompanyName())) {
+            return "Company name is required";
+        }
+        if (!StringUtils.hasText(request.getPlace())) {
+            return "Place is required";
+        }
+        if (!StringUtils.hasText(request.getContactNumber())) {
+            return "Contact number is required";
+        }
+        if (!StringUtils.hasText(request.getEmail())) {
+            return "Email is required";
+        }
+        if (!StringUtils.hasText(request.getContactPersonName())) {
+            return "Contact person name is required";
+        }
+        if (!StringUtils.hasText(request.getPreferredMode())) {
+            return "Preferred mode is required";
+        }
+        if (!StringUtils.hasText(request.getPreferredDate())) {
+            return "Preferred date is required";
+        }
+        if (!StringUtils.hasText(request.getPreferredTime())) {
+            return "Preferred time is required";
+        }
+        return null;
+    }
+
     @Data
     private static class EnrollRequest {
         private String instituteName;
@@ -192,6 +221,101 @@ public class ExpertSessionController {
         private String preferredTime;
         private Integer expectedParticipantCount;
         private String additionalNotes;
+    }
+
+    @Data
+    private static class IndustryEnrollRequest {
+        private String companyName;
+        private String industryType;
+        private String place;
+        private String contactNumber;
+        private String email;
+        private String contactPersonName;
+        private String contactPersonDesignation;
+        private String preferredMode;
+        private String preferredDate;
+        private String preferredTime;
+        private Integer expectedParticipantCount;
+        private String additionalNotes;
+    }
+
+    // Admin endpoints for expert management
+    @PostMapping("/admin/expert-sessions")
+    public ResponseEntity<?> createExpert(@RequestBody ExpertSession expertSession) {
+        try {
+            // Set default allocation if not provided
+            if (expertSession.getAvailableForInstitute() == null) {
+                expertSession.setAvailableForInstitute(true);
+            }
+            if (expertSession.getAvailableForIndustry() == null) {
+                expertSession.setAvailableForIndustry(true);
+            }
+            ExpertSession saved = expertSessionRepository.save(expertSession);
+            return ResponseEntity.ok(saved);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Failed to create expert: " + e.getMessage()));
+        }
+    }
+
+    @PutMapping("/admin/expert-sessions/{id}")
+    public ResponseEntity<?> updateExpert(@PathVariable String id, @RequestBody ExpertSession expertSession) {
+        try {
+            if (!expertSessionRepository.existsById(id)) {
+                return ResponseEntity.notFound().build();
+            }
+            expertSession.setId(id);
+            ExpertSession updated = expertSessionRepository.save(expertSession);
+            return ResponseEntity.ok(updated);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Failed to update expert: " + e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/admin/expert-sessions/{id}")
+    public ResponseEntity<?> deleteExpert(@PathVariable String id) {
+        try {
+            if (!expertSessionRepository.existsById(id)) {
+                return ResponseEntity.notFound().build();
+            }
+            expertSessionRepository.deleteById(id);
+            return ResponseEntity.ok(Map.of("message", "Expert deleted successfully"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Failed to delete expert: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/admin/expert-sessions/{id}/stats")
+    public ResponseEntity<?> getExpertStats(@PathVariable String id) {
+        try {
+            ExpertSession expert = expertSessionRepository.findById(id).orElse(null);
+            if (expert == null) {
+                return ResponseEntity.notFound().build();
+            }
+
+            // Count enrollments
+            long totalEnrollments = enrollmentRepository.countByExpertSessionId(id);
+            long instituteEnrollments = instituteEnrollmentRepository.countByExpertSessionId(id);
+            long industryEnrollments = industryEnrollmentRepository.countByExpertSessionId(id);
+
+            // Get recent enrollments
+            List<InstituteExpertSessionEnrollment> recentInstituteEnrollments = 
+                instituteEnrollmentRepository.findTop5ByExpertSessionIdOrderBySubmittedAtDesc(id);
+            List<IndustryExpertSessionEnrollment> recentIndustryEnrollments = 
+                industryEnrollmentRepository.findTop5ByExpertSessionIdOrderBySubmittedAtDesc(id);
+
+            Map<String, Object> stats = Map.of(
+                "expert", expert,
+                "totalEnrollments", totalEnrollments,
+                "instituteEnrollments", instituteEnrollments,
+                "industryEnrollments", industryEnrollments,
+                "recentInstituteEnrollments", recentInstituteEnrollments,
+                "recentIndustryEnrollments", recentIndustryEnrollments
+            );
+
+            return ResponseEntity.ok(stats);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Failed to get stats: " + e.getMessage()));
+        }
     }
 }
 

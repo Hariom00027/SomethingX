@@ -129,6 +129,11 @@ const Dashboard = () => {
               <h3 className="text-xl font-semibold text-gray-900 mb-2">AI Interview</h3>
               <p className="text-gray-600">Conduct AI-powered interviews</p>
             </Link>
+
+            <Link to="/industry/expert-sessions" className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">Expert Sessions</h3>
+              <p className="text-gray-600">Book sessions with industry experts</p>
+            </Link>
           </div>
         );
         

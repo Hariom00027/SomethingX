@@ -8,5 +8,8 @@ import java.util.List;
 public interface IndustryExpertSessionEnrollmentRepository extends MongoRepository<IndustryExpertSessionEnrollment, String> {
 
     List<IndustryExpertSessionEnrollment> findTop10ByOrderBySubmittedAtDesc();
+    long countByExpertSessionId(String expertSessionId);
+    List<IndustryExpertSessionEnrollment> findTop5ByExpertSessionIdOrderBySubmittedAtDesc(String expertSessionId);
 }
+
 

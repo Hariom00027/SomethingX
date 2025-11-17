@@ -8,6 +8,7 @@ import java.util.List;
 public interface ExpertSessionEnrollmentRepository extends MongoRepository<ExpertSessionEnrollment, String> {
 
     List<ExpertSessionEnrollment> findTop10ByOrderBySubmittedAtDesc();
+    long countByExpertSessionId(String expertSessionId);
 }
 
 

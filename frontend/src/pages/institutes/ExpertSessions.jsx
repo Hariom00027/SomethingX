@@ -3,6 +3,8 @@ import { useNavigate, useLocation } from "react-router-dom";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card.jsx";
 import { Button } from "@/components/ui/button.jsx";
+import { Input } from "@/components/ui/input.jsx";
+import { Textarea } from "@/components/ui/textarea.jsx";
 import apiClient from "@/lib/apiClient.js";
 import {
   Calendar,
@@ -65,11 +67,61 @@ const ExpertSessions = () => {
   };
 
   const openDetails = (expert) => {
-    navigate(`/institutes/expert-sessions/${expert.id}`);
+    setSelectedExpert(expert);
+    setModalMode("details");
   };
 
   const openEnrollment = (expert) => {
-    navigate(`/institutes/expert-sessions/${expert.id}/enroll`);
+    setSelectedExpert(expert);
+    setModalMode("enroll");
+    setEnrollmentForm({
+      ...defaultFormState,
+      preferredMode: expert?.sessionFormats?.[0] || "Online",
+    });
+  };
+
+  const closeModal = () => {
+    setSelectedExpert(null);
+    setModalMode(null);
+    setEnrollmentForm(defaultFormState);
+  };
+
+  const onFormChange = (field, value) => {
+    setEnrollmentForm((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    if (!selectedExpert) return;
+
+    const payload = {
+      ...enrollmentForm,
+      expectedParticipantCount: enrollmentForm.expectedParticipantCount
+        ? Number(enrollmentForm.expectedParticipantCount)
+        : null,
+    };
+
+    try {
+      setSubmitting(true);
+      const response = await apiClient.post(
+        `/expert-sessions/${selectedExpert.id}/enroll`,
+        payload
+      );
+      setToast({ type: "success", message: "Enrollment request submitted" });
+      setEnrollmentNotifications((prev) => [response.data, ...(prev || [])].slice(0, 10));
+      closeModal();
+    } catch (err) {
+      console.error(err);
+      const message =
+        err?.response?.data?.error ||
+        "Something went wrong while submitting the enrollment. Please retry.";
+      setToast({ type: "error", message });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
 
@@ -259,7 +311,7 @@ const ExpertCard = ({ expert, onViewDetails, onEnroll, formatCurrency }) => {
         <CardTitle className="text-sm leading-tight line-clamp-1 font-semibold">{expert.fullName}</CardTitle>
         <p className="text-[10px] text-muted-foreground line-clamp-1 mt-0.5">{expert.designation}</p>
         {expert.organization && (
-          <p className="text-[10px] text-muted-foreground line-clamp-1">{expert.organization}</p>
+          <p className="text-xs text-muted-foreground">{expert.organization}</p>
         )}
       </CardHeader>
       <CardContent className="flex-1 space-y-1.5 px-2.5 pb-2">

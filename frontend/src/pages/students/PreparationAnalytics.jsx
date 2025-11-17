@@ -113,20 +113,27 @@ const PreparationAnalytics = () => {
   };
 
   const handleLeavePreparation = async () => {
-    if (!user?.id) return;
+    console.log('handleLeavePreparation called');
+    if (!user?.id) {
+      console.error('No user ID found');
+      return;
+    }
     
     setIsDeleting(true);
     try {
       const decodedRoleName = decodeURIComponent(roleName || '');
-      await axios.delete(
+      console.log('Deleting preparation for role:', decodedRoleName, 'student:', user.id);
+      const response = await axios.delete(
         `http://localhost:8080/api/role-preparation/${encodeURIComponent(decodedRoleName)}?studentId=${user.id}`
       );
+      console.log('Delete response:', response);
       
       // Navigate back or to dashboard
       navigate('/dashboard');
     } catch (err) {
       console.error('Error leaving preparation:', err);
-      alert('Failed to leave preparation. Please try again.');
+      console.error('Error details:', err.response?.data || err.message);
+      alert(`Failed to leave preparation: ${err.response?.data?.message || err.message || 'Unknown error'}`);
       setIsDeleting(false);
     }
   };
@@ -239,11 +246,16 @@ const PreparationAnalytics = () => {
 
   const chartOptions = {
     responsive: true,
-    maintainAspectRatio: true,
-    aspectRatio: 1.5,
+    maintainAspectRatio: false,
     plugins: {
       legend: {
         position: 'top',
+        labels: {
+          boxWidth: 12,
+          font: {
+            size: 11
+          }
+        }
       },
       tooltip: {
         enabled: true,
@@ -253,13 +265,24 @@ const PreparationAnalytics = () => {
 
   const lineChartOptions = {
     ...chartOptions,
+    maintainAspectRatio: false,
     scales: {
       y: {
         beginAtZero: true,
         ticks: {
           stepSize: 1,
+          font: {
+            size: 10
+          }
         },
       },
+      x: {
+        ticks: {
+          font: {
+            size: 10
+          }
+        }
+      }
     },
   };
 
@@ -386,7 +409,7 @@ const PreparationAnalytics = () => {
             <CardContent>
               <div className="h-48 flex items-center justify-center">
                 {Object.keys(analytics.skillsByType || {}).length > 0 ? (
-                  <div className="w-full max-w-xs mx-auto">
+                  <div className="w-48 h-48 mx-auto">
                     <Pie data={skillsByTypeData} options={chartOptions} />
                   </div>
                 ) : (
@@ -405,14 +428,14 @@ const PreparationAnalytics = () => {
             </CardHeader>
             <CardContent>
               <div className="h-48 flex flex-col items-center justify-center">
-                <div className="w-full max-w-xs mx-auto">
+                <div className="w-48 h-48 mx-auto">
                   <Doughnut data={preparationProgressData} options={chartOptions} />
                 </div>
-                <div className="text-center mt-4">
-                  <p className="text-2xl font-bold text-gray-900">
+                <div className="text-center mt-2">
+                  <p className="text-xl font-bold text-gray-900">
                     {Math.round(analytics.completionPercentage || 0)}%
                   </p>
-                  <p className="text-sm text-gray-600">Complete</p>
+                  <p className="text-xs text-gray-600">Complete</p>
                 </div>
               </div>
             </CardContent>
@@ -428,9 +451,9 @@ const PreparationAnalytics = () => {
             </p>
           </CardHeader>
           <CardContent>
-            <div className="h-64">
+            <div className="h-64 w-full">
               {sortedMonths.length > 0 ? (
-                <Line data={learningTimelineData} options={lineChartOptions} />
+                <Line data={learningTimelineData} options={{...lineChartOptions, maintainAspectRatio: false}} />
               ) : (
                 <div className="h-full flex items-center justify-center text-gray-500">
                   No learning data available yet
@@ -646,27 +669,53 @@ const PreparationAnalytics = () => {
         )}
 
         {/* Leave Preparation Button */}
-        <div className="mb-8 flex justify-center">
-          <button
-            onClick={() => setShowLeaveConfirmation(true)}
-            className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium shadow-md"
-          >
-            Leave Preparation
-          </button>
-        </div>
+        <Card className="mb-8 border-red-200">
+          <CardContent className="p-6">
+            <div className="flex justify-center">
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('Leave Preparation button clicked');
+                  console.log('Current showLeaveConfirmation state:', showLeaveConfirmation);
+                  setShowLeaveConfirmation(true);
+                  console.log('Set showLeaveConfirmation to true');
+                }}
+                className="px-8 py-4 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-semibold text-lg shadow-lg cursor-pointer"
+                type="button"
+                style={{ zIndex: 10 }}
+              >
+                Leave Preparation
+              </button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Leave Confirmation Dialog */}
       {showLeaveConfirmation && (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4"
+          style={{ 
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 9999
+          }}
           onClick={(e) => {
             if (e.target === e.currentTarget && !isDeleting) {
+              console.log('Closing dialog by clicking backdrop');
               setShowLeaveConfirmation(false);
             }
           }}
         >
-          <Card className="w-full max-w-md">
+          <Card 
+            className="w-full max-w-md bg-white"
+            onClick={(e) => e.stopPropagation()}
+            style={{ zIndex: 10000 }}
+          >
             <CardHeader>
               <div className="flex items-center gap-2">
                 <AlertCircle className="h-6 w-6 text-red-600" />
@@ -679,16 +728,28 @@ const PreparationAnalytics = () => {
               </p>
               <div className="flex gap-3 justify-end">
                 <button
-                  onClick={() => setShowLeaveConfirmation(false)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Cancel clicked');
+                    setShowLeaveConfirmation(false);
+                  }}
                   disabled={isDeleting}
                   className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  type="button"
                 >
                   Cancel
                 </button>
                 <button
-                  onClick={handleLeavePreparation}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Confirm clicked');
+                    handleLeavePreparation();
+                  }}
                   disabled={isDeleting}
                   className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  type="button"
                 >
                   {isDeleting ? (
                     <>

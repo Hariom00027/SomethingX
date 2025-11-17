@@ -91,7 +91,7 @@ const ExpertEnrollment = () => {
 
     try {
       setSubmitting(true);
-      await apiClient.post(`/expert-sessions/${expert.id}/enroll`, payload);
+      await apiClient.post(`/expert-sessions/institutes/${expert.id}/enroll`, payload);
       setSuccess(true);
       // Navigate back to expert sessions page after 2 seconds with refresh parameter
       setTimeout(() => {

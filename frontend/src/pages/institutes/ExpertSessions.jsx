@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card.jsx";
 import { Button } from "@/components/ui/button.jsx";
@@ -13,6 +14,9 @@ import {
   Users,
   Video,
   GraduationCap,
+  Globe,
+  Phone,
+  Mail,
 } from "lucide-react";
 
 const ExpertSessions = () => {
@@ -24,6 +28,25 @@ const ExpertSessions = () => {
   const [toast, setToast] = useState(null);
   const [enrollmentNotifications, setEnrollmentNotifications] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedExpert, setSelectedExpert] = useState(null);
+  const [modalMode, setModalMode] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+  
+  const defaultFormState = {
+    instituteName: "",
+    place: "",
+    contactNumber: "",
+    email: "",
+    contactPersonName: "",
+    contactPersonDesignation: "",
+    preferredMode: "Online",
+    preferredDate: "",
+    preferredTime: "",
+    expectedParticipantCount: "",
+    additionalNotes: "",
+  };
+  
+  const [enrollmentForm, setEnrollmentForm] = useState(defaultFormState);
 
   useEffect(() => {
     if (!toast) return;
@@ -37,7 +60,7 @@ const ExpertSessions = () => {
         setLoading(true);
         const [expertsResponse, enrollmentsResponse] = await Promise.all([
           apiClient.get("/expert-sessions"),
-          apiClient.get("/expert-sessions/enrollments/latest"),
+          apiClient.get("/expert-sessions/institutes/enrollments/latest"),
         ]);
         setExperts(expertsResponse.data || []);
         setEnrollmentNotifications(enrollmentsResponse.data || []);
@@ -54,7 +77,7 @@ const ExpertSessions = () => {
   const handleRefresh = async () => {
     try {
       setRefreshing(true);
-      const response = await apiClient.get("/expert-sessions/enrollments/latest");
+      const response = await apiClient.get("/expert-sessions/institutes/enrollments/latest");
       setEnrollmentNotifications(response.data || []);
       setToast({ type: "success", message: "Latest activity fetched" });
     } catch (err) {
@@ -106,7 +129,7 @@ const ExpertSessions = () => {
     try {
       setSubmitting(true);
       const response = await apiClient.post(
-        `/expert-sessions/${selectedExpert.id}/enroll`,
+        `/expert-sessions/institutes/${selectedExpert.id}/enroll`,
         payload
       );
       setToast({ type: "success", message: "Enrollment request submitted" });
@@ -162,7 +185,12 @@ const ExpertSessions = () => {
               request that fits your schedule and delivery mode.
             </p>
           </div>
-          <Button variant="outline" onClick={handleRefresh} disabled={refreshing}>
+          <Button 
+            type="button"
+            variant="outline" 
+            onClick={handleRefresh} 
+            disabled={refreshing}
+          >
             {refreshing ? (
               <span className="flex items-center gap-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -253,7 +281,13 @@ const Sidebar = ({ expertCount, domainCount, notifications, onRefresh, refreshin
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <h3 className="text-base font-semibold">Recent enrollments</h3>
-          <Button variant="ghost" size="sm" onClick={onRefresh} disabled={refreshing}>
+          <Button 
+            type="button"
+            variant="ghost" 
+            size="sm" 
+            onClick={onRefresh} 
+            disabled={refreshing}
+          >
             {refreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : "Refresh"}
           </Button>
         </div>
@@ -355,10 +389,19 @@ const ExpertCard = ({ expert, onViewDetails, onEnroll, formatCurrency }) => {
         </div>
       </CardContent>
       <CardFooter className="gap-2">
-        <Button variant="outline" className="flex-1" onClick={onViewDetails}>
+        <Button 
+          type="button"
+          variant="outline" 
+          className="flex-1" 
+          onClick={onViewDetails}
+        >
           View details
         </Button>
-        <Button className="flex-1" onClick={onEnroll}>
+        <Button 
+          type="button"
+          className="flex-1" 
+          onClick={onEnroll}
+        >
           Enroll
         </Button>
       </CardFooter>
@@ -380,10 +423,21 @@ const ExpertModal = ({
   if (!expert) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 py-10">
-      <div className="relative max-h-full w-full max-w-4xl overflow-hidden rounded-xl bg-white shadow-2xl">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 py-10"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+    >
+      <div 
+        className="relative max-h-full w-full max-w-4xl overflow-hidden rounded-xl bg-white shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
         <button
-          className="absolute right-4 top-4 text-muted-foreground hover:text-foreground"
+          type="button"
+          className="absolute right-4 top-4 z-10 text-muted-foreground hover:text-foreground text-2xl font-bold"
           onClick={onClose}
           aria-label="Close modal"
         >
@@ -450,6 +504,7 @@ const ExpertModal = ({
                 </h3>
                 <div className="flex gap-2">
                   <Button
+                    type="button"
                     variant={mode === "details" ? "default" : "outline"}
                     size="sm"
                     onClick={() => onSwitchMode("details")}
@@ -457,6 +512,7 @@ const ExpertModal = ({
                     Overview
                   </Button>
                   <Button
+                    type="button"
                     variant={mode === "enroll" ? "default" : "outline"}
                     size="sm"
                     onClick={() => onSwitchMode("enroll")}

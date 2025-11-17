@@ -26,6 +26,9 @@ import InternshipManagement from "./pages/institutes/InternshipManagement";
 import ExpertSessions from "./pages/institutes/ExpertSessions";
 import ExpertDetails from "./pages/institutes/ExpertDetails";
 import ExpertEnrollment from "./pages/institutes/ExpertEnrollment";
+import IndustryExpertSessions from "./pages/industry/ExpertSessions";
+import IndustryExpertDetails from "./pages/industry/ExpertDetails";
+import IndustryExpertEnrollment from "./pages/industry/ExpertEnrollment";
 import Workshops from "./pages/institutes/Workshops";
 import StudentTrainingRoleReady from "./pages/institutes/StudentTrainingRoleReady";
 import ResumeAccess from "./pages/industry/ResumeAccess";
@@ -198,6 +201,21 @@ function App() {
           <Route path="/industry/ai-interview" element={
             <ProtectedRoute requiredUserType="INDUSTRY">
               <AiInterview />
+            </ProtectedRoute>
+          } />
+          <Route path="/industry/expert-sessions" element={
+            <ProtectedRoute requiredUserType="INDUSTRY">
+              <IndustryExpertSessions />
+            </ProtectedRoute>
+          } />
+          <Route path="/industry/expert-sessions/:expertId" element={
+            <ProtectedRoute requiredUserType="INDUSTRY">
+              <IndustryExpertDetails />
+            </ProtectedRoute>
+          } />
+          <Route path="/industry/expert-sessions/:expertId/enroll" element={
+            <ProtectedRoute requiredUserType="INDUSTRY">
+              <IndustryExpertEnrollment />
             </ProtectedRoute>
           } />
           

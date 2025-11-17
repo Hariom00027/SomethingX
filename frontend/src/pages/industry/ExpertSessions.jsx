@@ -36,7 +36,7 @@ const ExpertSessions = () => {
         setLoading(true);
         const [expertsResponse, enrollmentsResponse] = await Promise.all([
           apiClient.get("/expert-sessions"),
-          apiClient.get("/expert-sessions/institutes/enrollments/latest"),
+          apiClient.get("/expert-sessions/industry/enrollments/latest"),
         ]);
         setExperts(expertsResponse.data || []);
         setEnrollmentNotifications(enrollmentsResponse.data || []);
@@ -53,7 +53,7 @@ const ExpertSessions = () => {
   const handleRefresh = async () => {
     try {
       setRefreshing(true);
-      const response = await apiClient.get("/expert-sessions/institutes/enrollments/latest");
+      const response = await apiClient.get("/expert-sessions/industry/enrollments/latest");
       setEnrollmentNotifications(response.data || []);
       setToast({ type: "success", message: "Latest activity fetched" });
     } catch (err) {
@@ -65,11 +65,11 @@ const ExpertSessions = () => {
   };
 
   const openDetails = (expert) => {
-    navigate(`/institutes/expert-sessions/${expert.id}`);
+    navigate(`/industry/expert-sessions/${expert.id}`);
   };
 
   const openEnrollment = (expert) => {
-    navigate(`/institutes/expert-sessions/${expert.id}/enroll`);
+    navigate(`/industry/expert-sessions/${expert.id}/enroll`);
   };
 
 
@@ -107,7 +107,7 @@ const ExpertSessions = () => {
           <div>
             <h1 className="text-3xl font-semibold tracking-tight">Expert Session Service</h1>
             <p className="text-muted-foreground mt-2 max-w-2xl">
-              Discover curated industry leaders ready to host tailored sessions for your institute.
+              Discover curated industry leaders ready to host tailored sessions for your company.
               Browse expert profiles, review in-depth session details, and submit an enrollment
               request that fits your schedule and delivery mode.
             </p>
@@ -184,7 +184,7 @@ const Sidebar = ({ expertCount, domainCount, notifications, onRefresh, refreshin
       <div>
         <h2 className="text-xl font-semibold">Service Snapshot</h2>
         <p className="text-sm text-muted-foreground mt-2">
-          Track service health and recent enrollment activity from institutes.
+          Track service health and recent enrollment activity from companies.
         </p>
         <div className="mt-4 grid gap-3">
           <StatPill icon={<Users className="h-4 w-4 text-primary" />} label="Active experts" value={expertCount} />
@@ -210,7 +210,7 @@ const Sidebar = ({ expertCount, domainCount, notifications, onRefresh, refreshin
             notifications.map((notification) => (
               <div key={notification.id} className="rounded-md border p-3">
                 <p className="text-sm font-medium leading-tight">
-                  {notification.instituteName}
+                  {notification.companyName}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
                   {notification.contactPersonName} · {notification.preferredMode}
@@ -225,7 +225,7 @@ const Sidebar = ({ expertCount, domainCount, notifications, onRefresh, refreshin
             ))
           ) : (
             <p className="text-sm text-muted-foreground">
-              No enrollments yet. They will appear here once institutes submit requests.
+              No enrollments yet. They will appear here once companies submit requests.
             </p>
           )}
         </div>
@@ -355,7 +355,4 @@ const formatDate = (value) => {
 };
 
 export default ExpertSessions;
-
-
-
 

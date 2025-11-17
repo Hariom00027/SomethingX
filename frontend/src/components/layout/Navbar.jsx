@@ -56,6 +56,7 @@ const Navbar = () => {
               <DropdownMenuItem asChild><Link to="/industry/role-ready-freshers">Role Ready Freshers</Link></DropdownMenuItem>
               <DropdownMenuItem asChild><Link to="/industry/post-jobs">Post Jobs & Hackathons</Link></DropdownMenuItem>
               <DropdownMenuItem asChild><Link to="/industry/ai-interview">AI Technical Interview</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild><Link to="/industry/expert-sessions">Expert Sessions</Link></DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
           

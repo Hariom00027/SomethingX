@@ -28,6 +28,10 @@ public class ExpertSession {
     private List<String> topicsCovered;
     private Integer yearsOfExperience;
     private List<String> languages;
+    
+    // Allocation fields - determines which user types can access this expert
+    private Boolean availableForInstitute = true;
+    private Boolean availableForIndustry = true;
 }
 
 

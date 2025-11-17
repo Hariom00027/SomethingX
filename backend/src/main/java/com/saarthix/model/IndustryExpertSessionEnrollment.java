@@ -16,7 +16,8 @@ public class IndustryExpertSessionEnrollment {
     private String expertSessionId;
     private String expertNameSnapshot;
 
-    private String instituteName; // Company/Organization name
+    private String companyName;
+    private String industryType;
     private String place;
     private String contactNumber;
     private String email;
@@ -30,4 +31,5 @@ public class IndustryExpertSessionEnrollment {
 
     private Instant submittedAt = Instant.now();
 }
+
 

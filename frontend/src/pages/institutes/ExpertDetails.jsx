@@ -6,12 +6,14 @@ import { Button } from "@/components/ui/button.jsx";
 import apiClient from "@/lib/apiClient.js";
 import {
   Calendar,
+  Clock,
   Loader2,
   MapPin,
   Users,
   Video,
   Globe,
   ArrowLeft,
+  GraduationCap,
 } from "lucide-react";
 
 const ExpertDetails = () => {
@@ -158,42 +160,132 @@ const ExpertDetails = () => {
           {/* Right Column - Session Details */}
           <Card>
             <CardContent className="px-6 py-6">
-              <div className="space-y-6">
-                <div className="space-y-4 text-sm text-slate-700">
-                  <p>
-                    Book a tailored session with {expert.fullName}. Select the delivery mode, share
-                    institute contact details, and outline expectations so the expert team can respond
-                    quickly.
-                  </p>
-                  <div className="rounded-md border bg-muted/40 p-4">
-                    <h4 className="text-sm font-semibold text-slate-800">Session quick facts</h4>
-                    <ul className="mt-2 space-y-2 text-sm">
-                      <li className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-primary" />
-                        {expert.sessionDurations?.join(" · ") || "Flexible timelines"}
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <Video className="h-4 w-4 text-primary" />
-                        {expert.sessionFormats?.join(" · ") || "Available on request"}
-                      </li>
-                      {expert.baseLocation && (
-                        <li className="flex items-center gap-2">
-                          <MapPin className="h-4 w-4 text-primary" />
-                          Based in {expert.baseLocation}
-                        </li>
+              <div className="space-y-6 text-sm text-slate-700">
+                <div>
+                  <h4 className="text-base font-semibold text-slate-900 mb-3 flex items-center gap-2">
+                    <Users className="h-5 w-5 text-primary" />
+                    Expert Profile
+                  </h4>
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Designation & Post</p>
+                      <p className="font-medium text-slate-800">{expert.designation}</p>
+                      {expert.organization && (
+                        <p className="text-sm text-muted-foreground mt-1">{expert.organization}</p>
                       )}
-                    </ul>
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-semibold text-slate-800">Suggested pre-work</h4>
-                    <ul className="mt-2 list-disc space-y-2 pl-5 text-sm">
-                      <li>Share institute context and session goals via enrollment notes.</li>
-                      <li>Confirm preferred duration and participant profile.</li>
-                      <li>Indicate audio-visual setup needs for offline engagements.</li>
-                    </ul>
+                    </div>
+                    {expert.yearsOfExperience && (
+                      <div>
+                        <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Experience</p>
+                        <p className="font-medium text-slate-800">{expert.yearsOfExperience}+ years of professional experience</p>
+                      </div>
+                    )}
                   </div>
                 </div>
+
+                <div>
+                  <h4 className="text-base font-semibold text-slate-900 mb-3 flex items-center gap-2">
+                    <GraduationCap className="h-5 w-5 text-primary" />
+                    Domain of Expertise
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    {(expert.expertiseDomains || []).map((domain) => (
+                      <span
+                        key={domain}
+                        className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary"
+                      >
+                        {domain}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="text-base font-semibold text-slate-900 mb-3 flex items-center gap-2">
+                    <Clock className="h-5 w-5 text-primary" />
+                    Session Duration
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    {(expert.sessionDurations || []).map((duration) => (
+                      <span
+                        key={duration}
+                        className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 border border-blue-200"
+                      >
+                        <Clock className="h-3.5 w-3.5" />
+                        {duration}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="text-base font-semibold text-slate-900 mb-3 flex items-center gap-2">
+                    <Video className="h-5 w-5 text-primary" />
+                    Pricing Per Hour
+                  </h4>
+                  <div className="grid gap-3 rounded-lg border bg-gradient-to-br from-slate-50 to-white p-4 shadow-sm">
+                    <div className="flex items-center justify-between p-3 rounded-md bg-white border border-slate-200">
+                      <span className="flex items-center gap-2 text-slate-700 font-medium">
+                        <Video className="h-4 w-4 text-green-600" /> 
+                        Online Mode
+                      </span>
+                      <span className="font-bold text-lg text-green-700">{formatCurrency(expert.pricingPerHourOnline)}</span>
+                    </div>
+                    <div className="flex items-center justify-between p-3 rounded-md bg-white border border-slate-200">
+                      <span className="flex items-center gap-2 text-slate-700 font-medium">
+                        <MapPin className="h-4 w-4 text-blue-600" /> 
+                        Offline Mode
+                      </span>
+                      <span className="font-bold text-lg text-blue-700">{formatCurrency(expert.pricingPerHourOffline)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                  <div>
+                  <h4 className="text-base font-semibold text-slate-900 mb-3 flex items-center gap-2">
+                    <GraduationCap className="h-5 w-5 text-primary" />
+                    Topics Covered in Sessions
+                  </h4>
+                  {expert.topicsCovered && expert.topicsCovered.length > 0 ? (
+                    <ul className="space-y-2">
+                      {expert.topicsCovered.map((topic, index) => (
+                        <li key={index} className="flex items-start gap-2 p-2 rounded-md hover:bg-slate-50 transition-colors">
+                          <span className="text-primary mt-0.5">•</span>
+                          <span className="text-slate-700">{topic}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-sm text-muted-foreground italic">Topics will be customized based on your requirements</p>
+                  )}
+                </div>
+
+                <div className="rounded-md border border-primary/20 bg-primary/5 p-4">
+                  <h4 className="text-sm font-semibold text-slate-800 mb-2">Session Formats Available</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {(expert.sessionFormats || []).map((format) => (
+                      <span
+                        key={format}
+                        className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary"
+                      >
+                        {format === "Online" ? <Video className="h-3.5 w-3.5" /> : <MapPin className="h-3.5 w-3.5" />}
+                        {format}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {expert.baseLocation && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <MapPin className="h-4 w-4" />
+                    <span>Based in {expert.baseLocation}</span>
+                  </div>
+                )}
+
                 <div className="pt-4 border-t">
+                  <p className="text-sm text-slate-600 mb-4">
+                    Ready to book a session? Click the button below to submit your enrollment request.
+                  </p>
                   <Button
                     onClick={() => navigate(`/institutes/expert-sessions/${expertId}/enroll`)}
                     className="w-full"

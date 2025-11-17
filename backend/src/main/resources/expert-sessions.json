@@ -130,6 +130,138 @@
     ],
     "yearsOfExperience": 10,
     "languages": ["English", "Hindi"]
+  },
+  {
+    "id": "exp-khushi",
+    "fullName": "Khushi",
+    "designation": "Industry Expert",
+    "organization": "Professional Services",
+    "baseLocation": "India",
+    "photoUrl": "/assets/experts/khushi.jpg",
+    "expertiseDomains": ["Professional Development", "Career Guidance", "Industry Insights"],
+    "summary": "Experienced professional providing expert guidance and mentorship to educational institutes.",
+    "sessionFormats": ["Online", "Offline"],
+    "sessionDurations": ["60 minutes", "90 minutes"],
+    "pricingPerHourOnline": 5000,
+    "pricingPerHourOffline": 6500,
+    "topicsCovered": [
+      "Career development strategies",
+      "Industry best practices",
+      "Professional skill enhancement",
+      "Mentorship programs"
+    ],
+    "yearsOfExperience": 8,
+    "languages": ["English", "Hindi"]
+  },
+  {
+    "id": "exp-raja",
+    "fullName": "Raja C",
+    "designation": "Senior Industry Consultant",
+    "organization": "Consulting Services",
+    "baseLocation": "India",
+    "photoUrl": "/assets/experts/Raja C.jpg",
+    "expertiseDomains": ["Business Strategy", "Consulting", "Leadership"],
+    "summary": "Senior consultant with extensive experience in business strategy and organizational development.",
+    "sessionFormats": ["Online", "Offline"],
+    "sessionDurations": ["60 minutes", "90 minutes", "120 minutes"],
+    "pricingPerHourOnline": 6000,
+    "pricingPerHourOffline": 7500,
+    "topicsCovered": [
+      "Strategic planning and execution",
+      "Organizational development",
+      "Leadership training",
+      "Business transformation"
+    ],
+    "yearsOfExperience": 15,
+    "languages": ["English", "Hindi"]
+  },
+  {
+    "id": "exp-priyanshu",
+    "fullName": "Priyanshu",
+    "designation": "Technology Expert",
+    "organization": "Tech Solutions",
+    "baseLocation": "India",
+    "photoUrl": "/assets/experts/Priyanshu.jpg",
+    "expertiseDomains": ["Technology", "Software Development", "Innovation"],
+    "summary": "Technology expert specializing in modern software development and digital transformation.",
+    "sessionFormats": ["Online", "Offline"],
+    "sessionDurations": ["60 minutes", "90 minutes"],
+    "pricingPerHourOnline": 5500,
+    "pricingPerHourOffline": 7000,
+    "topicsCovered": [
+      "Modern software development practices",
+      "Digital transformation strategies",
+      "Technology stack selection",
+      "Innovation in education"
+    ],
+    "yearsOfExperience": 10,
+    "languages": ["English", "Hindi"]
+  },
+  {
+    "id": "exp-pratistha",
+    "fullName": "Pratistha",
+    "designation": "Education Specialist",
+    "organization": "Educational Services",
+    "baseLocation": "India",
+    "photoUrl": "/assets/experts/Pratistha.jpg",
+    "expertiseDomains": ["Education", "Curriculum Development", "Teaching Methodologies"],
+    "summary": "Education specialist focused on curriculum development and innovative teaching methodologies.",
+    "sessionFormats": ["Online", "Offline"],
+    "sessionDurations": ["45 minutes", "60 minutes", "90 minutes"],
+    "pricingPerHourOnline": 5000,
+    "pricingPerHourOffline": 6500,
+    "topicsCovered": [
+      "Curriculum design and development",
+      "Innovative teaching methods",
+      "Student engagement strategies",
+      "Educational technology integration"
+    ],
+    "yearsOfExperience": 7,
+    "languages": ["English", "Hindi"]
+  },
+  {
+    "id": "exp-meenakshi",
+    "fullName": "Meenakshi",
+    "designation": "Industry Mentor",
+    "organization": "Professional Development",
+    "baseLocation": "India",
+    "photoUrl": "/assets/experts/Meenakshi.jpg",
+    "expertiseDomains": ["Mentorship", "Professional Development", "Career Counseling"],
+    "summary": "Dedicated mentor helping students and professionals achieve their career goals.",
+    "sessionFormats": ["Online", "Offline"],
+    "sessionDurations": ["60 minutes", "90 minutes"],
+    "pricingPerHourOnline": 4800,
+    "pricingPerHourOffline": 6200,
+    "topicsCovered": [
+      "Career counseling and guidance",
+      "Professional skill development",
+      "Mentorship programs",
+      "Personal branding"
+    ],
+    "yearsOfExperience": 9,
+    "languages": ["English", "Hindi"]
+  },
+  {
+    "id": "exp-hari-om",
+    "fullName": "Hari Om",
+    "designation": "Senior Industry Advisor",
+    "organization": "Advisory Services",
+    "baseLocation": "India",
+    "photoUrl": "/assets/experts/Hari om.jpg",
+    "expertiseDomains": ["Business Advisory", "Strategic Planning", "Industry Relations"],
+    "summary": "Senior advisor with deep industry knowledge and strategic planning expertise.",
+    "sessionFormats": ["Online", "Offline"],
+    "sessionDurations": ["60 minutes", "90 minutes", "120 minutes"],
+    "pricingPerHourOnline": 6500,
+    "pricingPerHourOffline": 8000,
+    "topicsCovered": [
+      "Strategic business planning",
+      "Industry partnerships",
+      "Market analysis",
+      "Business development strategies"
+    ],
+    "yearsOfExperience": 18,
+    "languages": ["English", "Hindi"]
   }
 ]
 

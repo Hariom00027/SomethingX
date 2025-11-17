@@ -6,6 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/ca
 import GanttChart from '../../components/ui/gantt-chart';
 import { Briefcase, Loader2, AlertCircle, Calendar, Target, Sparkles, CheckCircle2, Play, BarChart3, ToggleLeft, ToggleRight } from 'lucide-react';
 
+const normalizePreparation = (prep) => {
+  if (!prep) return null;
+  const isActive = prep.isActive ?? prep.active ?? false;
+  return { ...prep, isActive };
+};
+
 const JobDescription = () => {
   const { roleName } = useParams();
   const navigate = useNavigate();
@@ -76,8 +82,9 @@ const JobDescription = () => {
           `http://localhost:8080/api/role-preparation/${encodeURIComponent(decodedRoleName)}?studentId=${user.id}`
         );
         if (response.data) {
-          setPreparation(response.data);
-          setShowPreparation(response.data.isActive || false);
+          const normalized = normalizePreparation(response.data);
+          setPreparation(normalized);
+          setShowPreparation(normalized?.isActive || false);
         } else {
           setPreparation(null);
           setShowPreparation(false);
@@ -121,15 +128,18 @@ const JobDescription = () => {
       
       if (response.data) {
         console.log('Preparation data:', response.data);
-        setPreparation(response.data);
-        setShowPreparation(true);
+        const normalized = normalizePreparation(response.data);
+        setPreparation(normalized);
+        setShowPreparation(Boolean(normalized?.isActive));
+        setShowPreparation(Boolean(normalized?.isActive));
+        setShowPreparation(Boolean(normalized?.isActive));
         // Refetch preparation to ensure everything is in sync
         try {
           const prepResponse = await axios.get(
             `http://localhost:8080/api/role-preparation/${encodeURIComponent(decodedRoleName)}?studentId=${user.id}`
           );
           if (prepResponse.data) {
-            setPreparation(prepResponse.data);
+            setPreparation(normalizePreparation(prepResponse.data));
           }
         } catch (refetchErr) {
           console.warn('Error refetching preparation:', refetchErr);
@@ -159,9 +169,10 @@ const JobDescription = () => {
         `http://localhost:8080/api/role-preparation/skill/${encodeURIComponent(decodedRoleName)}/${encodeURIComponent(skillName)}?studentId=${user.id}&completed=${newStatus}`
       );
       if (response.data) {
-        setPreparation(response.data);
+        const normalized = normalizePreparation(response.data);
+        setPreparation(normalized);
         // Ensure preparation section stays visible
-        setShowPreparation(true);
+        setShowPreparation(normalized?.isActive ?? true);
       }
     } catch (err) {
       console.error('Error updating skill:', err);

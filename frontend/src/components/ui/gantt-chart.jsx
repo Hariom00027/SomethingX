@@ -1,62 +1,109 @@
 import React, { useState, useMemo } from 'react';
+import { Layers, Timer, Target, Sparkles, Calendar } from 'lucide-react';
 
-const GanttChart = ({ data, totalMonths }) => {
+const GanttChart = ({ data, totalMonths = 6 }) => {
   const [hoveredTask, setHoveredTask] = useState(null);
-  const [hoveredMonth, setHoveredMonth] = useState(null);
   const [hoveredTaskInfo, setHoveredTaskInfo] = useState(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
 
-  if (!data || !data.tasks) {
-    return (
-      <div className="text-center py-8 text-gray-500">
-        No data available for Gantt chart
-      </div>
-    );
-  }
+  // Safely extract and normalize data
+  const normalizedData = useMemo(() => {
+    if (!data || typeof data !== 'object') {
+      return { tasks: [], labels: [] };
+    }
+    
+    const tasks = Array.isArray(data.tasks) ? data.tasks : [];
+    const labels = Array.isArray(data.labels) ? data.labels : [];
+    
+    // Generate labels if missing
+    const finalLabels = labels.length > 0 
+      ? labels 
+      : Array.from({ length: totalMonths }, (_, i) => `Month ${i + 1}`);
+    
+    return { tasks, labels: finalLabels };
+  }, [data, totalMonths]);
 
-  const { tasks, labels } = data;
-  
-  // Separate technical and non-technical skills
+  const { tasks, labels } = normalizedData;
+
+  // Separate tasks by type
   const { technicalTasks, nonTechnicalTasks } = useMemo(() => {
-    const technical = tasks.filter(task => task.type === 'technical');
-    const nonTechnical = tasks.filter(task => task.type === 'non-technical');
+    const technical = tasks.filter(task => task?.type === 'technical');
+    const nonTechnical = tasks.filter(task => task?.type === 'non-technical');
     return { technicalTasks: technical, nonTechnicalTasks: nonTechnical };
   }, [tasks]);
-  
-  // Calculate the width of each month column - ensure it fills the container
-  // Use a fixed pixel width for the Skills & Tasks column (12rem = 192px)
-  const skillsColumnWidth = 192; // 12rem in pixels
-  const monthWidth = `calc((100% - ${skillsColumnWidth}px) / ${totalMonths})`;
-  
-  // Generate colors based on skill type
-  const generateTaskColor = (task, index, totalTasks) => {
-    // Use different color schemes for technical vs non-technical skills
+
+  // Calculate summary statistics
+  const summaryCards = useMemo(() => {
+    if (tasks.length === 0) return [];
+    
+    const durations = tasks.map(task => Math.max(1, (task.end ?? 0) - (task.start ?? 0) + 1));
+    const totalDuration = durations.reduce((sum, val) => sum + val, 0);
+    const longestTask = tasks.reduce((longest, task) => {
+      const duration = Math.max(1, (task.end ?? 0) - (task.start ?? 0) + 1);
+      return !longest || duration > longest.duration 
+        ? { name: task.name, duration }
+        : longest;
+    }, null);
+    
+    const firstLabel = labels[0] || 'Start';
+    const lastLabel = labels[labels.length - 1] || 'Finish';
+    
+    return [
+      { 
+        label: 'Total Items', 
+        value: tasks.length, 
+        hint: `${technicalTasks.length} technical • ${nonTechnicalTasks.length} non-technical`, 
+        gradient: 'from-blue-500/90 via-indigo-500/90 to-purple-500/90', 
+        icon: Layers 
+      },
+      { 
+        label: 'Avg Duration', 
+        value: `${(totalDuration / tasks.length).toFixed(1)} mo`, 
+        hint: 'per milestone', 
+        gradient: 'from-fuchsia-500/90 via-violet-500/90 to-blue-500/90', 
+        icon: Timer 
+      },
+      { 
+        label: 'Longest Sprint', 
+        value: longestTask ? `${longestTask.duration} mo` : '–', 
+        hint: longestTask?.name || 'N/A', 
+        gradient: 'from-emerald-500/90 via-teal-500/90 to-cyan-500/90', 
+        icon: Target 
+      },
+      { 
+        label: 'Timeline', 
+        value: `${totalMonths} mo`, 
+        hint: `${firstLabel} → ${lastLabel}`, 
+        gradient: 'from-amber-500/90 via-orange-500/90 to-rose-500/90', 
+        icon: Sparkles 
+      }
+    ];
+  }, [tasks, labels, technicalTasks.length, nonTechnicalTasks.length, totalMonths]);
+
+  // Generate task color based on type
+  const getTaskColor = (task, index) => {
+    const technicalColors = ['#4A90E2', '#50E3C2', '#F5A623', '#7ED321', '#BD10E0'];
+    const nonTechnicalColors = ['#F8E71C', '#D0021B', '#9013FE', '#B8E986', '#4A4A4A'];
+
     if (task.type === 'non-technical') {
-      // Non-technical skills: use green/teal tones
-      const hue = 160 + (index % 3) * 10; // Green to teal range
-      const saturation = 60 + (index % 2) * 10;
-      const lightness = 45 + (index % 2) * 5;
-      return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+      return nonTechnicalColors[index % nonTechnicalColors.length];
     } else if (task.type === 'technical') {
-      // Technical skills: use blue/purple tones
-      const hue = 220 + (index % 3) * 15; // Blue to purple range
-      const saturation = 65 + (index % 3) * 5;
-      const lightness = 50 + (index % 2) * 5;
-      return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
-    } else {
-      // Project phase or other: use orange/red tones
-      const hue = (index * 360 / totalTasks) % 360;
-      const saturation = 65 + (index % 3) * 5;
-      const lightness = 50 + (index % 2) * 5;
-      return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+      return technicalColors[index % technicalColors.length];
     }
+    const hue = (index * 137.5) % 360;
+    return `hsl(${hue}, 65%, 50%)`;
   };
 
-  // Get month name from label (e.g., "Month 1" -> "Month 1" or extract month number)
+  // Check if month is in task range
+  const isMonthInTask = (monthIndex, task) => {
+    const monthNum = monthIndex + 1;
+    return monthNum >= (task.start ?? 0) && monthNum <= (task.end ?? 0);
+  };
+
+  // Get month info
   const getMonthInfo = (label, index) => {
     const monthNum = index + 1;
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    // Calculate which month of the year (assuming starting from current month or Jan)
     const monthIndex = (monthNum - 1) % 12;
     return {
       number: monthNum,
@@ -65,70 +112,50 @@ const GanttChart = ({ data, totalMonths }) => {
     };
   };
 
-  // Check if a month is within a task's range
-  const isMonthInTask = (monthIndex, task) => {
-    const monthNum = monthIndex + 1;
-    return monthNum >= task.start && monthNum <= task.end;
-  };
-
-  // Render a task row
-  const renderTaskRow = (task, index, isTechnical) => {
+  // Render task row
+  const renderTaskRow = (task, index) => {
+    if (!task || !task.start || !task.end) return null;
+    
     const startPosition = ((task.start - 1) / totalMonths) * 100;
     const taskWidth = ((task.end - task.start + 1) / totalMonths) * 100;
-    const taskColor = generateTaskColor(task, index, tasks.length);
+    const taskColor = getTaskColor(task, index);
     const isHovered = hoveredTask === task.id;
-    const skillTypeLabel = task.type === 'technical' ? 'Technical' : 
-                          task.type === 'non-technical' ? 'Non-Technical' : 
-                          task.type === 'project' ? 'Project' : '';
+    const typeLabel = task.type === 'technical' ? 'Technical' : 
+                     task.type === 'non-technical' ? 'Non-Technical' : 
+                     task.type || 'Task';
     
     return (
-      <div 
-        key={task.id} 
-        className="flex items-center border-b border-gray-200 py-2.5 hover:bg-gray-50 transition-colors"
-        onMouseEnter={(e) => {
-          setHoveredTask(task.id);
-          setHoveredTaskInfo({ task, monthInfo: null });
-          setTooltipPosition({ x: e.clientX, y: e.clientY });
-        }}
-        onMouseMove={(e) => {
-          setTooltipPosition({ x: e.clientX, y: e.clientY });
-        }}
-        onMouseLeave={() => {
-          setHoveredTask(null);
-          setHoveredTaskInfo(null);
-        }}
+      <div
+        key={task.id || index}
+        className="group relative flex items-stretch overflow-hidden rounded-xl border border-slate-200/70 bg-white/90 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-indigo-300 hover:shadow-lg"
+        onMouseEnter={() => setHoveredTask(task.id)}
+        onMouseLeave={() => setHoveredTask(null)}
       >
-        {/* Task name - Fixed width for alignment */}
-        <div className="w-48 flex-shrink-0 p-2 border-r-2 border-gray-300 bg-gray-50">
-          <div className="flex items-center">
-            <div 
-              className="w-3.5 h-3.5 rounded-full mr-3 shadow-sm transition-transform hover:scale-110 flex-shrink-0"
+        <div className="w-56 flex-shrink-0 border-r border-slate-200/70 bg-white/95 px-4 py-4">
+          <div className="flex items-center gap-3">
+            <div
+              className="h-3.5 w-3.5 rounded-full shadow-md ring-2 ring-white transition-transform duration-300 group-hover:scale-125"
               style={{ backgroundColor: taskColor }}
-            ></div>
-            <div className="flex flex-col min-w-0 flex-1">
-              <span className="text-sm font-semibold text-gray-800 truncate">{task.name}</span>
-              {skillTypeLabel && (
-                <span className="text-xs text-gray-500">{skillTypeLabel}</span>
-              )}
+            />
+            <div className="min-w-0 flex-1">
+              <span className="block truncate text-sm font-semibold text-slate-900">{task.name || 'Unnamed Task'}</span>
+              <span className="text-xs font-medium uppercase tracking-wide text-slate-500">{typeLabel}</span>
             </div>
           </div>
         </div>
-        
-        {/* Timeline area */}
-        <div className="flex-1 relative h-10 min-w-0">
-          {/* Background grid */}
+        <div className="relative flex-1 min-w-0 py-6">
+          <div className="absolute inset-0 bg-gradient-to-r from-white/70 via-white/40 to-white/60" />
           <div className="absolute inset-0 flex">
-            {labels.map((_, monthIndex) => {
-              const monthInfo = getMonthInfo(labels[monthIndex], monthIndex);
+            {labels.map((label, monthIndex) => {
               const isInTask = isMonthInTask(monthIndex, task);
               return (
-                <div 
+                <div
                   key={monthIndex}
-                  className="border-r border-gray-200 relative flex-shrink-0 flex-grow"
+                  className="relative flex-1 border-r border-slate-200/60"
                   style={{ flexBasis: 0 }}
                   onMouseEnter={(e) => {
                     if (isInTask) {
-                      setHoveredTask(task.id);
+                      const monthInfo = getMonthInfo(label, monthIndex);
                       setHoveredTaskInfo({ task, monthInfo });
                       setTooltipPosition({ x: e.clientX, y: e.clientY });
                     }
@@ -140,181 +167,209 @@ const GanttChart = ({ data, totalMonths }) => {
                   }}
                   onMouseLeave={() => {
                     if (isInTask) {
-                      setHoveredTaskInfo(prev => prev ? { ...prev, monthInfo: null } : null);
+                      setHoveredTaskInfo(null);
                     }
                   }}
                 >
+                  <div className="absolute inset-0 bg-gradient-to-b from-slate-50/40 via-white/10 to-transparent" />
                   {isInTask && (
-                    <div className="absolute inset-0 bg-opacity-5" style={{ backgroundColor: taskColor }}></div>
+                    <div
+                      className="absolute inset-[6px] rounded-lg"
+                      style={{ backgroundColor: taskColor, opacity: 0.18 }}
+                    />
                   )}
                 </div>
               );
             })}
           </div>
-          
-          {/* Task bar - end-to-end aligned */}
-          <div 
-            className={`absolute top-0 h-10 rounded flex items-center justify-center transition-all duration-200 ${
-              isHovered ? 'ring-2 ring-offset-1 ring-gray-400' : ''
+          <div
+            className={`absolute top-1/2 flex h-12 -translate-y-1/2 items-center justify-center rounded-xl px-3 text-xs font-semibold uppercase tracking-wide text-white transition-all duration-300 ${
+              isHovered ? 'ring-2 ring-offset-1 ring-indigo-300 shadow-lg' : 'shadow-md'
             }`}
             style={{
               left: `${startPosition}%`,
               width: `${taskWidth}%`,
               backgroundColor: taskColor,
-              transform: isHovered ? 'scaleY(1.1)' : 'scaleY(1)',
               zIndex: isHovered ? 20 : 1,
-              boxShadow: isHovered ? `0 4px 12px ${taskColor}60` : '0 2px 6px rgba(0,0,0,0.15)',
-              border: isHovered ? `2px solid ${taskColor}` : 'none'
+              transform: isHovered ? 'translateY(-50%) scale(1.03)' : 'translateY(-50%)'
             }}
           >
-            <span className="text-xs text-white font-bold px-2 drop-shadow-md">
-              {task.start}-{task.end}
-            </span>
+            {task.start}-{task.end}
           </div>
         </div>
       </div>
     );
   };
 
+  // Early returns after all hooks
+  if (!data || tasks.length === 0) {
+    return (
+      <div className="rounded-2xl border border-slate-200/70 bg-white/90 p-12 text-center shadow-inner">
+        <Target className="mx-auto mb-4 h-16 w-16 text-slate-400" />
+        <p className="mb-2 text-lg font-semibold text-slate-700">No Gantt chart data available</p>
+        <p className="text-sm text-slate-500">Please ensure your profile is fully updated with graduation year and academic details.</p>
+      </div>
+    );
+  }
+
+  if (labels.length === 0 && tasks.length > 0) {
+    return (
+      <div className="rounded-2xl border border-slate-200/70 bg-white/90 p-12 text-center shadow-inner">
+        <Calendar className="mx-auto mb-4 h-16 w-16 text-slate-400" />
+        <p className="mb-2 text-lg font-semibold text-slate-700">Unable to generate timeline</p>
+        <p className="text-sm text-slate-500">Missing timeline information. Please ensure totalMonths is provided.</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="gantt-chart-container bg-white rounded-xl shadow-xl p-6 border-2 border-gray-200">
-      <div className="overflow-x-auto">
-        <div className="inline-block min-w-full" style={{ width: '100%' }}>
-          {/* Header with month labels */}
-          <div className="flex border-b-2 border-gray-300 mb-2 bg-gradient-to-r from-gray-50 via-blue-50 to-gray-100 rounded-t-lg sticky top-0 z-10">
-            <div className="w-48 flex-shrink-0 p-3 font-bold border-r-2 border-gray-400 text-gray-800 bg-gradient-to-br from-gray-100 to-gray-50">
-              Skills & Tasks
-            </div>
-            <div className="flex" style={{ width: `calc(100% - ${skillsColumnWidth}px)` }}>
-              {labels.map((label, index) => {
-                const monthInfo = getMonthInfo(label, index);
-                return (
-                  <div 
-                    key={index}
-                    className="flex-shrink-0 flex-grow p-2 text-center border-r border-gray-300 font-semibold text-sm text-gray-700 hover:bg-blue-100 transition-all duration-200 cursor-help relative group"
-                    style={{ flexBasis: 0 }}
-                  >
-                    <div className="font-bold text-gray-800">{monthInfo.name}</div>
-                    <div className="text-xs text-gray-600 font-medium">M{monthInfo.number}</div>
+    <div className="gantt-chart-container relative overflow-hidden rounded-3xl border border-slate-200/60 bg-white/80 p-6 shadow-xl backdrop-blur-xl md:p-8">
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-slate-100/70 via-sky-50/60 to-purple-50/50" />
+      <div className="relative z-10 space-y-8">
+        {/* Summary Cards */}
+        {summaryCards.length > 0 && (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {summaryCards.map((card, idx) => {
+              const Icon = card.icon;
+              return (
+                <div key={idx} className="relative overflow-hidden rounded-2xl border border-white/15 bg-slate-900/85 p-5 shadow-lg">
+                  <div className={`absolute inset-0 bg-gradient-to-br ${card.gradient}`} />
+                  <div className="relative flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.28em] text-white/70">{card.label}</p>
+                      <p className="mt-3 text-3xl font-semibold text-white">{card.value}</p>
+                      <p className="mt-3 text-sm font-medium text-white/80">{card.hint}</p>
+                    </div>
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 backdrop-blur">
+                      <Icon className="h-6 w-6 text-white" />
+                    </div>
                   </div>
-                );
-              })}
-            </div>
+                </div>
+              );
+            })}
           </div>
+        )}
 
-          {/* Technical Skills Section */}
-          {technicalTasks.length > 0 && (
-            <>
-              <div className="flex border-b-2 border-blue-300 bg-gradient-to-r from-blue-50 to-indigo-50">
-                <div className="w-48 flex-shrink-0 p-2 border-r-2 border-blue-300 bg-blue-100">
-                  <div className="flex items-center gap-2">
-                    <div className="w-1.5 h-6 bg-gradient-to-b from-blue-500 to-indigo-600 rounded-full"></div>
-                    <span className="text-sm font-bold text-blue-900">Technical Skills</span>
+        {/* Gantt Chart */}
+        <div className="overflow-x-auto rounded-2xl border border-slate-200/70 bg-white/90 shadow-inner">
+          <div className="inline-block min-w-full align-top">
+            {/* Header */}
+            <div className="sticky top-0 z-10 flex rounded-t-2xl border-b border-slate-200/80 bg-gradient-to-r from-slate-100 via-indigo-50 to-white">
+              <div className="w-56 flex-shrink-0 border-r border-slate-200/70 px-4 py-4 text-sm font-semibold uppercase tracking-[0.28em] text-slate-700">
+                Skills & Milestones
+              </div>
+              <div className="flex flex-1">
+                {labels.map((label, index) => {
+                  const monthInfo = getMonthInfo(label, index);
+                  return (
+                    <div
+                      key={index}
+                      className="flex-1 border-r border-slate-200/60 px-3 py-3 text-center transition-all duration-200 hover:bg-indigo-50/60"
+                    >
+                      <div className="text-sm font-semibold text-slate-800">{monthInfo.name}</div>
+                      <div className="text-xs font-medium text-slate-500">M{monthInfo.number}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Technical Tasks */}
+            {technicalTasks.length > 0 && (
+              <>
+                <div className="bg-gradient-to-r from-blue-900/10 via-blue-50/60 to-white px-4 py-3 text-xs font-semibold uppercase tracking-[0.4em] text-blue-900">
+                  Technical Skills
+                </div>
+                <div className="space-y-3 px-4 py-4">
+                  {technicalTasks.map((task, index) => renderTaskRow(task, index))}
+                </div>
+              </>
+            )}
+
+            {/* Non-Technical Tasks */}
+            {nonTechnicalTasks.length > 0 && (
+              <>
+                <div className="bg-gradient-to-r from-emerald-900/10 via-emerald-50/60 to-white px-4 py-3 text-xs font-semibold uppercase tracking-[0.4em] text-emerald-900">
+                  Non-Technical Skills
+                </div>
+                <div className="space-y-3 px-4 py-4">
+                  {nonTechnicalTasks.map((task, index) => renderTaskRow(task, index))}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Legend */}
+        <div className="rounded-2xl border border-slate-200/70 bg-white/90 p-6 shadow-inner">
+          <h3 className="mb-5 flex items-center gap-3 text-base font-bold text-slate-900">
+            <div className="h-5 w-1.5 rounded-full bg-gradient-to-b from-slate-500 to-slate-700" />
+            Task Legend
+          </h3>
+          <div className="flex flex-wrap gap-3">
+            {tasks.map((task, index) => {
+              const taskColor = getTaskColor(task, index);
+              const typeLabel = task.type === 'technical' ? 'Technical' : 
+                              task.type === 'non-technical' ? 'Non-Technical' : 
+                              task.type || 'Task';
+              return (
+                <div 
+                  key={task.id || index}
+                  className="flex items-center gap-3 rounded-2xl border border-slate-200/70 bg-gradient-to-r from-white via-slate-50 to-white px-4 py-2.5 shadow-sm transition-all duration-200 hover:border-indigo-300 hover:shadow-lg"
+                >
+                  <div 
+                    className="h-4 w-4 flex-shrink-0 rounded-full shadow-md ring-2 ring-white"
+                    style={{ backgroundColor: taskColor }}
+                  />
+                  <div className="flex flex-col">
+                    <span className="max-w-[200px] truncate text-sm font-semibold text-slate-900">{task.name || 'Unnamed Task'}</span>
+                    <span className="text-xs font-medium text-slate-500">{typeLabel}</span>
                   </div>
                 </div>
-                <div className="flex-1"></div>
-              </div>
-              <div className="space-y-0">
-                {technicalTasks.map((task, index) => renderTaskRow(task, index, true))}
-              </div>
-            </>
-          )}
-
-          {/* Non-Technical Skills Section */}
-          {nonTechnicalTasks.length > 0 && (
-            <>
-              <div className="flex border-b-2 border-emerald-300 bg-gradient-to-r from-emerald-50 to-teal-50">
-                <div className="w-48 flex-shrink-0 p-2 border-r-2 border-emerald-300 bg-emerald-100">
-                  <div className="flex items-center gap-2">
-                    <div className="w-1.5 h-6 bg-gradient-to-b from-emerald-500 to-teal-600 rounded-full"></div>
-                    <span className="text-sm font-bold text-emerald-900">Non-Technical Skills</span>
-                  </div>
-                </div>
-                <div className="flex-1"></div>
-              </div>
-              <div className="space-y-0">
-                {nonTechnicalTasks.map((task, index) => renderTaskRow(task, index, false))}
-              </div>
-            </>
-          )}
+              );
+            })}
+          </div>
         </div>
       </div>
 
-      {/* Unified Hover Tooltip */}
+      {/* Tooltip */}
       {hoveredTaskInfo && hoveredTaskInfo.task && (
-        <div className="fixed bg-gray-900 text-white text-xs rounded-lg px-4 py-3 shadow-2xl z-50 border border-gray-700 pointer-events-none"
-             style={{
-               left: `${tooltipPosition.x + 15}px`,
-               top: `${tooltipPosition.y - 10}px`,
-               minWidth: '250px',
-               maxWidth: '400px',
-               transform: 'translateY(-100%)'
-             }}>
-          <div className="font-bold mb-2 text-sm text-white">{hoveredTaskInfo.task.name}</div>
+        <div
+          className="fixed z-50 w-[320px] max-w-[360px] rounded-2xl border border-white/10 bg-slate-950/95 px-6 py-4 text-sm text-white shadow-2xl backdrop-blur-lg"
+          style={{
+            left: `${tooltipPosition.x + 20}px`,
+            top: `${tooltipPosition.y - 15}px`,
+            transform: 'translateY(-100%)',
+            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+          }}
+        >
+          <div className="mb-3 text-base font-semibold">{hoveredTaskInfo.task.name}</div>
           {hoveredTaskInfo.monthInfo && (
-            <div className="text-gray-300 text-xs mb-2 pb-2 border-b border-gray-700">
-              <span className="font-semibold">Month:</span> {hoveredTaskInfo.monthInfo.fullLabel}
+            <div className="mb-3 border-b border-white/10 pb-3 text-sm text-white/80">
+              <span className="font-semibold text-white">Month:</span> {hoveredTaskInfo.monthInfo.fullLabel}
             </div>
           )}
-          <div className="text-gray-300 text-xs mb-1.5">
-            <span className="font-semibold">Duration:</span> Months {hoveredTaskInfo.task.start} - {hoveredTaskInfo.task.end} ({hoveredTaskInfo.task.end - hoveredTaskInfo.task.start + 1} months)
+          <div className="mb-2 text-sm text-white/80">
+            <span className="font-semibold text-white">Duration:</span> Months {hoveredTaskInfo.task.start} - {hoveredTaskInfo.task.end} ({hoveredTaskInfo.task.end - hoveredTaskInfo.task.start + 1} months)
           </div>
           {hoveredTaskInfo.task.type && (
-            <div className="text-gray-400 text-xs mb-1">
-              <span className="font-semibold">Type:</span> <span className="text-gray-300 font-medium capitalize">{hoveredTaskInfo.task.type === 'technical' ? 'Technical' : hoveredTaskInfo.task.type === 'non-technical' ? 'Non-Technical' : hoveredTaskInfo.task.type}</span>
+            <div className="mb-2 text-sm text-white/70">
+              <span className="font-semibold text-white">Type:</span> <span className="font-medium capitalize text-white/80">{hoveredTaskInfo.task.type}</span>
             </div>
           )}
           {hoveredTaskInfo.task.difficulty && (
-            <div className="text-gray-400 text-xs mb-1">
-              <span className="font-semibold">Difficulty:</span> <span className="text-gray-300 font-medium capitalize">{hoveredTaskInfo.task.difficulty}</span>
-            </div>
-          )}
-          {hoveredTaskInfo.task.importance && (
-            <div className="text-gray-400 text-xs mb-1">
-              <span className="font-semibold">Importance:</span> <span className="text-gray-300 font-medium">{hoveredTaskInfo.task.importance}</span>
+            <div className="mb-2 text-sm text-white/70">
+              <span className="font-semibold text-white">Difficulty:</span> <span className="font-medium capitalize text-white/80">{hoveredTaskInfo.task.difficulty}</span>
             </div>
           )}
           {hoveredTaskInfo.task.description && (
-            <div className="text-gray-400 text-xs mt-2 pt-2 border-t border-gray-700">
+            <div className="mt-3 border-t border-white/10 pt-3 text-sm text-white/70">
               {hoveredTaskInfo.task.description}
             </div>
           )}
         </div>
       )}
-
-
-      {/* Legend */}
-      <div className="mt-8 pt-6 border-t-2 border-gray-300">
-        <h3 className="text-base font-bold text-gray-800 mb-5 flex items-center gap-2">
-          <div className="w-1.5 h-5 bg-gradient-to-b from-gray-400 to-gray-500 rounded-full"></div>
-          Task Legend
-        </h3>
-        <div className="flex flex-wrap gap-3">
-          {tasks.map((task, index) => {
-            const taskColor = generateTaskColor(task, index, tasks.length);
-            const skillTypeLabel = task.type === 'technical' ? 'Technical' : 
-                                  task.type === 'non-technical' ? 'Non-Technical' : 
-                                  task.type === 'project' ? 'Project' : '';
-            return (
-              <div 
-                key={task.id}
-                className="flex items-center bg-gradient-to-r from-gray-50 via-white to-gray-50 px-4 py-2.5 rounded-xl hover:from-gray-100 hover:via-white hover:to-gray-100 transition-all duration-200 border-2 border-gray-200 hover:border-gray-400 shadow-md hover:shadow-lg"
-              >
-                <div 
-                  className="w-4 h-4 rounded-full mr-3 shadow-md flex-shrink-0 ring-2 ring-white"
-                  style={{ backgroundColor: taskColor }}
-                ></div>
-                <div className="flex flex-col min-w-0">
-                  <span className="text-sm text-gray-800 font-semibold truncate max-w-[200px]">{task.name}</span>
-                  {skillTypeLabel && (
-                    <span className="text-xs text-gray-600 font-medium">{skillTypeLabel}</span>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
     </div>
   );
 };

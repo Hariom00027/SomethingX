@@ -1,10 +1,31 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Link } from 'react-router-dom';
+import axios from 'axios';
 import ReviewNotifications from '../components/notifications/ReviewNotifications';
+import { BarChart3, Loader2 } from 'lucide-react';
 
 const Dashboard = () => {
   const { user } = useAuth();
+  const [preparations, setPreparations] = useState([]);
+  const [loadingPreparations, setLoadingPreparations] = useState(false);
+
+  useEffect(() => {
+    if (user?.userType === 'STUDENT' && user?.id) {
+      setLoadingPreparations(true);
+      axios.get(`http://localhost:8080/api/role-preparation/all?studentId=${user.id}`)
+        .then(response => {
+          const activePreparations = response.data.filter(p => p.isActive);
+          setPreparations(activePreparations);
+        })
+        .catch(err => {
+          console.error('Error fetching preparations:', err);
+        })
+        .finally(() => {
+          setLoadingPreparations(false);
+        });
+    }
+  }, [user?.id, user?.userType]);
 
   const getDashboardContent = () => {
     switch (user?.userType) {
@@ -35,6 +56,22 @@ const Dashboard = () => {
               <h3 className="text-xl font-semibold text-gray-900 mb-2">Career Counselling</h3>
               <p className="text-gray-600">Get guidance from career experts</p>
             </Link>
+            
+            {preparations.length > 0 && (
+              <Link 
+                to={`/students/preparation-analytics/${encodeURIComponent(preparations[0].roleName)}`}
+                className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow border-2 border-blue-200"
+              >
+                <div className="flex items-center gap-3 mb-2">
+                  <BarChart3 className="h-6 w-6 text-blue-600" />
+                  <h3 className="text-xl font-semibold text-gray-900">Analytics</h3>
+                </div>
+                <p className="text-gray-600">View your preparation progress and analytics</p>
+                {preparations.length > 1 && (
+                  <p className="text-sm text-blue-600 mt-2">{preparations.length} active preparations</p>
+                )}
+              </Link>
+            )}
           </div>
         );
         
@@ -121,6 +158,46 @@ const Dashboard = () => {
         <div className="mb-8">
           {getDashboardContent()}
         </div>
+
+        {/* Active Preparations Section for Students */}
+        {user?.userType === 'STUDENT' && (
+          <div className="mb-8 bg-white rounded-lg shadow-md p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-gray-900">Active Preparations</h2>
+              {loadingPreparations && (
+                <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+              )}
+            </div>
+            {preparations.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {preparations.map((prep) => (
+                  <Link
+                    key={prep.id}
+                    to={`/students/preparation-analytics/${encodeURIComponent(prep.roleName)}`}
+                    className="p-4 border border-gray-200 rounded-lg hover:border-blue-500 hover:shadow-md transition-all flex items-center justify-between"
+                  >
+                    <div>
+                      <h3 className="font-semibold text-gray-900">{prep.roleName}</h3>
+                      <p className="text-sm text-gray-600 mt-1">
+                        Started: {new Date(prep.preparationStartDate).toLocaleDateString()}
+                      </p>
+                      {prep.skillProgress && (
+                        <p className="text-sm text-gray-600 mt-1">
+                          {Object.values(prep.skillProgress).filter(p => p.completed).length} / {Object.keys(prep.skillProgress).length} skills completed
+                        </p>
+                      )}
+                    </div>
+                    <BarChart3 className="h-5 w-5 text-blue-500" />
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-600">
+                {loadingPreparations ? 'Loading...' : 'No active preparations. Start preparing for a role to see analytics here.'}
+              </p>
+            )}
+          </div>
+        )}
 
         <div className="bg-white rounded-lg shadow-md p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h2>

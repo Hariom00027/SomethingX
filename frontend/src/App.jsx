@@ -23,6 +23,8 @@ import Courses from "./pages/students/Courses";
 import RoleReadyTraining from "./pages/students/RoleReadyTraining";
 import InternshipManagement from "./pages/institutes/InternshipManagement";
 import ExpertSessions from "./pages/institutes/ExpertSessions";
+import ExpertDetails from "./pages/institutes/ExpertDetails";
+import ExpertEnrollment from "./pages/institutes/ExpertEnrollment";
 import Workshops from "./pages/institutes/Workshops";
 import StudentTrainingRoleReady from "./pages/institutes/StudentTrainingRoleReady";
 import ResumeAccess from "./pages/industry/ResumeAccess";
@@ -143,6 +145,16 @@ function App() {
           <Route path="/institutes/expert-sessions" element={
             <ProtectedRoute requiredUserType="INSTITUTE">
               <ExpertSessions />
+            </ProtectedRoute>
+          } />
+          <Route path="/institutes/expert-sessions/:expertId" element={
+            <ProtectedRoute requiredUserType="INSTITUTE">
+              <ExpertDetails />
+            </ProtectedRoute>
+          } />
+          <Route path="/institutes/expert-sessions/:expertId/enroll" element={
+            <ProtectedRoute requiredUserType="INSTITUTE">
+              <ExpertEnrollment />
             </ProtectedRoute>
           } />
           <Route path="/institutes/workshops" element={

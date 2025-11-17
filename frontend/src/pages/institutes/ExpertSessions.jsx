@@ -184,7 +184,7 @@ const ExpertSessions = () => {
           </div>
         ) : (
           <>
-            <section className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
+            <section className="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">
               {experts.map((expert) => (
                 <ExpertCard
                   key={expert.id}
@@ -269,72 +269,70 @@ const StatPill = ({ icon, label, value }) => (
 
 const ExpertCard = ({ expert, onViewDetails, onEnroll, formatCurrency }) => {
   return (
-    <Card className="flex flex-col overflow-hidden hover:shadow-md transition-shadow h-full w-full">
-      <div className="relative w-full h-40 sm:h-44 md:h-48 lg:h-52 overflow-hidden bg-muted flex-shrink-0">
+    <Card className="flex flex-col overflow-hidden hover:shadow-md transition-shadow h-full w-full max-w-full">
+      <div className="relative w-full h-28 sm:h-32 md:h-36 overflow-hidden bg-muted flex-shrink-0">
         <img
           src={expert.photoUrl}
           alt={expert.fullName}
           className="h-full w-full object-cover object-center"
           loading="lazy"
           onError={(e) => {
-            e.target.src = 'https://via.placeholder.com/300x200?text=Expert';
+            e.target.src = 'https://via.placeholder.com/200x150?text=Expert';
           }}
         />
       </div>
-      <CardHeader className="pb-2 pt-3 px-3">
-        <CardTitle className="text-base leading-tight line-clamp-1">{expert.fullName}</CardTitle>
-        <p className="text-xs text-muted-foreground line-clamp-1">{expert.designation}</p>
+      <CardHeader className="pb-1 pt-2 px-2">
+        <CardTitle className="text-sm leading-tight line-clamp-1 font-semibold">{expert.fullName}</CardTitle>
+        <p className="text-[10px] text-muted-foreground line-clamp-1">{expert.designation}</p>
         {expert.organization && (
-          <p className="text-xs text-muted-foreground line-clamp-1">{expert.organization}</p>
+          <p className="text-[10px] text-muted-foreground line-clamp-1">{expert.organization}</p>
         )}
       </CardHeader>
-      <CardContent className="flex-1 space-y-2 px-3 pb-2">
-        <div className="space-y-1">
-          <div className="flex flex-wrap gap-1">
-            {(expert.expertiseDomains || []).slice(0, 2).map((domain) => (
-              <span
-                key={domain}
-                className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary"
-              >
-                {domain}
-              </span>
-            ))}
-            {(expert.expertiseDomains || []).length > 2 && (
-              <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-                +{(expert.expertiseDomains || []).length - 2}
-              </span>
-            )}
-          </div>
+      <CardContent className="flex-1 space-y-1.5 px-2 pb-1.5">
+        <div className="flex flex-wrap gap-1">
+          {(expert.expertiseDomains || []).slice(0, 2).map((domain) => (
+            <span
+              key={domain}
+              className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] font-medium text-primary"
+            >
+              {domain}
+            </span>
+          ))}
+          {(expert.expertiseDomains || []).length > 2 && (
+            <span className="rounded-full bg-muted px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground">
+              +{(expert.expertiseDomains || []).length - 2}
+            </span>
+          )}
         </div>
-        <div className="grid grid-cols-2 gap-2 rounded-md border bg-muted/30 p-2 text-[10px]">
+        <div className="grid grid-cols-2 gap-1.5 rounded border bg-muted/30 p-1.5 text-[9px]">
           <div>
-            <p className="text-muted-foreground flex items-center gap-1 font-medium">
-              <Video className="h-3 w-3" /> Online
+            <p className="text-muted-foreground flex items-center gap-0.5 font-medium">
+              <Video className="h-2.5 w-2.5" /> Online
             </p>
-            <p className="mt-0.5 font-semibold text-xs">{formatCurrency(expert.pricingPerHourOnline)}</p>
+            <p className="mt-0.5 font-semibold text-[10px]">{formatCurrency(expert.pricingPerHourOnline)}</p>
           </div>
           <div>
-            <p className="text-muted-foreground flex items-center gap-1 font-medium">
-              <MapPin className="h-3 w-3" /> Offline
+            <p className="text-muted-foreground flex items-center gap-0.5 font-medium">
+              <MapPin className="h-2.5 w-2.5" /> Offline
             </p>
-            <p className="mt-0.5 font-semibold text-xs">{formatCurrency(expert.pricingPerHourOffline)}</p>
+            <p className="mt-0.5 font-semibold text-[10px]">{formatCurrency(expert.pricingPerHourOffline)}</p>
           </div>
         </div>
         {expert.baseLocation && (
-          <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-            <MapPin className="h-3 w-3" />
+          <div className="flex items-center gap-1 text-[9px] text-muted-foreground">
+            <MapPin className="h-2.5 w-2.5" />
             <span className="line-clamp-1">{expert.baseLocation}</span>
           </div>
         )}
-        <div className="text-[10px] text-muted-foreground line-clamp-2 leading-relaxed">
+        <div className="text-[9px] text-muted-foreground line-clamp-2 leading-tight">
           {expert.summary || ""}
         </div>
       </CardContent>
-      <CardFooter className="gap-1.5 px-3 pb-3 pt-2">
-        <Button variant="outline" className="flex-1 text-xs h-8" onClick={onViewDetails} type="button">
+      <CardFooter className="gap-1 px-2 pb-2 pt-1.5">
+        <Button variant="outline" className="flex-1 text-[10px] h-7 px-1" onClick={onViewDetails} type="button">
           View details
         </Button>
-        <Button className="flex-1 text-xs h-8" onClick={onEnroll} type="button">
+        <Button className="flex-1 text-[10px] h-7 px-1" onClick={onEnroll} type="button">
           Enroll
         </Button>
       </CardFooter>

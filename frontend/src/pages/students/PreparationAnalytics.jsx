@@ -42,6 +42,8 @@ const PreparationAnalytics = () => {
   const [preparation, setPreparation] = useState(null);
   const [roleDetails, setRoleDetails] = useState(null);
   const [showSkills, setShowSkills] = useState(false);
+  const [showLeaveConfirmation, setShowLeaveConfirmation] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (authLoading || !user?.id) return;
@@ -107,6 +109,25 @@ const PreparationAnalytics = () => {
     } catch (err) {
       console.error('Error updating skill:', err);
       alert('Failed to update skill. Please try again.');
+    }
+  };
+
+  const handleLeavePreparation = async () => {
+    if (!user?.id) return;
+    
+    setIsDeleting(true);
+    try {
+      const decodedRoleName = decodeURIComponent(roleName || '');
+      await axios.delete(
+        `http://localhost:8080/api/role-preparation/${encodeURIComponent(decodedRoleName)}?studentId=${user.id}`
+      );
+      
+      // Navigate back or to dashboard
+      navigate('/dashboard');
+    } catch (err) {
+      console.error('Error leaving preparation:', err);
+      alert('Failed to leave preparation. Please try again.');
+      setIsDeleting(false);
     }
   };
 
@@ -219,7 +240,7 @@ const PreparationAnalytics = () => {
   const chartOptions = {
     responsive: true,
     maintainAspectRatio: true,
-    aspectRatio: 1,
+    aspectRatio: 1.5,
     plugins: {
       legend: {
         position: 'top',
@@ -363,7 +384,7 @@ const PreparationAnalytics = () => {
               <CardTitle>Skills by Type</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="h-64 flex items-center justify-center">
+              <div className="h-48 flex items-center justify-center">
                 {Object.keys(analytics.skillsByType || {}).length > 0 ? (
                   <div className="w-full max-w-xs mx-auto">
                     <Pie data={skillsByTypeData} options={chartOptions} />
@@ -383,7 +404,7 @@ const PreparationAnalytics = () => {
               <CardTitle>Preparation Progress</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="h-64 flex flex-col items-center justify-center">
+              <div className="h-48 flex flex-col items-center justify-center">
                 <div className="w-full max-w-xs mx-auto">
                   <Doughnut data={preparationProgressData} options={chartOptions} />
                 </div>
@@ -407,7 +428,7 @@ const PreparationAnalytics = () => {
             </p>
           </CardHeader>
           <CardContent>
-            <div className="h-80">
+            <div className="h-64">
               {sortedMonths.length > 0 ? (
                 <Line data={learningTimelineData} options={lineChartOptions} />
               ) : (
@@ -595,7 +616,7 @@ const PreparationAnalytics = () => {
 
         {/* Warnings Section */}
         {analytics.skillsWithWarnings && analytics.skillsWithWarnings.length > 0 && (
-          <Card className="border-red-200 bg-red-50">
+          <Card className="border-red-200 bg-red-50 mb-8">
             <CardHeader>
               <div className="flex items-center gap-2">
                 <AlertCircle className="h-5 w-5 text-red-600" />
@@ -623,7 +644,66 @@ const PreparationAnalytics = () => {
             </CardContent>
           </Card>
         )}
+
+        {/* Leave Preparation Button */}
+        <div className="mb-8 flex justify-center">
+          <button
+            onClick={() => setShowLeaveConfirmation(true)}
+            className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium shadow-md"
+          >
+            Leave Preparation
+          </button>
+        </div>
       </div>
+
+      {/* Leave Confirmation Dialog */}
+      {showLeaveConfirmation && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !isDeleting) {
+              setShowLeaveConfirmation(false);
+            }
+          }}
+        >
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <AlertCircle className="h-6 w-6 text-red-600" />
+                <CardTitle className="text-red-900">Leave Preparation?</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-700 mb-4">
+                Are you sure you want to leave this preparation? All your progress, including completed skills and learning history, will be permanently deleted. This action cannot be undone.
+              </p>
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => setShowLeaveConfirmation(false)}
+                  disabled={isDeleting}
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleLeavePreparation}
+                  disabled={isDeleting}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {isDeleting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Leaving...
+                    </>
+                  ) : (
+                    'Yes, Leave Preparation'
+                  )}
+                </button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 };

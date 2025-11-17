@@ -100,5 +100,20 @@ public class RolePreparationController {
             return ResponseEntity.badRequest().body("Error fetching analytics: " + e.getMessage());
         }
     }
+
+    @DeleteMapping("/{roleName}")
+    public ResponseEntity<?> deletePreparation(
+            @PathVariable String roleName,
+            @RequestParam String studentId) {
+        try {
+            // URL decode the role name
+            String decodedRoleName = java.net.URLDecoder.decode(roleName, "UTF-8");
+            rolePreparationService.deletePreparation(studentId, decodedRoleName);
+            return ResponseEntity.ok().body("Preparation deleted successfully");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body("Error deleting preparation: " + e.getMessage());
+        }
+    }
 }
 

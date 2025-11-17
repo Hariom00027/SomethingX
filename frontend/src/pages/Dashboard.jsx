@@ -5,6 +5,12 @@ import axios from 'axios';
 import ReviewNotifications from '../components/notifications/ReviewNotifications';
 import { BarChart3, Loader2 } from 'lucide-react';
 
+const normalizePreparation = (prep) => {
+  if (!prep) return null;
+  const isActive = prep.isActive ?? prep.active ?? false;
+  return { ...prep, isActive };
+};
+
 const Dashboard = () => {
   const { user } = useAuth();
   const [preparations, setPreparations] = useState([]);
@@ -15,7 +21,8 @@ const Dashboard = () => {
       setLoadingPreparations(true);
       axios.get(`http://localhost:8080/api/role-preparation/all?studentId=${user.id}`)
         .then(response => {
-          const activePreparations = response.data.filter(p => p.isActive);
+          const normalized = (response.data || []).map(normalizePreparation).filter(Boolean);
+          const activePreparations = normalized.filter(p => p.isActive);
           setPreparations(activePreparations);
         })
         .catch(err => {

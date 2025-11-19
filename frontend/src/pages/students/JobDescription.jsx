@@ -4,12 +4,164 @@ import { useAuth } from '../../contexts/AuthContext';
 import axios from 'axios';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import GanttChart from '../../components/ui/gantt-chart';
-import { Briefcase, Loader2, AlertCircle, Calendar, Target, Sparkles, CheckCircle2, Play, BarChart3, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Briefcase, Loader2, AlertCircle, Calendar, Target, Sparkles, CheckCircle2, Play, BarChart3, ToggleLeft, ToggleRight, Clock, TrendingUp } from 'lucide-react';
 
 const normalizePreparation = (prep) => {
   if (!prep) return null;
   const isActive = prep.isActive ?? prep.active ?? false;
   return { ...prep, isActive };
+};
+
+// Skill Badge Component with Tooltip
+const SkillBadge = ({ skill, variant, type }) => {
+  const [showTooltip, setShowTooltip] = useState(false);
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+
+  const handleMouseEnter = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const tooltipWidth = 288; // w-72 = 18rem = 288px
+    const tooltipHeight = 200; // approximate height
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    
+    let x = rect.left + rect.width / 2;
+    let y = rect.top - 10;
+    
+    // Adjust if tooltip would go off screen horizontally
+    if (x - tooltipWidth / 2 < 10) {
+      x = tooltipWidth / 2 + 10;
+    } else if (x + tooltipWidth / 2 > viewportWidth - 10) {
+      x = viewportWidth - tooltipWidth / 2 - 10;
+    }
+    
+    // Adjust if tooltip would go off screen vertically
+    if (y - tooltipHeight < 10) {
+      y = rect.bottom + 10;
+    }
+    
+    setTooltipPosition({ x, y });
+    setShowTooltip(true);
+  };
+
+  const handleMouseLeave = () => {
+    setShowTooltip(false);
+  };
+
+  const getBadgeClasses = () => {
+    if (type === 'technical') {
+      return variant === 'essential'
+        ? 'px-4 py-2 text-sm font-medium bg-blue-100 text-blue-800 rounded-lg border border-blue-200 hover:bg-blue-200 transition-colors cursor-pointer'
+        : 'px-4 py-2 text-sm font-medium bg-indigo-100 text-indigo-800 rounded-lg border border-indigo-200 hover:bg-indigo-200 transition-colors cursor-pointer';
+    } else {
+      return variant === 'essential'
+        ? 'px-4 py-2 text-sm font-medium bg-emerald-100 text-emerald-800 rounded-lg border border-emerald-200 hover:bg-emerald-200 transition-colors cursor-pointer'
+        : 'px-4 py-2 text-sm font-medium bg-teal-100 text-teal-800 rounded-lg border border-teal-200 hover:bg-teal-200 transition-colors cursor-pointer';
+    }
+  };
+
+  const getDifficultyColor = (difficulty) => {
+    if (!difficulty) return 'text-slate-600';
+    const diff = difficulty.toLowerCase();
+    if (diff === 'beginner') return 'text-green-600';
+    if (diff === 'intermediate') return 'text-yellow-600';
+    if (diff === 'advanced') return 'text-red-600';
+    return 'text-slate-600';
+  };
+
+  return (
+    <div className="relative inline-block">
+      <span
+        className={getBadgeClasses()}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      >
+        {skill?.skillName || 'Unknown Skill'}
+      </span>
+      
+      {showTooltip && (
+        <div
+          className="fixed z-50 w-72 rounded-lg border border-slate-200 bg-white shadow-2xl p-4 pointer-events-none"
+          style={{
+            left: `${tooltipPosition.x}px`,
+            top: `${tooltipPosition.y}px`,
+            transform: tooltipPosition.y > window.innerHeight / 2 
+              ? 'translate(-50%, 0)' 
+              : 'translate(-50%, -100%)',
+            marginTop: tooltipPosition.y > window.innerHeight / 2 ? '8px' : '-8px'
+          }}
+        >
+          <div className="space-y-3">
+            <div className="border-b border-slate-200 pb-2">
+              <h4 className="text-base font-bold text-slate-900">{skill?.skillName || 'Unknown Skill'}</h4>
+              <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mt-1">
+                {type === 'technical' ? 'Technical Skill' : 'Soft Skill'}
+              </p>
+            </div>
+            
+            <div className="space-y-2 text-sm">
+              {skill?.importance && (
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4 text-slate-500" />
+                  <span className="text-slate-600">Importance:</span>
+                  <span className="font-semibold text-slate-900">{skill.importance}</span>
+                </div>
+              )}
+              
+              {skill?.difficulty && (
+                <div className="flex items-center gap-2">
+                  <Target className="h-4 w-4 text-slate-500" />
+                  <span className="text-slate-600">Difficulty:</span>
+                  <span className={`font-semibold capitalize ${getDifficultyColor(skill.difficulty)}`}>
+                    {skill.difficulty}
+                  </span>
+                </div>
+              )}
+              
+              {skill?.timeRequiredMonths !== undefined && skill?.timeRequiredMonths !== null && (
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-slate-500" />
+                  <span className="text-slate-600">Total Time:</span>
+                  <span className="font-semibold text-slate-900">
+                    {skill.timeRequiredMonths} {skill.timeRequiredMonths === 1 ? 'month' : 'months'}
+                  </span>
+                </div>
+              )}
+              
+              {skill?.description && (
+                <div className="pt-2 border-t border-slate-100">
+                  <p className="text-slate-700 leading-relaxed">{skill.description}</p>
+                </div>
+              )}
+              
+              {skill?.prerequisites && Array.isArray(skill.prerequisites) && skill.prerequisites.length > 0 && (
+                <div className="pt-2 border-t border-slate-100">
+                  <p className="text-xs font-semibold text-slate-600 mb-1">Prerequisites:</p>
+                  <ul className="list-disc list-inside text-xs text-slate-600 space-y-1">
+                    {skill.prerequisites.map((prereq, idx) => (
+                      <li key={idx}>{prereq}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+          
+          {/* Tooltip arrow */}
+          <div
+            className={`absolute left-1/2 w-3 h-3 bg-white border-r border-b border-slate-200 transform -translate-x-1/2 rotate-45 ${
+              tooltipPosition.y > window.innerHeight / 2 
+                ? 'top-0 -translate-y-1/2' 
+                : 'bottom-0 translate-y-1/2'
+            }`}
+            style={tooltipPosition.y > window.innerHeight / 2 
+              ? { marginTop: '-6px' } 
+              : { marginBottom: '-6px' }
+            }
+          />
+        </div>
+      )}
+    </div>
+  );
 };
 
 const JobDescription = () => {
@@ -296,15 +448,14 @@ const JobDescription = () => {
 
       <div className="relative z-10 mx-auto max-w-6xl px-4 py-12">
         {/* Header */}
-        <div className="relative mx-auto mb-12 max-w-3xl overflow-hidden rounded-3xl border border-white/60 bg-white/70 p-10 text-center shadow-[0_35px_90px_-45px_rgba(79,70,229,0.45)] backdrop-blur-xl">
-          <div className="absolute inset-0 bg-gradient-to-br from-white/70 via-blue-50/60 to-purple-50/60" />
+        <div className="relative mx-auto mb-12 max-w-3xl overflow-hidden rounded-3xl border border-slate-200 bg-white p-10 text-center shadow-lg">
           <div className="relative">
             <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 shadow-lg">
               <Briefcase className="h-10 w-10 text-white" />
             </div>
             <h1 className="text-4xl font-bold leading-tight text-slate-900 md:text-5xl mb-4">
               Career Blueprint for{' '}
-              <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+              <span className="text-indigo-700 font-extrabold">
                 {jobDetails?.name || jobDetails?.roleName || decodeURIComponent(roleName || 'Unknown Role')}
               </span>
             </h1>
@@ -350,7 +501,7 @@ const JobDescription = () => {
                   const isLast = idx === 3;
                   return (
                     <React.Fragment key={idx}>
-                      <div className="flex-1 p-6 bg-gradient-to-b from-white to-slate-50/30">
+                      <div className="flex-1 p-6 bg-white hover:bg-slate-50 transition-colors">
                         <div className="flex items-center justify-between">
                           <div className="flex-1">
                             <p className="text-xs font-semibold uppercase tracking-wider text-slate-600 mb-2">
@@ -361,7 +512,7 @@ const JobDescription = () => {
                             </p>
                           </div>
                           <div className="ml-4 flex-shrink-0">
-                            <Icon className="h-8 w-8 text-slate-900" />
+                            <Icon className="h-8 w-8 text-slate-700" />
                           </div>
                         </div>
                       </div>
@@ -379,113 +530,134 @@ const JobDescription = () => {
           </Card>
         )}
 
-        {/* Job Description and Skills */}
-        <div className="mb-12 grid grid-cols-1 gap-6 md:grid-cols-2">
-          {/* Job Narrative */}
-          <Card className="overflow-hidden border border-white/60 bg-white/80 shadow-xl backdrop-blur transition-transform duration-500 hover:-translate-y-1">
-            <div className="h-1 bg-gradient-to-r from-blue-500 via-sky-500 to-cyan-500" />
-            <CardHeader className="bg-gradient-to-br from-white to-sky-50/60">
-              <div className="flex items-center gap-3">
-                <div className="rounded-xl bg-gradient-to-br from-blue-500 via-sky-500 to-cyan-500 p-3 text-white shadow-lg">
-                  <Briefcase className="h-5 w-5" />
-                </div>
-                <CardTitle className="text-2xl font-bold text-slate-900">Job Narrative</CardTitle>
+        {/* Job Description Section */}
+        <Card className="mb-12 overflow-hidden border border-slate-200 bg-white shadow-lg">
+          <div className="h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
+          <CardHeader className="bg-gradient-to-br from-slate-50 to-white">
+            <div className="flex items-center gap-3">
+              <div className="rounded-xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-3 text-white shadow-md">
+                <Briefcase className="h-6 w-6" />
               </div>
-            </CardHeader>
-            <CardContent className="py-6">
-              <p className="leading-relaxed text-slate-700">
+              <CardTitle className="text-2xl font-bold text-slate-900">Job Description</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-6 pt-8">
+            {/* Job Description Sub-block */}
+            <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-6">
+              <h3 className="text-lg font-bold text-slate-900 mb-4">Job Description</h3>
+              <p className="leading-relaxed text-slate-700 text-base mb-4">
                 {jobDetails?.jobDescription?.description || jobDetails?.description || 'No description available for this role.'}
               </p>
-            </CardContent>
-          </Card>
 
-          {/* Required Skills */}
-          <Card className="overflow-hidden border border-white/60 bg-white/80 shadow-xl backdrop-blur transition-transform duration-500 hover:-translate-y-1">
-            <div className="h-1 bg-gradient-to-r from-purple-500 via-fuchsia-500 to-pink-500" />
-            <CardHeader className="bg-gradient-to-br from-white to-rose-50/60">
-              <div className="flex items-center gap-3">
-                <div className="rounded-xl bg-gradient-to-br from-purple-500 via-fuchsia-500 to-pink-500 p-3 text-white shadow-lg">
-                  <Target className="h-5 w-5" />
+              {/* Key Responsibilities */}
+              {jobDetails?.jobDescription?.keyResponsibilities && Array.isArray(jobDetails.jobDescription.keyResponsibilities) && jobDetails.jobDescription.keyResponsibilities.length > 0 && (
+                <div className="mt-4">
+                  <h4 className="text-base font-semibold text-slate-800 mb-3">Key Responsibilities:</h4>
+                  <ul className="space-y-2 list-disc list-inside text-slate-700">
+                    {jobDetails.jobDescription.keyResponsibilities.map((responsibility, index) => (
+                      <li key={index} className="leading-relaxed">{responsibility}</li>
+                    ))}
+                  </ul>
                 </div>
-                <CardTitle className="text-2xl font-bold text-slate-900">Required Skills</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-6 py-6">
-              {jobDetails?.skillRequirements && Array.isArray(jobDetails.skillRequirements) && jobDetails.skillRequirements.length > 0 ? (
-                <div className="space-y-6">
-                  {(() => {
-                    const technicalSkills = (jobDetails.skillRequirements || []).filter(skill => 
-                      skill?.skillType === 'technical' || skill?.skillType === 'Technical'
-                    );
-                    const nonTechnicalSkills = (jobDetails.skillRequirements || []).filter(skill => 
-                      skill?.skillType !== 'technical' && skill?.skillType !== 'Technical'
-                    );
-                    
-                    return (
-                      <>
-                        {technicalSkills.length > 0 && (
-                          <div className="rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-6">
-                            <h3 className="text-lg font-bold text-blue-900 mb-4">Technical Skills</h3>
-                            <div className="space-y-3">
-                              {technicalSkills.map((skill, index) => (
-                                <div key={index} className="rounded-xl border border-blue-200 bg-white/90 p-4">
-                                  <h4 className="font-semibold text-slate-900 mb-1">{skill.skillName}</h4>
-                                  {skill.description && (
-                                    <p className="text-sm text-slate-600 mb-2">{skill.description}</p>
-                                  )}
-                                  <div className="flex flex-wrap gap-2">
-                                    <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded">Technical</span>
-                                    {skill.importance && (
-                                      <span className="px-2 py-1 text-xs font-medium bg-purple-100 text-purple-700 rounded">{skill.importance}</span>
-                                    )}
-                                    {skill.difficulty && (
-                                      <span className="px-2 py-1 text-xs font-medium bg-amber-100 text-amber-700 rounded capitalize">{skill.difficulty}</span>
-                                    )}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                        {nonTechnicalSkills.length > 0 && (
-                          <div className="rounded-2xl border border-emerald-100 bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 p-6">
-                            <h3 className="text-lg font-bold text-emerald-900 mb-4">Non-Technical Skills</h3>
-                            <div className="space-y-3">
-                              {nonTechnicalSkills.map((skill, index) => (
-                                <div key={index} className="rounded-xl border border-emerald-200 bg-white/90 p-4">
-                                  <h4 className="font-semibold text-slate-900 mb-1">{skill.skillName}</h4>
-                                  {skill.description && (
-                                    <p className="text-sm text-slate-600 mb-2">{skill.description}</p>
-                                  )}
-                                  <div className="flex flex-wrap gap-2">
-                                    <span className="px-2 py-1 text-xs font-medium bg-emerald-100 text-emerald-700 rounded">Non-Technical</span>
-                                    {skill.importance && (
-                                      <span className="px-2 py-1 text-xs font-medium bg-purple-100 text-purple-700 rounded">{skill.importance}</span>
-                                    )}
-                                    {skill.difficulty && (
-                                      <span className="px-2 py-1 text-xs font-medium bg-amber-100 text-amber-700 rounded capitalize">{skill.difficulty}</span>
-                                    )}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </>
-                    );
-                  })()}
-                </div>
-              ) : (
-                <p className="text-sm text-slate-500">No skill requirements available for this role.</p>
               )}
-            </CardContent>
-          </Card>
-        </div>
+            </div>
+
+            {/* Technical Skills Required Sub-block */}
+            {jobDetails?.skillRequirements && Array.isArray(jobDetails.skillRequirements) && jobDetails.skillRequirements.length > 0 && (() => {
+              const technicalSkills = (jobDetails.skillRequirements || []).filter(skill => 
+                skill?.skillType === 'technical' || skill?.skillType === 'Technical'
+              );
+              
+              if (technicalSkills.length === 0) return null;
+
+              const essentialSkills = technicalSkills.filter(skill => 
+                skill?.importance?.toLowerCase() === 'essential' || skill?.importance?.toLowerCase() === 'required'
+              );
+              const importantSkills = technicalSkills.filter(skill => 
+                skill?.importance?.toLowerCase() === 'important' || 
+                (skill?.importance?.toLowerCase() !== 'essential' && skill?.importance?.toLowerCase() !== 'required')
+              );
+
+              return (
+                <div className="rounded-xl border border-blue-200 bg-blue-50/30 p-6">
+                  <h3 className="text-lg font-bold text-slate-900 mb-4">Technical Skills Required</h3>
+                  <div className="space-y-5">
+                    {essentialSkills.length > 0 && (
+                      <div>
+                        <h4 className="text-base font-semibold text-slate-800 mb-3">Essential</h4>
+                        <div className="flex flex-wrap gap-3">
+                          {essentialSkills.map((skill, index) => (
+                            <SkillBadge key={index} skill={skill} variant="essential" type="technical" />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {importantSkills.length > 0 && (
+                      <div>
+                        <h4 className="text-base font-semibold text-slate-800 mb-3">Important</h4>
+                        <div className="flex flex-wrap gap-3">
+                          {importantSkills.map((skill, index) => (
+                            <SkillBadge key={index} skill={skill} variant="important" type="technical" />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Soft Skills Required Sub-block */}
+            {jobDetails?.skillRequirements && Array.isArray(jobDetails.skillRequirements) && jobDetails.skillRequirements.length > 0 && (() => {
+              const softSkills = (jobDetails.skillRequirements || []).filter(skill => 
+                skill?.skillType !== 'technical' && skill?.skillType !== 'Technical'
+              );
+              
+              if (softSkills.length === 0) return null;
+
+              const essentialSkills = softSkills.filter(skill => 
+                skill?.importance?.toLowerCase() === 'essential' || skill?.importance?.toLowerCase() === 'required'
+              );
+              const importantSkills = softSkills.filter(skill => 
+                skill?.importance?.toLowerCase() === 'important' || 
+                (skill?.importance?.toLowerCase() !== 'essential' && skill?.importance?.toLowerCase() !== 'required')
+              );
+
+              return (
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50/30 p-6">
+                  <h3 className="text-lg font-bold text-slate-900 mb-4">Soft Skills Required</h3>
+                  <div className="space-y-5">
+                    {essentialSkills.length > 0 && (
+                      <div>
+                        <h4 className="text-base font-semibold text-slate-800 mb-3">Essential</h4>
+                        <div className="flex flex-wrap gap-3">
+                          {essentialSkills.map((skill, index) => (
+                            <SkillBadge key={index} skill={skill} variant="essential" type="soft" />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {importantSkills.length > 0 && (
+                      <div>
+                        <h4 className="text-base font-semibold text-slate-800 mb-3">Important</h4>
+                        <div className="flex flex-wrap gap-3">
+                          {importantSkills.map((skill, index) => (
+                            <SkillBadge key={index} skill={skill} variant="important" type="soft" />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
+          </CardContent>
+        </Card>
 
         {/* Gantt Chart Section */}
-        <Card className="mb-16 overflow-hidden border border-white/60 bg-white/85 shadow-2xl backdrop-blur-xl">
+        <Card className="mb-16 overflow-hidden border border-slate-200 bg-white shadow-lg">
           <div className="h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
-          <CardHeader className="bg-gradient-to-br from-white to-indigo-50/65">
+          <CardHeader className="bg-gradient-to-br from-slate-50 to-white">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div className="flex items-center gap-3">
                 <div className="rounded-xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-3 text-white shadow-lg">

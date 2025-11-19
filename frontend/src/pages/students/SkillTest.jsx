@@ -156,14 +156,11 @@ const SkillTest = () => {
 
   const handleAnswerSelect = async (questionNumber, answer) => {
     if (testCompleted) return;
-    // Reset feedback if re-answering
-    setQuestionFeedback((prev) => {
-      const next = { ...prev };
-      if (next[questionNumber]) {
-        delete next[questionNumber];
-      }
-      return next;
-    });
+    
+    // Prevent changing answer if question is already submitted
+    if (questionFeedback[questionNumber]?.submitted) {
+      return;
+    }
 
     const newAnswers = { ...answers, [questionNumber]: answer };
     setAnswers(newAnswers);
@@ -341,10 +338,16 @@ const SkillTest = () => {
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-sky-50 to-emerald-50 py-8 px-4">
       {/* Security Notice */}
       <div className="max-w-4xl mx-auto mb-6">
-        <Card className="bg-gradient-to-r from-yellow-50 via-amber-50 to-orange-50 border-yellow-200 shadow-lg">
+        <Card 
+          className="border-2 shadow-lg"
+          style={{
+            background: 'linear-gradient(to right, #fef3c7, #fde68a, #fed7aa)',
+            borderColor: '#fbbf24'
+          }}
+        >
           <CardContent className="p-4 flex items-center gap-3">
-            <Lock className="h-5 w-5 text-yellow-600" />
-            <p className="text-sm text-yellow-800">
+            <Lock className="h-5 w-5" style={{ color: '#d97706' }} />
+            <p className="text-sm" style={{ color: '#92400e', fontWeight: '500' }}>
               <strong>Secure Test Mode:</strong> Copy, paste, and right-click are disabled. Navigation away from this page will end your test.
             </p>
           </CardContent>
@@ -353,16 +356,38 @@ const SkillTest = () => {
 
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <Card className="mb-6 bg-white/90 backdrop-blur border-blue-100 shadow-xl">
-          <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-t">
+        <Card 
+          className="mb-6 border-2 shadow-xl"
+          style={{
+            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+            borderColor: '#93c5fd'
+          }}
+        >
+          <CardHeader 
+            className="rounded-t"
+            style={{
+              background: 'linear-gradient(to right, #dbeafe, #e9d5ff)'
+            }}
+          >
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-2xl text-slate-900">Skill Test: {decodeURIComponent(skillName)}</CardTitle>
-                <p className="text-sm text-gray-600 mt-1">Role: {decodeURIComponent(roleName)}</p>
+                <CardTitle className="text-2xl" style={{ color: '#1e293b' }}>
+                  Skill Test: {decodeURIComponent(skillName)}
+                </CardTitle>
+                <p className="text-sm mt-1" style={{ color: '#4b5563' }}>
+                  Role: {decodeURIComponent(roleName)}
+                </p>
               </div>
               {timeRemaining && (
-                <div className="flex items-center gap-2 text-lg font-semibold text-blue-600 bg-blue-50 px-3 py-1 rounded-full shadow-inner">
-                  <Clock className="h-5 w-5" />
+                <div 
+                  className="flex items-center gap-2 text-lg font-semibold px-3 py-1 rounded-full"
+                  style={{
+                    color: '#2563eb',
+                    backgroundColor: '#dbeafe',
+                    boxShadow: 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.06)'
+                  }}
+                >
+                  <Clock className="h-5 w-5" style={{ color: '#2563eb' }} />
                   {timeRemaining}
                 </div>
               )}
@@ -390,7 +415,8 @@ const SkillTest = () => {
         <Card className="mb-6 border-0 shadow-2xl bg-gradient-to-br from-white via-blue-50 to-purple-50">
           <CardContent className="p-6">
             <h3 className="text-xl font-semibold mb-6 text-slate-900 flex items-center gap-2">
-              <span className="text-blue-500">{question.questionNumber}.</span> {question.questionText}
+              <span style={{ color: '#3b82f6', fontWeight: 'bold' }}>{question.questionNumber}.</span> 
+              <span style={{ color: '#1e293b' }}>{question.questionText}</span>
             </h3>
             
             <div className="space-y-3">
@@ -401,31 +427,74 @@ const SkillTest = () => {
                 const isCorrectAnswer = question.correctAnswer
                   ? option.trim() === question.correctAnswer.trim()
                   : false;
-                let optionClasses =
-                  'w-full text-left p-4 rounded-lg border-2 transition-all bg-white shadow-sm';
+                const isDisabled = isSubmitted;
+                
+                let optionClasses = 'w-full text-left p-4 rounded-lg border-2 transition-all font-medium';
+                let inlineStyle = {};
 
                 if (isSubmitted) {
                   if (isCorrectAnswer) {
-                    optionClasses += ' border-green-500 bg-green-50 text-green-900';
+                    optionClasses += ' border-green-600 text-green-900 shadow-lg';
+                    inlineStyle = {
+                      backgroundColor: '#dcfce7',
+                      background: 'linear-gradient(to right, #dcfce7, #f0fdf4)',
+                      borderColor: '#16a34a',
+                      color: '#166534'
+                    };
                   } else if (selected) {
-                    optionClasses += ' border-red-500 bg-red-50 text-red-900';
+                    optionClasses += ' border-red-600 text-red-900 shadow-lg';
+                    inlineStyle = {
+                      backgroundColor: '#fee2e2',
+                      background: 'linear-gradient(to right, #fee2e2, #fef2f2)',
+                      borderColor: '#dc2626',
+                      color: '#991b1b'
+                    };
                   } else {
-                    optionClasses += ' border-gray-200 text-slate-700';
+                    optionClasses += ' border-gray-300 text-gray-600 opacity-60';
+                    inlineStyle = {
+                      backgroundColor: '#f9fafb',
+                      borderColor: '#d1d5db',
+                      color: '#4b5563'
+                    };
                   }
                 } else if (selected) {
-                  optionClasses += ' border-blue-600 bg-blue-50';
+                  optionClasses += ' border-blue-600 text-blue-900 shadow-md';
+                  inlineStyle = {
+                    backgroundColor: '#dbeafe',
+                    background: 'linear-gradient(to right, #dbeafe, #eff6ff)',
+                    borderColor: '#2563eb',
+                    color: '#1e3a8a'
+                  };
                 } else {
-                  optionClasses += ' border-gray-200 hover:border-blue-300 hover:bg-blue-50/50';
+                  optionClasses += ' border-gray-300 bg-white';
+                  inlineStyle = {
+                    backgroundColor: '#ffffff',
+                    borderColor: '#d1d5db',
+                    color: '#1f2937'
+                  };
+                }
+
+                if (isDisabled) {
+                  optionClasses += ' cursor-not-allowed';
                 }
 
                 return (
                   <button
                     key={index}
                     onClick={() => handleAnswerSelect(question.questionNumber, option)}
+                    disabled={isDisabled}
                     className={optionClasses}
+                    style={inlineStyle}
+                    type="button"
                   >
-                    <span className="font-semibold text-slate-900">{String.fromCharCode(65 + index)}. </span>
+                    <span className="font-bold">{String.fromCharCode(65 + index)}. </span>
                     {option}
+                    {isSubmitted && isCorrectAnswer && (
+                      <span className="ml-2" style={{ color: '#16a34a', fontSize: '18px', fontWeight: 'bold' }}>✓</span>
+                    )}
+                    {isSubmitted && selected && !isCorrectAnswer && (
+                      <span className="ml-2" style={{ color: '#dc2626', fontSize: '18px', fontWeight: 'bold' }}>✗</span>
+                    )}
                   </button>
                 );
               })}
@@ -434,28 +503,44 @@ const SkillTest = () => {
             <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
               <div>
                 {questionFeedback[question.questionNumber]?.submitted && (
-                  <p
-                    className={`text-sm font-semibold ${
-                      questionFeedback[question.questionNumber].isCorrect ? 'text-green-600' : 'text-red-600'
-                    }`}
+                  <div 
+                    className="p-3 rounded-lg border-2"
+                    style={{
+                      backgroundColor: questionFeedback[question.questionNumber].isCorrect ? '#dcfce7' : '#fee2e2',
+                      borderColor: questionFeedback[question.questionNumber].isCorrect ? '#16a34a' : '#dc2626'
+                    }}
                   >
-                    {questionFeedback[question.questionNumber].isCorrect
-                      ? 'Great job! That is correct.'
-                      : 'Not quite. Review and try another question.'}
-                  </p>
+                    <p
+                      className="text-sm font-bold"
+                      style={{
+                        color: questionFeedback[question.questionNumber].isCorrect ? '#166534' : '#991b1b'
+                      }}
+                    >
+                      {questionFeedback[question.questionNumber].isCorrect
+                        ? '✓ Correct! Well done!'
+                        : '✗ Incorrect. The correct answer is highlighted in green.'}
+                    </p>
+                  </div>
                 )}
               </div>
               <button
                 onClick={() => handleQuestionSubmit(question.questionNumber)}
-                className="px-5 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-md hover:shadow-lg transition"
+                disabled={questionFeedback[question.questionNumber]?.submitted || !answers[question.questionNumber]}
+                className="px-6 py-2.5 rounded-lg text-white font-semibold shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{
+                  background: questionFeedback[question.questionNumber]?.submitted 
+                    ? 'linear-gradient(to right, #6b7280, #4b5563)'
+                    : 'linear-gradient(to right, #10b981, #059669, #0d9488)',
+                  cursor: questionFeedback[question.questionNumber]?.submitted || !answers[question.questionNumber] ? 'not-allowed' : 'pointer'
+                }}
                 type="button"
               >
-                Check Answer
+                {questionFeedback[question.questionNumber]?.submitted ? 'Submitted ✓' : 'Submit'}
               </button>
             </div>
 
-            <div className="text-xs text-gray-500 text-right mt-4 italic">
-              Correct answer: <span className="font-semibold text-green-600">{question.correctAnswer || 'N/A'}</span>
+            <div className="text-xs text-right mt-4 italic" style={{ color: '#6b7280' }}>
+              Correct answer: <span className="font-semibold" style={{ color: '#16a34a' }}>{question.correctAnswer || 'N/A'}</span>
             </div>
           </CardContent>
         </Card>
@@ -506,30 +591,62 @@ const SkillTest = () => {
         </div>
 
         {/* Question Navigation Grid */}
-        <Card className="mt-6 border-0 shadow-xl bg-white/90">
+        <Card className="mt-6 border-0 shadow-xl" style={{ background: 'linear-gradient(to bottom right, #ffffff, #f1f5f9)' }}>
           <CardContent className="p-4">
-            <p className="text-sm font-medium mb-3">Question Navigation:</p>
+            <p className="text-sm font-semibold mb-3" style={{ color: '#334155' }}>Question Navigation:</p>
             <div className="grid grid-cols-10 gap-2">
-              {test.questions.map((q, index) => (
-                <button
-                  key={index}
-                  onClick={() => setCurrentQuestion(index)}
-                  className={`p-2 rounded text-sm font-semibold transition ${
-                    currentQuestion === index
-                      ? 'bg-blue-600 text-white shadow'
-                      : questionFeedback[q.questionNumber]?.submitted
-                      ? questionFeedback[q.questionNumber].isCorrect
-                        ? 'bg-green-500/80 text-white shadow'
-                        : 'bg-red-500/80 text-white shadow'
-                      : answers[q.questionNumber]
-                      ? 'bg-amber-100 text-amber-800 border-2 border-amber-300'
-                      : 'bg-gray-100 text-gray-700 border-2 border-gray-200'
-                  }`}
-                  type="button"
-                >
-                  {q.questionNumber}
-                </button>
-              ))}
+              {test.questions.map((q, index) => {
+                let buttonStyle = {};
+                let buttonClass = 'p-2 rounded-lg text-sm font-bold transition-all shadow-sm';
+                
+                if (currentQuestion === index) {
+                  buttonStyle = {
+                    background: 'linear-gradient(to bottom right, #2563eb, #1d4ed8)',
+                    color: '#ffffff',
+                    transform: 'scale(1.05)',
+                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                  };
+                } else if (questionFeedback[q.questionNumber]?.submitted) {
+                  if (questionFeedback[q.questionNumber].isCorrect) {
+                    buttonStyle = {
+                      background: 'linear-gradient(to bottom right, #22c55e, #16a34a)',
+                      color: '#ffffff',
+                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                    };
+                  } else {
+                    buttonStyle = {
+                      background: 'linear-gradient(to bottom right, #ef4444, #dc2626)',
+                      color: '#ffffff',
+                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                    };
+                  }
+                } else if (answers[q.questionNumber]) {
+                  buttonStyle = {
+                    background: 'linear-gradient(to bottom right, #fbbf24, #f59e0b)',
+                    color: '#ffffff',
+                    border: '2px solid #f59e0b',
+                    boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)'
+                  };
+                } else {
+                  buttonStyle = {
+                    backgroundColor: '#e5e7eb',
+                    color: '#4b5563',
+                    border: '2px solid #d1d5db'
+                  };
+                }
+                
+                return (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentQuestion(index)}
+                    className={buttonClass}
+                    style={buttonStyle}
+                    type="button"
+                  >
+                    {q.questionNumber}
+                  </button>
+                );
+              })}
             </div>
           </CardContent>
         </Card>

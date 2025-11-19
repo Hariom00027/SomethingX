@@ -77,6 +77,11 @@ public class RolePreparationService {
     }
 
     public RolePreparation updateSkillCompletion(String studentId, String roleName, String skillName, boolean completed) {
+        // When marking as completed, user must pass test first - this method now only allows unmarking
+        if (completed) {
+            throw new RuntimeException("Cannot mark skill as completed directly. Please pass the skill test first.");
+        }
+        
         Optional<RolePreparation> prepOpt = rolePreparationRepository.findByStudentIdAndRoleName(studentId, roleName);
         if (prepOpt.isEmpty()) {
             throw new RuntimeException("Preparation not found for role: " + roleName);
@@ -96,11 +101,41 @@ public class RolePreparationService {
             skillProgress.put(skillName, progress);
         }
 
-        progress.setCompleted(completed);
-        if (completed) {
+        progress.setCompleted(false);
+        progress.setCompletedDate(null);
+        progress.setScore(null);
+
+        preparation.setUpdatedAt(LocalDateTime.now());
+        return rolePreparationRepository.save(preparation);
+    }
+
+    public RolePreparation markSkillCompletedAfterTest(String studentId, String roleName, String skillName, Integer score) {
+        Optional<RolePreparation> prepOpt = rolePreparationRepository.findByStudentIdAndRoleName(studentId, roleName);
+        if (prepOpt.isEmpty()) {
+            throw new RuntimeException("Preparation not found for role: " + roleName);
+        }
+
+        RolePreparation preparation = prepOpt.get();
+        Map<String, RolePreparation.SkillProgress> skillProgress = preparation.getSkillProgress();
+        
+        if (skillProgress == null) {
+            skillProgress = new HashMap<>();
+            preparation.setSkillProgress(skillProgress);
+        }
+
+        RolePreparation.SkillProgress progress = skillProgress.get(skillName);
+        if (progress == null) {
+            progress = new RolePreparation.SkillProgress();
+            skillProgress.put(skillName, progress);
+        }
+
+        // Only mark as completed if score is 80 or above
+        if (score != null && score >= 80) {
+            progress.setCompleted(true);
             progress.setCompletedDate(LocalDate.now());
+            progress.setScore(score);
         } else {
-            progress.setCompletedDate(null);
+            throw new RuntimeException("Test score must be at least 80% to mark skill as completed. Current score: " + score + "%");
         }
 
         preparation.setUpdatedAt(LocalDateTime.now());
@@ -209,6 +244,15 @@ public class RolePreparationService {
         analytics.put("skillsByType", skillsByType);
         analytics.put("learningByMonth", learningByMonth);
         analytics.put("skillsWithWarnings", skillsWithWarnings);
+        
+        // Skill scores for analytics
+        Map<String, Integer> skillScores = new HashMap<>();
+        for (Map.Entry<String, RolePreparation.SkillProgress> entry : skillProgress.entrySet()) {
+            if (entry.getValue().isCompleted() && entry.getValue().getScore() != null) {
+                skillScores.put(entry.getKey(), entry.getValue().getScore());
+            }
+        }
+        analytics.put("skillScores", skillScores);
         
         // Additional stats
         analytics.put("daysSinceStart", java.time.temporal.ChronoUnit.DAYS.between(

@@ -149,144 +149,78 @@ public class BlueprintService {
         List<Map<String, Object>> tasks = new ArrayList<>();
         
         if (roleDetails.getSkillRequirements() == null || roleDetails.getSkillRequirements().isEmpty()) {
-            // No skill requirements available
             ganttData.put("labels", labels);
             ganttData.put("tasks", tasks);
             ganttData.put("totalMonths", totalMonths);
             ganttData.put("chartType", "gantt");
             ganttData.put("warnings", warnings);
+            ganttData.put("leftoverMonths", totalMonths);
+            ganttData.put("doNotExtendDurations", true);
+            ganttData.put("leftoverSuggestion", totalMonths > 0 ? 
+                totalMonths + " months remain unused. Consider adding elective skills, practice projects, or internships." : 
+                "No skills to schedule.");
             return ganttData;
         }
         
-        // Calculate total time required for all skills
-        int totalTimeRequired = roleDetails.getSkillRequirements().stream()
+        // Validate and sanitize durations
+        List<Blueprint.SkillRequirement> validSkills = new ArrayList<>();
+        for (Blueprint.SkillRequirement skill : roleDetails.getSkillRequirements()) {
+            int duration = skill.getTimeRequiredMonths();
+            if (duration < 1) {
+                warnings.add("Skill '" + skill.getSkillName() + "' has invalid duration (" + duration + "), setting to 1 month.");
+                skill.setTimeRequiredMonths(1);
+            }
+            validSkills.add(skill);
+        }
+        
+        // Calculate total time required
+        int totalTimeRequired = validSkills.stream()
                 .mapToInt(Blueprint.SkillRequirement::getTimeRequiredMonths)
                 .sum();
         
+        // Check for prerequisite cycles
+        if (hasPrerequisiteCycle(validSkills)) {
+            warnings.add("ERROR: Circular prerequisite dependency detected. Please fix the blueprint prerequisites.");
+            ganttData.put("labels", labels);
+            ganttData.put("tasks", tasks);
+            ganttData.put("totalMonths", totalMonths);
+            ganttData.put("chartType", "gantt");
+            ganttData.put("warnings", warnings);
+            ganttData.put("leftoverMonths", totalMonths);
+            ganttData.put("doNotExtendDurations", true);
+            ganttData.put("leftoverSuggestion", "Cannot schedule due to prerequisite cycle.");
+            return ganttData;
+        }
+        
         // Check if time is insufficient
         if (totalTimeRequired > totalMonths) {
-            warnings.add("Warning: The total time required (" + totalTimeRequired + " months) exceeds the available time (" + totalMonths + " months). Essential skills will be prioritized, and other skills will be scheduled in parallel.");
+            warnings.add("Insufficient time: The total time required (" + totalTimeRequired + " months) exceeds the available time (" + totalMonths + " months). A prioritized subset will be scheduled.");
         }
         
-        // Sort skills by priority: Importance (Essential > Important > Good to be), then by difficulty (beginner < intermediate < advanced)
-        List<Blueprint.SkillRequirement> sortedSkills = new ArrayList<>(roleDetails.getSkillRequirements());
-        sortedSkills.sort((s1, s2) -> {
-            // First, compare by importance
-            int importance1 = getImportancePriority(s1.getImportance());
-            int importance2 = getImportancePriority(s2.getImportance());
-            if (importance1 != importance2) {
-                return Integer.compare(importance1, importance2); // Lower number = higher priority
-            }
-            
-            // If importance is same, compare by difficulty (beginner first)
-            int difficulty1 = getDifficultyPriority(s1.getDifficulty());
-            int difficulty2 = getDifficultyPriority(s2.getDifficulty());
-            if (difficulty1 != difficulty2) {
-                return Integer.compare(difficulty1, difficulty2);
-            }
-            
-            // If both are same, prioritize shorter skills first
-            return Integer.compare(s1.getTimeRequiredMonths(), s2.getTimeRequiredMonths());
-        });
+        // Configuration: maxParallel (default 3, can be made configurable)
+        int maxParallel = 3;
         
-        // Track which months are allocated to which skills (for parallel learning)
-        // Store skill details for each month to check compatibility
-        Map<Integer, List<Map<String, Object>>> monthAllocations = new HashMap<>();
-        for (int i = 1; i <= totalMonths; i++) {
-            monthAllocations.put(i, new ArrayList<>());
-        }
+        // Execute greedy scheduling algorithm
+        GanttScheduleResult result = greedySchedule(validSkills, totalMonths, maxParallel);
         
-        // Allocate skills to timeline
-        for (Blueprint.SkillRequirement skillReq : sortedSkills) {
-            int skillTime = skillReq.getTimeRequiredMonths();
-            String skillName = skillReq.getSkillName();
-            // Map old skill types to new ones for backward compatibility
-            String rawSkillType = skillReq.getSkillType();
-            String skillType = normalizeSkillType(rawSkillType);
-            String difficulty = skillReq.getDifficulty();
-            
-            // Find the best starting position for this skill
-            int startMonth = findBestStartMonth(monthAllocations, skillTime, totalMonths, skillReq);
-            
-            if (startMonth > 0) {
-                int endMonth = Math.min(startMonth + skillTime - 1, totalMonths);
-                
-                // Allocate months for this skill
-                for (int month = startMonth; month <= endMonth; month++) {
-                    Map<String, Object> skillInfo = new HashMap<>();
-                    skillInfo.put("name", skillName);
-                    skillInfo.put("type", skillType);
-                    skillInfo.put("difficulty", difficulty);
-                    monthAllocations.get(month).add(skillInfo);
-                }
-                
-                Map<String, Object> task = new HashMap<>();
-                task.put("id", "skill_" + skillName.replaceAll("\\s+", "_").replaceAll("[^a-zA-Z0-9_]", ""));
-                task.put("name", skillName);
-                task.put("start", startMonth);
-                task.put("end", endMonth);
-                task.put("type", skillType);
-                task.put("difficulty", difficulty);
-                task.put("importance", skillReq.getImportance());
-                task.put("description", skillReq.getDescription());
-                task.put("timeRequired", skillReq.getTimeRequiredMonths());
-                task.put("progress", 0);
-                tasks.add(task);
-            } else {
-                // Could not allocate - skill will be scheduled in parallel with others
-                // Find any available slot or overlap with compatible skills
-                int fallbackStart = 1;
-                int fallbackEnd = Math.min(fallbackStart + skillTime - 1, totalMonths);
-                
-                // Allocate in parallel
-                for (int month = fallbackStart; month <= fallbackEnd; month++) {
-                    Map<String, Object> skillInfo = new HashMap<>();
-                    skillInfo.put("name", skillName);
-                    skillInfo.put("type", skillType);
-                    skillInfo.put("difficulty", difficulty);
-                    monthAllocations.get(month).add(skillInfo);
-                }
-                
-                Map<String, Object> task = new HashMap<>();
-                task.put("id", "skill_" + skillName.replaceAll("\\s+", "_").replaceAll("[^a-zA-Z0-9_]", ""));
-                task.put("name", skillName);
-                task.put("start", fallbackStart);
-                task.put("end", fallbackEnd);
-                task.put("type", skillType);
-                task.put("difficulty", difficulty);
-                task.put("importance", skillReq.getImportance());
-                task.put("description", skillReq.getDescription());
-                task.put("timeRequired", skillReq.getTimeRequiredMonths());
-                task.put("progress", 0);
-                task.put("parallel", true); // Mark as parallel learning
-                tasks.add(task);
-            }
-        }
+        tasks = result.tasks;
+        warnings.addAll(result.warnings);
         
-        // If there's excess time, extend skill learning periods
-        int allocatedTime = tasks.stream()
-                .mapToInt(t -> (Integer) t.get("end") - (Integer) t.get("start") + 1)
-                .sum();
-        
-        if (allocatedTime < totalMonths && totalTimeRequired < totalMonths) {
-            int excessTime = totalMonths - Math.max(allocatedTime, totalTimeRequired);
-            // Distribute excess time to essential and important skills
-            distributeExcessTime(tasks, excessTime, totalMonths);
-        }
-        
-        // Check if there's spare time after all skills are completed
+        // Calculate leftover months (do NOT extend durations)
         int maxEndMonth = tasks.stream()
                 .mapToInt(t -> (Integer) t.get("end"))
                 .max()
                 .orElse(0);
+        int leftoverMonths = Math.max(0, totalMonths - maxEndMonth);
         
-        boolean hasSpareTime = maxEndMonth < totalMonths && totalTimeRequired < totalMonths;
-        if (hasSpareTime) {
-            int spareMonths = totalMonths - maxEndMonth;
-            ganttData.put("hasSpareTime", true);
-            ganttData.put("spareMonths", spareMonths);
+        // Build leftover suggestion
+        String leftoverSuggestion = "";
+        if (leftoverMonths > 0) {
+            leftoverSuggestion = leftoverMonths + " months remain unused. Consider adding elective skills, practice projects, or internships. Durations of existing skills were NOT extended.";
+        } else if (leftoverMonths == 0 && maxEndMonth == totalMonths) {
+            leftoverSuggestion = "All available time has been utilized.";
         } else {
-            ganttData.put("hasSpareTime", false);
+            leftoverSuggestion = "Schedule complete.";
         }
         
         ganttData.put("labels", labels);
@@ -294,6 +228,9 @@ public class BlueprintService {
         ganttData.put("totalMonths", totalMonths);
         ganttData.put("chartType", "gantt");
         ganttData.put("warnings", warnings);
+        ganttData.put("leftoverMonths", leftoverMonths);
+        ganttData.put("doNotExtendDurations", true);
+        ganttData.put("leftoverSuggestion", leftoverSuggestion);
         
         return ganttData;
     }
@@ -333,129 +270,628 @@ public class BlueprintService {
         return "technical";
     }
     
-    private int findBestStartMonth(Map<Integer, List<Map<String, Object>>> monthAllocations, int skillTime, int totalMonths, Blueprint.SkillRequirement skillReq) {
-        // Normalize skill type for consistency
-        String rawSkillType = skillReq.getSkillType();
-        String skillType = normalizeSkillType(rawSkillType);
-        String difficulty = skillReq.getDifficulty();
-        boolean isTechnical = "technical".equalsIgnoreCase(skillType);
-        int difficultyLevel = getDifficultyPriority(difficulty);
-        
-        // For essential skills, try to find consecutive months with minimal incompatible overlap
-        if ("Essential".equalsIgnoreCase(skillReq.getImportance())) {
-            int bestStart = 0;
-            int minIncompatibleOverlaps = Integer.MAX_VALUE;
-            
-            for (int start = 1; start <= totalMonths - skillTime + 1; start++) {
-                int incompatibleOverlaps = 0;
-                boolean canFit = true;
-                
-                for (int i = 0; i < skillTime; i++) {
-                    int month = start + i;
-                    if (month > totalMonths) {
-                        canFit = false;
-                        break;
-                    }
-                    List<Map<String, Object>> existing = monthAllocations.get(month);
-                    // Count incompatible overlaps
-                    for (Map<String, Object> existingSkill : existing) {
-                        String existingType = (String) existingSkill.get("type");
-                        String existingDifficulty = (String) existingSkill.get("difficulty");
-                        boolean existingIsTechnical = "technical".equalsIgnoreCase(existingType);
-                        int existingDifficultyLevel = getDifficultyPriority(existingDifficulty);
-                        
-                        // Incompatible if: both are technical AND both are advanced difficulty
-                        // Allow: non-technical with technical, less difficult with more difficult
-                        if (isTechnical && existingIsTechnical && difficultyLevel == 3 && existingDifficultyLevel == 3) {
-                            // Both are advanced technical skills - prefer not to overlap
-                            incompatibleOverlaps++;
-                        }
-                        // All other combinations are allowed (non-technical with technical, beginner/intermediate with advanced)
-                    }
-                }
-                
-                if (canFit && incompatibleOverlaps < minIncompatibleOverlaps) {
-                    minIncompatibleOverlaps = incompatibleOverlaps;
-                    bestStart = start;
-                }
-            }
-            
-            if (bestStart > 0) {
-                return bestStart;
-            }
-        }
-        
-        // For other skills, find slot with least incompatible overlap (allow parallel learning)
-        int bestStart = 1;
-        int minIncompatibleOverlaps = Integer.MAX_VALUE;
-        
-        for (int start = 1; start <= totalMonths - skillTime + 1; start++) {
-            int incompatibleOverlaps = 0;
-            for (int i = 0; i < skillTime; i++) {
-                int month = start + i;
-                if (month <= totalMonths) {
-                    List<Map<String, Object>> existing = monthAllocations.get(month);
-                    // Count incompatible overlaps
-                    for (Map<String, Object> existingSkill : existing) {
-                        String existingType = (String) existingSkill.get("type");
-                        String existingDifficulty = (String) existingSkill.get("difficulty");
-                        boolean existingIsTechnical = "technical".equalsIgnoreCase(existingType);
-                        int existingDifficultyLevel = getDifficultyPriority(existingDifficulty);
-                        
-                        // Incompatible if: both are technical AND both are advanced difficulty
-                        // Allow: non-technical with technical, less difficult with more difficult
-                        if (isTechnical && existingIsTechnical && difficultyLevel == 3 && existingDifficultyLevel == 3) {
-                            // Both are advanced technical skills - prefer not to overlap
-                            incompatibleOverlaps++;
-                        }
-                        // All other combinations are allowed (non-technical with technical, beginner/intermediate with advanced)
-                    }
-                }
-            }
-            
-            if (incompatibleOverlaps < minIncompatibleOverlaps) {
-                minIncompatibleOverlaps = incompatibleOverlaps;
-                bestStart = start;
-            }
-        }
-        
-        return bestStart;
+    /**
+     * Result class for greedy scheduling
+     */
+    private static class GanttScheduleResult {
+        List<Map<String, Object>> tasks = new ArrayList<>();
+        List<String> warnings = new ArrayList<>();
     }
     
-    private void distributeExcessTime(List<Map<String, Object>> tasks, int excessTime, int totalMonths) {
-        // Sort tasks by importance and extend essential/important skills first
-        List<Map<String, Object>> sortedTasks = new ArrayList<>(tasks);
-        sortedTasks.sort((t1, t2) -> {
-            String imp1 = (String) t1.getOrDefault("importance", "Good to be");
-            String imp2 = (String) t2.getOrDefault("importance", "Good to be");
-            int priority1 = getImportancePriority(imp1);
-            int priority2 = getImportancePriority(imp2);
-            return Integer.compare(priority1, priority2);
-        });
+    /**
+     * Greedy deterministic scheduling algorithm
+     */
+    private GanttScheduleResult greedySchedule(List<Blueprint.SkillRequirement> skills, int totalMonths, int maxParallel) {
+        GanttScheduleResult result = new GanttScheduleResult();
         
-        int remainingExcess = excessTime;
-        for (Map<String, Object> task : sortedTasks) {
-            if (remainingExcess <= 0) break;
+        // Build prerequisite graph and topological sort
+        Map<String, List<String>> prereqMap = new HashMap<>();
+        Map<String, Blueprint.SkillRequirement> skillMap = new HashMap<>();
+        for (Blueprint.SkillRequirement skill : skills) {
+            skillMap.put(skill.getSkillName(), skill);
+            if (skill.getPrerequisites() != null && !skill.getPrerequisites().isEmpty()) {
+                prereqMap.put(skill.getSkillName(), new ArrayList<>(skill.getPrerequisites()));
+            }
+        }
+        
+        List<String> topoOrder = topologicalSort(skills, prereqMap);
+        if (topoOrder == null) {
+            result.warnings.add("Topological sort failed - prerequisite cycle detected.");
+            return result;
+        }
+        
+        // Partition skills
+        List<Blueprint.SkillRequirement> criticalTech = new ArrayList<>();
+        List<Blueprint.SkillRequirement> criticalNonTech = new ArrayList<>();
+        List<Blueprint.SkillRequirement> others = new ArrayList<>();
+        
+        for (String skillName : topoOrder) {
+            Blueprint.SkillRequirement skill = skillMap.get(skillName);
+            if (skill == null) continue;
             
-            // Skip project phase
-            if ("project".equals(task.get("type"))) continue;
+            boolean isEssential = "Essential".equalsIgnoreCase(skill.getImportance());
+            boolean isAdvanced = "advanced".equalsIgnoreCase(skill.getDifficulty());
+            boolean isTechnical = "technical".equalsIgnoreCase(normalizeSkillType(skill.getSkillType()));
             
-            int currentEnd = (Integer) task.get("end");
-            int timeRequired = (Integer) task.get("timeRequired");
-            int currentDuration = currentEnd - (Integer) task.get("start") + 1;
+            if (isEssential && isAdvanced) {
+                if (isTechnical) {
+                    criticalTech.add(skill);
+                } else {
+                    criticalNonTech.add(skill);
+                }
+            } else {
+                others.add(skill);
+            }
+        }
+        
+        // Sort by priority: importance desc, difficulty asc, time asc
+        criticalTech.sort(this::compareSkillsByPriority);
+        criticalNonTech.sort(this::compareSkillsByPriority);
+        others.sort(this::compareSkillsByPriority);
+        
+        // Track schedule state
+        Map<String, Integer> skillStart = new HashMap<>();
+        Map<String, Integer> skillEnd = new HashMap<>();
+        Map<Integer, List<String>> monthActiveSkills = new HashMap<>();
+        for (int i = 1; i <= totalMonths; i++) {
+            monthActiveSkills.put(i, new ArrayList<>());
+        }
+        
+        // Phase 1: Schedule critical technical skills sequentially (NO OVERLAP)
+        for (Blueprint.SkillRequirement skill : criticalTech) {
+            int start = findEarliestStartForCriticalTech(skill, skillStart, skillEnd, prereqMap, 
+                    monthActiveSkills, totalMonths, maxParallel, skillMap);
+            if (start == -1) {
+                result.warnings.add("Cannot schedule critical technical skill '" + skill.getSkillName() + 
+                    "' - insufficient time or constraint violation.");
+                continue;
+            }
             
-            // If current duration is less than time required, extend it
-            if (currentDuration < timeRequired && currentEnd < totalMonths) {
-                int extension = Math.min(remainingExcess, timeRequired - currentDuration);
-                int newEnd = Math.min(currentEnd + extension, totalMonths);
-                task.put("end", newEnd);
-                remainingExcess -= (newEnd - currentEnd);
-            } else if (currentEnd < totalMonths) {
-                // Even if duration matches, extend slightly for better learning
-                int extension = Math.min(remainingExcess, 1);
-                int newEnd = Math.min(currentEnd + extension, totalMonths);
-                task.put("end", newEnd);
-                remainingExcess -= extension;
+            int duration = skill.getTimeRequiredMonths();
+            int end = Math.min(start + duration - 1, totalMonths);
+            skillStart.put(skill.getSkillName(), start);
+            skillEnd.put(skill.getSkillName(), end);
+            
+            // Mark months as active
+            for (int month = start; month <= end; month++) {
+                monthActiveSkills.get(month).add(skill.getSkillName());
+            }
+        }
+        
+        // Phase 2: Schedule critical non-technical skills (can parallel with critical tech)
+        for (Blueprint.SkillRequirement skill : criticalNonTech) {
+            int start = findEarliestStart(skill, skillStart, skillEnd, prereqMap, 
+                    monthActiveSkills, totalMonths, maxParallel, false, skillMap);
+            if (start == -1) {
+                result.warnings.add("Cannot schedule critical non-technical skill '" + skill.getSkillName() + 
+                    "' - insufficient time or constraint violation.");
+                continue;
+            }
+            
+            int duration = skill.getTimeRequiredMonths();
+            int end = Math.min(start + duration - 1, totalMonths);
+            skillStart.put(skill.getSkillName(), start);
+            skillEnd.put(skill.getSkillName(), end);
+            
+            for (int month = start; month <= end; month++) {
+                monthActiveSkills.get(month).add(skill.getSkillName());
+            }
+        }
+        
+        // Phase 3: Schedule other skills
+        for (Blueprint.SkillRequirement skill : others) {
+            int start = findEarliestStart(skill, skillStart, skillEnd, prereqMap, 
+                    monthActiveSkills, totalMonths, maxParallel, true, skillMap);
+            if (start == -1) {
+                result.warnings.add("Cannot schedule skill '" + skill.getSkillName() + 
+                    "' - insufficient time or constraint violation.");
+                continue;
+            }
+            
+            int duration = skill.getTimeRequiredMonths();
+            int end = Math.min(start + duration - 1, totalMonths);
+            skillStart.put(skill.getSkillName(), start);
+            skillEnd.put(skill.getSkillName(), end);
+            
+            for (int month = start; month <= end; month++) {
+                monthActiveSkills.get(month).add(skill.getSkillName());
+            }
+        }
+        
+        // Compact schedule (move tasks earlier without violating constraints)
+        compactScheduleGreedy(skillStart, skillEnd, prereqMap, monthActiveSkills, totalMonths, maxParallel, skillMap);
+        
+        // Build task list from schedule
+        for (Blueprint.SkillRequirement skill : skills) {
+            String skillName = skill.getSkillName();
+            if (skillStart.containsKey(skillName)) {
+                int start = skillStart.get(skillName);
+                int end = skillEnd.get(skillName);
+                
+                Map<String, Object> task = createTask(skill, start, end);
+                
+                // Check if parallel
+                boolean isParallel = false;
+                for (int month = start; month <= end; month++) {
+                    if (monthActiveSkills.get(month).size() > 1) {
+                        isParallel = true;
+                        break;
+                    }
+                }
+                if (isParallel) {
+                    task.put("parallel", true);
+                }
+                
+                result.tasks.add(task);
+            }
+        }
+        
+        // Check for advanced technical overlaps (soft warning)
+        checkAdvancedTechnicalOverlaps(result.tasks, result.warnings, skillMap);
+        
+        return result;
+    }
+    
+    /**
+     * Creates a task map for a skill requirement
+     */
+    private Map<String, Object> createTask(Blueprint.SkillRequirement skillReq, int startMonth, int endMonth) {
+        Map<String, Object> task = new HashMap<>();
+        String skillName = skillReq.getSkillName();
+        task.put("id", "skill_" + skillName.replaceAll("\\s+", "_").replaceAll("[^a-zA-Z0-9_]", ""));
+        task.put("name", skillName);
+        task.put("start", startMonth);
+        task.put("end", endMonth);
+        task.put("type", normalizeSkillType(skillReq.getSkillType()));
+        task.put("difficulty", skillReq.getDifficulty());
+        task.put("importance", skillReq.getImportance());
+        task.put("description", skillReq.getDescription());
+        task.put("timeRequired", skillReq.getTimeRequiredMonths());
+        task.put("progress", 0);
+        return task;
+    }
+    
+    /**
+     * Compares skills by priority: importance desc, difficulty asc, time asc
+     */
+    private int compareSkillsByPriority(Blueprint.SkillRequirement s1, Blueprint.SkillRequirement s2) {
+        int imp1 = getImportancePriority(s1.getImportance());
+        int imp2 = getImportancePriority(s2.getImportance());
+        if (imp1 != imp2) {
+            return Integer.compare(imp1, imp2); // Lower number = higher priority
+        }
+        
+        int diff1 = getDifficultyPriority(s1.getDifficulty());
+        int diff2 = getDifficultyPriority(s2.getDifficulty());
+        if (diff1 != diff2) {
+            return Integer.compare(diff1, diff2); // Lower difficulty first
+        }
+        
+        return Integer.compare(s1.getTimeRequiredMonths(), s2.getTimeRequiredMonths()); // Shorter first
+    }
+    
+    /**
+     * Checks for prerequisite cycles using DFS
+     */
+    private boolean hasPrerequisiteCycle(List<Blueprint.SkillRequirement> skills) {
+        Map<String, List<String>> graph = new HashMap<>();
+        Map<String, Blueprint.SkillRequirement> skillMap = new HashMap<>();
+        
+        for (Blueprint.SkillRequirement skill : skills) {
+            skillMap.put(skill.getSkillName(), skill);
+            graph.put(skill.getSkillName(), new ArrayList<>());
+        }
+        
+        for (Blueprint.SkillRequirement skill : skills) {
+            if (skill.getPrerequisites() != null) {
+                for (String prereq : skill.getPrerequisites()) {
+                    if (graph.containsKey(prereq)) {
+                        graph.get(skill.getSkillName()).add(prereq);
+                    }
+                }
+            }
+        }
+        
+        Set<String> visited = new HashSet<>();
+        Set<String> recStack = new HashSet<>();
+        
+        for (String skillName : graph.keySet()) {
+            if (hasCycleDFS(skillName, graph, visited, recStack)) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    private boolean hasCycleDFS(String node, Map<String, List<String>> graph, Set<String> visited, Set<String> recStack) {
+        if (recStack.contains(node)) {
+            return true; // Cycle detected
+        }
+        if (visited.contains(node)) {
+            return false;
+        }
+        
+        visited.add(node);
+        recStack.add(node);
+        
+        for (String neighbor : graph.getOrDefault(node, Collections.emptyList())) {
+            if (hasCycleDFS(neighbor, graph, visited, recStack)) {
+                return true;
+            }
+        }
+        
+        recStack.remove(node);
+        return false;
+    }
+    
+    /**
+     * Topological sort of skills respecting prerequisites
+     */
+    private List<String> topologicalSort(List<Blueprint.SkillRequirement> skills, Map<String, List<String>> prereqMap) {
+        Map<String, List<String>> graph = new HashMap<>();
+        Map<String, Integer> inDegree = new HashMap<>();
+        
+        // Initialize
+        for (Blueprint.SkillRequirement skill : skills) {
+            String name = skill.getSkillName();
+            graph.put(name, new ArrayList<>());
+            inDegree.put(name, 0);
+        }
+        
+        // Build graph and calculate in-degrees
+        for (Blueprint.SkillRequirement skill : skills) {
+            String name = skill.getSkillName();
+            if (prereqMap.containsKey(name)) {
+                for (String prereq : prereqMap.get(name)) {
+                    if (graph.containsKey(prereq)) {
+                        graph.get(prereq).add(name);
+                        inDegree.put(name, inDegree.get(name) + 1);
+                    }
+                }
+            }
+        }
+        
+        // Kahn's algorithm
+        Queue<String> queue = new LinkedList<>();
+        for (String skillName : inDegree.keySet()) {
+            if (inDegree.get(skillName) == 0) {
+                queue.offer(skillName);
+            }
+        }
+        
+        List<String> result = new ArrayList<>();
+        while (!queue.isEmpty()) {
+            String current = queue.poll();
+            result.add(current);
+            
+            for (String neighbor : graph.get(current)) {
+                inDegree.put(neighbor, inDegree.get(neighbor) - 1);
+                if (inDegree.get(neighbor) == 0) {
+                    queue.offer(neighbor);
+                }
+            }
+        }
+        
+        // Check for cycle
+        if (result.size() != skills.size()) {
+            return null; // Cycle detected
+        }
+        
+        return result;
+    }
+    
+    /**
+     * Finds earliest start for critical technical skill (no overlap with other critical tech)
+     */
+    private int findEarliestStartForCriticalTech(Blueprint.SkillRequirement skill, 
+                                                  Map<String, Integer> skillStart,
+                                                  Map<String, Integer> skillEnd,
+                                                  Map<String, List<String>> prereqMap,
+                                                  Map<Integer, List<String>> monthActiveSkills,
+                                                  int totalMonths, int maxParallel,
+                                                  Map<String, Blueprint.SkillRequirement> skillMap) {
+        int duration = skill.getTimeRequiredMonths();
+        
+        // Find earliest start respecting prerequisites
+        int earliestAfterPrereqs = 1;
+        if (prereqMap.containsKey(skill.getSkillName())) {
+            for (String prereq : prereqMap.get(skill.getSkillName())) {
+                if (skillEnd.containsKey(prereq)) {
+                    earliestAfterPrereqs = Math.max(earliestAfterPrereqs, skillEnd.get(prereq) + 1);
+                }
+            }
+        }
+        
+        // Find earliest slot with no critical tech overlap
+        for (int start = earliestAfterPrereqs; start <= totalMonths - duration + 1; start++) {
+            boolean canFit = true;
+            
+            // Check if any month in this range has a critical tech skill
+            for (int month = start; month < start + duration && month <= totalMonths; month++) {
+                List<String> active = monthActiveSkills.get(month);
+                for (String activeSkillName : active) {
+                    Blueprint.SkillRequirement activeSkill = skillMap.get(activeSkillName);
+                    if (activeSkill != null) {
+                        boolean isEssential = "Essential".equalsIgnoreCase(activeSkill.getImportance());
+                        boolean isAdvanced = "advanced".equalsIgnoreCase(activeSkill.getDifficulty());
+                        boolean isTechnical = "technical".equalsIgnoreCase(normalizeSkillType(activeSkill.getSkillType()));
+                        
+                        if (isEssential && isAdvanced && isTechnical) {
+                            canFit = false;
+                            break;
+                        }
+                    }
+                }
+                if (!canFit) break;
+            }
+            
+            if (canFit) {
+                return start;
+            }
+        }
+        
+        return -1; // Cannot schedule
+    }
+    
+    /**
+     * Finds earliest start for a skill respecting all constraints
+     */
+    private int findEarliestStart(Blueprint.SkillRequirement skill,
+                                  Map<String, Integer> skillStart,
+                                  Map<String, Integer> skillEnd,
+                                  Map<String, List<String>> prereqMap,
+                                  Map<Integer, List<String>> monthActiveSkills,
+                                  int totalMonths, int maxParallel,
+                                  boolean checkAdvancedOverlap,
+                                  Map<String, Blueprint.SkillRequirement> skillMap) {
+        int duration = skill.getTimeRequiredMonths();
+        boolean isTechnical = "technical".equalsIgnoreCase(normalizeSkillType(skill.getSkillType()));
+        boolean isAdvanced = "advanced".equalsIgnoreCase(skill.getDifficulty());
+        
+        // Find earliest start respecting prerequisites
+        int earliestAfterPrereqs = 1;
+        if (prereqMap.containsKey(skill.getSkillName())) {
+            for (String prereq : prereqMap.get(skill.getSkillName())) {
+                if (skillEnd.containsKey(prereq)) {
+                    earliestAfterPrereqs = Math.max(earliestAfterPrereqs, skillEnd.get(prereq) + 1);
+                }
+            }
+        }
+        
+        // Find earliest slot respecting maxParallel and other constraints
+        for (int start = earliestAfterPrereqs; start <= totalMonths - duration + 1; start++) {
+            boolean canFit = true;
+            
+            // Check maxParallel constraint
+            for (int month = start; month < start + duration && month <= totalMonths; month++) {
+                List<String> active = monthActiveSkills.get(month);
+                int effectiveLoad = 0;
+                for (String activeSkillName : active) {
+                    Blueprint.SkillRequirement activeSkill = skillMap.get(activeSkillName);
+                    if (activeSkill != null) {
+                        boolean activeIsTechnical = "technical".equalsIgnoreCase(normalizeSkillType(activeSkill.getSkillType()));
+                        effectiveLoad += activeIsTechnical ? 1 : 1; // Can adjust weight for non-technical
+                    }
+                }
+                
+                // Add this skill's load
+                effectiveLoad += isTechnical ? 1 : 1;
+                
+                if (effectiveLoad > maxParallel) {
+                    canFit = false;
+                    break;
+                }
+                
+                // Check for advanced technical overlap (soft constraint - warn but allow)
+                if (checkAdvancedOverlap && isTechnical && isAdvanced) {
+                    for (String activeSkillName : active) {
+                        Blueprint.SkillRequirement activeSkill = skillMap.get(activeSkillName);
+                        if (activeSkill != null) {
+                            boolean activeIsTechnical = "technical".equalsIgnoreCase(normalizeSkillType(activeSkill.getSkillType()));
+                            boolean activeIsAdvanced = "advanced".equalsIgnoreCase(activeSkill.getDifficulty());
+                            if (activeIsTechnical && activeIsAdvanced) {
+                                // Soft constraint violation - allow but will warn later
+                            }
+                        }
+                    }
+                }
+            }
+            
+            if (canFit) {
+                return start;
+            }
+        }
+        
+        return -1; // Cannot schedule
+    }
+    
+    /**
+     * Compacts schedule by moving tasks earlier without violating constraints
+     */
+    private void compactScheduleGreedy(Map<String, Integer> skillStart,
+                                       Map<String, Integer> skillEnd,
+                                       Map<String, List<String>> prereqMap,
+                                       Map<Integer, List<String>> monthActiveSkills,
+                                       int totalMonths, int maxParallel,
+                                       Map<String, Blueprint.SkillRequirement> skillMap) {
+        // Sort skills by current start time
+        List<String> sortedSkills = new ArrayList<>(skillStart.keySet());
+        sortedSkills.sort(Comparator.comparing(skillStart::get));
+        
+        // Try to move each skill earlier
+        for (String skillName : sortedSkills) {
+            Blueprint.SkillRequirement skill = skillMap.get(skillName);
+            if (skill == null) continue;
+            
+            int currentStart = skillStart.get(skillName);
+            int duration = skill.getTimeRequiredMonths();
+            int currentEnd = skillEnd.get(skillName);
+            
+            // Find earliest possible start
+            int earliestAfterPrereqs = 1;
+            if (prereqMap.containsKey(skillName)) {
+                for (String prereq : prereqMap.get(skillName)) {
+                    if (skillEnd.containsKey(prereq)) {
+                        earliestAfterPrereqs = Math.max(earliestAfterPrereqs, skillEnd.get(prereq) + 1);
+                    }
+                }
+            }
+            
+            // Try to move earlier
+            for (int newStart = earliestAfterPrereqs; newStart < currentStart; newStart++) {
+                if (canMoveSkillTo(skillName, skill, newStart, skillStart, skillEnd, 
+                        monthActiveSkills, totalMonths, maxParallel, skillMap)) {
+                    // Move the skill
+                    int newEnd = newStart + duration - 1;
+                    
+                    // Remove from old months
+                    for (int month = currentStart; month <= currentEnd; month++) {
+                        monthActiveSkills.get(month).remove(skillName);
+                    }
+                    
+                    // Add to new months
+                    for (int month = newStart; month <= newEnd; month++) {
+                        if (month <= totalMonths) {
+                            monthActiveSkills.get(month).add(skillName);
+                        }
+                    }
+                    
+                    skillStart.put(skillName, newStart);
+                    skillEnd.put(skillName, newEnd);
+                    break; // Move as early as possible
+                }
+            }
+        }
+    }
+    
+    /**
+     * Checks if a skill can be moved to a new start position
+     */
+    private boolean canMoveSkillTo(String skillName, Blueprint.SkillRequirement skill,
+                                   int newStart, Map<String, Integer> skillStart,
+                                   Map<String, Integer> skillEnd,
+                                   Map<Integer, List<String>> monthActiveSkills,
+                                   int totalMonths, int maxParallel,
+                                   Map<String, Blueprint.SkillRequirement> skillMap) {
+        int duration = skill.getTimeRequiredMonths();
+        boolean isTechnical = "technical".equalsIgnoreCase(normalizeSkillType(skill.getSkillType()));
+        boolean isEssential = "Essential".equalsIgnoreCase(skill.getImportance());
+        boolean isAdvanced = "advanced".equalsIgnoreCase(skill.getDifficulty());
+        boolean isCriticalTech = isEssential && isAdvanced && isTechnical;
+        
+        // Check bounds
+        if (newStart < 1 || newStart + duration - 1 > totalMonths) {
+            return false;
+        }
+        
+        // Check prerequisites
+        // (Already handled by caller)
+        
+        // Check constraints for each month
+        for (int month = newStart; month < newStart + duration && month <= totalMonths; month++) {
+            List<String> active = new ArrayList<>(monthActiveSkills.get(month));
+            active.remove(skillName); // Remove this skill from active list (temporarily)
+            
+            // Check critical tech overlap
+            if (isCriticalTech) {
+                for (String activeSkillName : active) {
+                    Blueprint.SkillRequirement activeSkill = skillMap.get(activeSkillName);
+                    if (activeSkill != null) {
+                        boolean activeIsEssential = "Essential".equalsIgnoreCase(activeSkill.getImportance());
+                        boolean activeIsAdvanced = "advanced".equalsIgnoreCase(activeSkill.getDifficulty());
+                        boolean activeIsTechnical = "technical".equalsIgnoreCase(normalizeSkillType(activeSkill.getSkillType()));
+                        if (activeIsEssential && activeIsAdvanced && activeIsTechnical) {
+                            return false; // Cannot overlap with another critical tech
+                        }
+                    }
+                }
+            } else {
+                // Check if this month has a critical tech that would conflict
+                for (String activeSkillName : active) {
+                    Blueprint.SkillRequirement activeSkill = skillMap.get(activeSkillName);
+                    if (activeSkill != null) {
+                        boolean activeIsEssential = "Essential".equalsIgnoreCase(activeSkill.getImportance());
+                        boolean activeIsAdvanced = "advanced".equalsIgnoreCase(activeSkill.getDifficulty());
+                        boolean activeIsTechnical = "technical".equalsIgnoreCase(normalizeSkillType(activeSkill.getSkillType()));
+                        if (activeIsEssential && activeIsAdvanced && activeIsTechnical) {
+                            // This is fine - non-critical can overlap with critical tech
+                        }
+                    }
+                }
+            }
+            
+            // Check maxParallel
+            int effectiveLoad = 0;
+            for (String activeSkillName : active) {
+                Blueprint.SkillRequirement activeSkill = skillMap.get(activeSkillName);
+                if (activeSkill != null) {
+                    boolean activeIsTechnical = "technical".equalsIgnoreCase(normalizeSkillType(activeSkill.getSkillType()));
+                    effectiveLoad += activeIsTechnical ? 1 : 1;
+                }
+            }
+            effectiveLoad += isTechnical ? 1 : 1;
+            
+            if (effectiveLoad > maxParallel) {
+                return false;
+            }
+        }
+        
+        return true;
+    }
+    
+    /**
+     * Checks for advanced technical overlaps and adds warnings
+     */
+    private void checkAdvancedTechnicalOverlaps(List<Map<String, Object>> tasks, 
+                                               List<String> warnings,
+                                               Map<String, Blueprint.SkillRequirement> skillMap) {
+        // Build month-to-skills map
+        Map<Integer, List<String>> monthSkills = new HashMap<>();
+        for (Map<String, Object> task : tasks) {
+            String skillName = (String) task.get("name");
+            int start = (Integer) task.get("start");
+            int end = (Integer) task.get("end");
+            for (int month = start; month <= end; month++) {
+                monthSkills.computeIfAbsent(month, k -> new ArrayList<>()).add(skillName);
+            }
+        }
+        
+        // Check for overlaps
+        Set<String> warnedPairs = new HashSet<>();
+        for (int month = 1; month <= 24; month++) {
+            List<String> skills = monthSkills.get(month);
+            if (skills == null || skills.size() < 2) continue;
+            
+            for (int i = 0; i < skills.size(); i++) {
+                for (int j = i + 1; j < skills.size(); j++) {
+                    String skill1Name = skills.get(i);
+                    String skill2Name = skills.get(j);
+                    String pairKey = skill1Name.compareTo(skill2Name) < 0 ? 
+                        skill1Name + "|" + skill2Name : skill2Name + "|" + skill1Name;
+                    
+                    if (warnedPairs.contains(pairKey)) continue;
+                    
+                    Blueprint.SkillRequirement skill1 = skillMap.get(skill1Name);
+                    Blueprint.SkillRequirement skill2 = skillMap.get(skill2Name);
+                    
+                    if (skill1 != null && skill2 != null) {
+                        boolean s1Tech = "technical".equalsIgnoreCase(normalizeSkillType(skill1.getSkillType()));
+                        boolean s1Adv = "advanced".equalsIgnoreCase(skill1.getDifficulty());
+                        boolean s2Tech = "technical".equalsIgnoreCase(normalizeSkillType(skill2.getSkillType()));
+                        boolean s2Adv = "advanced".equalsIgnoreCase(skill2.getDifficulty());
+                        
+                        // Check if both are advanced technical (but not critical - critical is already prevented)
+                        boolean s1Critical = "Essential".equalsIgnoreCase(skill1.getImportance()) && s1Adv;
+                        boolean s2Critical = "Essential".equalsIgnoreCase(skill2.getImportance()) && s2Adv;
+                        
+                        if (s1Tech && s1Adv && s2Tech && s2Adv && !s1Critical && !s2Critical) {
+                            warnings.add("Soft preference violation: Advanced technical skills '" + skill1Name + 
+                                "' and '" + skill2Name + "' overlap (prefer not to overlap, but allowed).");
+                            warnedPairs.add(pairKey);
+                        }
+                    }
+                }
             }
         }
     }

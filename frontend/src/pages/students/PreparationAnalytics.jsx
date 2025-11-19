@@ -90,10 +90,23 @@ const PreparationAnalytics = () => {
     fetchData();
   }, [roleName, user?.id, authLoading]);
 
-  const handleToggleSkill = async (skillName, currentStatus) => {
+  const handleToggleSkill = async (skillName, currentStatus, event) => {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    
     if (!user?.id || !preparation) return;
 
-    const newStatus = !currentStatus;
+    // If trying to mark as completed, navigate to test page
+    if (!currentStatus) {
+      const decodedRoleName = decodeURIComponent(roleName || '');
+      navigate(`/students/skill-test/${encodeURIComponent(decodedRoleName)}/${encodeURIComponent(skillName)}`);
+      return;
+    }
+
+    // If unmarking (setting to not completed)
+    const newStatus = false;
     try {
       const decodedRoleName = decodeURIComponent(roleName || '');
       const response = await axios.put(
@@ -108,7 +121,18 @@ const PreparationAnalytics = () => {
       setAnalytics(analyticsResponse.data);
     } catch (err) {
       console.error('Error updating skill:', err);
-      alert('Failed to update skill. Please try again.');
+      const errorMessage = err.response?.data?.error || err.response?.data?.message || err.message || 'Failed to update skill. Please try again.';
+      
+      // If it's the test requirement error, navigate to test page instead
+      if (err.response?.data?.code === 'SKILL_COMPLETION_REQUIRES_TEST' || 
+          errorMessage.includes('test') || 
+          errorMessage.includes('Cannot mark skill as completed directly')) {
+        const decodedRoleName = decodeURIComponent(roleName || '');
+        navigate(`/students/skill-test/${encodeURIComponent(decodedRoleName)}/${encodeURIComponent(skillName)}`);
+        return;
+      }
+      
+      alert(errorMessage);
     }
   };
 
@@ -537,13 +561,21 @@ const PreparationAnalytics = () => {
                                         )}
                                       </div>
                                       {isCompleted && progress?.completedDate && (
-                                        <p className="text-xs text-green-700">
-                                          Completed on {new Date(progress.completedDate).toLocaleDateString()}
-                                        </p>
+                                        <div className="space-y-1">
+                                          <p className="text-xs text-green-700">
+                                            Completed on {new Date(progress.completedDate).toLocaleDateString()}
+                                          </p>
+                                          {progress?.score !== null && progress?.score !== undefined && (
+                                            <p className="text-xs font-semibold text-blue-700">
+                                              Test Score: {progress.score}%
+                                            </p>
+                                          )}
+                                        </div>
                                       )}
                                     </div>
                                     <button
-                                      onClick={() => handleToggleSkill(skill.skillName, isCompleted)}
+                                      onClick={(e) => handleToggleSkill(skill.skillName, isCompleted, e)}
+                                      type="button"
                                       className="flex-shrink-0"
                                     >
                                       {isCompleted ? (
@@ -607,13 +639,21 @@ const PreparationAnalytics = () => {
                                         )}
                                       </div>
                                       {isCompleted && progress?.completedDate && (
-                                        <p className="text-xs text-green-700">
-                                          Completed on {new Date(progress.completedDate).toLocaleDateString()}
-                                        </p>
+                                        <div className="space-y-1">
+                                          <p className="text-xs text-green-700">
+                                            Completed on {new Date(progress.completedDate).toLocaleDateString()}
+                                          </p>
+                                          {progress?.score !== null && progress?.score !== undefined && (
+                                            <p className="text-xs font-semibold text-blue-700">
+                                              Test Score: {progress.score}%
+                                            </p>
+                                          )}
+                                        </div>
                                       )}
                                     </div>
                                     <button
-                                      onClick={() => handleToggleSkill(skill.skillName, isCompleted)}
+                                      onClick={(e) => handleToggleSkill(skill.skillName, isCompleted, e)}
+                                      type="button"
                                       className="flex-shrink-0"
                                     >
                                       {isCompleted ? (

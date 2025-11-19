@@ -37,6 +37,7 @@ public class RolePreparation {
         private boolean completed;
         private LocalDate completedDate;
         private LocalDate targetDate; // Target date for this skill from the plan
+        private Integer score; // Test score (0-100) if test was taken
         
         public SkillProgress() {
             this.completed = false;
@@ -46,6 +47,13 @@ public class RolePreparation {
             this.completed = completed;
             this.completedDate = completedDate;
             this.targetDate = targetDate;
+        }
+        
+        public SkillProgress(boolean completed, LocalDate completedDate, LocalDate targetDate, Integer score) {
+            this.completed = completed;
+            this.completedDate = completedDate;
+            this.targetDate = targetDate;
+            this.score = score;
         }
     }
 }

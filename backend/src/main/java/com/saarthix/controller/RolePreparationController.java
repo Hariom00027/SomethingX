@@ -56,9 +56,18 @@ public class RolePreparationController {
             RolePreparation preparation = rolePreparationService.updateSkillCompletion(
                     studentId, decodedRoleName, decodedSkillName, completed);
             return ResponseEntity.ok(preparation);
+        } catch (RuntimeException e) {
+            e.printStackTrace();
+            // Return a structured error response
+            Map<String, String> errorResponse = new java.util.HashMap<>();
+            errorResponse.put("error", e.getMessage());
+            errorResponse.put("code", "SKILL_COMPLETION_REQUIRES_TEST");
+            return ResponseEntity.badRequest().body(errorResponse);
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.badRequest().body("Error updating skill: " + e.getMessage());
+            Map<String, String> errorResponse = new java.util.HashMap<>();
+            errorResponse.put("error", "Error updating skill: " + e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
         }
     }
 

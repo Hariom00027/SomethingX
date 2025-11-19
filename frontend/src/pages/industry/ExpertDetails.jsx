@@ -326,3 +326,4 @@ const DetailList = ({ title, items, icon: Icon }) => {
 
 export default ExpertDetails;
 
+

@@ -40,6 +40,11 @@ const AdminDashboard = () => {
   const [mappingLoading, setMappingLoading] = useState(false);
   const [mappingMessage, setMappingMessage] = useState('');
 
+  // Skill autocomplete state
+  const [skillSuggestions, setSkillSuggestions] = useState({});
+  const [showSuggestions, setShowSuggestions] = useState({});
+  const [allSkills, setAllSkills] = useState([]);
+
   // Section Templates state
   const [sectionTemplates, setSectionTemplates] = useState([]);
   const [showSectionForm, setShowSectionForm] = useState(false);
@@ -58,10 +63,20 @@ const AdminDashboard = () => {
     if (activeSection === 'blueprint') {
       fetchBlueprints();
       fetchMappingOptions();
+      fetchAllSkills();
     } else if (activeSection === 'resume-sections') {
       fetchSectionTemplates();
     }
   }, [activeSection]);
+
+  const fetchAllSkills = async () => {
+    try {
+      const response = await apiClient.get('/blueprint/skills');
+      setAllSkills(response.data || []);
+    } catch (error) {
+      console.error('Error fetching skills:', error);
+    }
+  };
   
   // Fetch options for mapping
   const fetchMappingOptions = async () => {
@@ -127,6 +142,25 @@ const AdminDashboard = () => {
         i === index ? { ...skill, [field]: value } : skill
       )
     }));
+
+    // Handle autocomplete for skill name
+    if (field === 'skillName') {
+      const query = value.toLowerCase().trim();
+      if (query.length > 0) {
+        const filtered = allSkills.filter(skill => 
+          skill.toLowerCase().includes(query)
+        );
+        setSkillSuggestions(prev => ({ ...prev, [index]: filtered.slice(0, 10) }));
+        setShowSuggestions(prev => ({ ...prev, [index]: true }));
+      } else {
+        setShowSuggestions(prev => ({ ...prev, [index]: false }));
+      }
+    }
+  };
+
+  const selectSkillSuggestion = (index, skillName) => {
+    updateSkillRequirement(index, 'skillName', skillName);
+    setShowSuggestions(prev => ({ ...prev, [index]: false }));
   };
 
   const removeSkillRequirement = (index) => {
@@ -626,12 +660,46 @@ const AdminDashboard = () => {
                         </Button>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
-                        <Input
-                          placeholder="Skill Name *"
-                          value={skill.skillName}
-                          onChange={(e) => updateSkillRequirement(index, 'skillName', e.target.value)}
-                          required
-                        />
+                        <div className="relative">
+                          <Input
+                            placeholder="Skill Name *"
+                            value={skill.skillName}
+                            onChange={(e) => updateSkillRequirement(index, 'skillName', e.target.value)}
+                            onFocus={() => {
+                              if (skill.skillName && skill.skillName.length > 0) {
+                                const query = skill.skillName.toLowerCase().trim();
+                                const filtered = allSkills.filter(s => 
+                                  s.toLowerCase().includes(query)
+                                );
+                                setSkillSuggestions(prev => ({ ...prev, [index]: filtered.slice(0, 10) }));
+                                setShowSuggestions(prev => ({ ...prev, [index]: true }));
+                              }
+                            }}
+                            onBlur={() => {
+                              // Delay hiding suggestions to allow clicking on them
+                              setTimeout(() => {
+                                setShowSuggestions(prev => ({ ...prev, [index]: false }));
+                              }, 200);
+                            }}
+                            required
+                          />
+                          {showSuggestions[index] && skillSuggestions[index] && skillSuggestions[index].length > 0 && (
+                            <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                              {skillSuggestions[index].map((suggestion, sugIndex) => (
+                                <div
+                                  key={sugIndex}
+                                  className="px-4 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
+                                  onMouseDown={(e) => {
+                                    e.preventDefault();
+                                    selectSkillSuggestion(index, suggestion);
+                                  }}
+                                >
+                                  <span className="text-sm text-gray-700">{suggestion}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                         <select
                           value={skill.skillType}
                           onChange={(e) => updateSkillRequirement(index, 'skillType', e.target.value)}

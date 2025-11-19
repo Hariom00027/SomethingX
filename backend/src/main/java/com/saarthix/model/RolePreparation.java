@@ -38,6 +38,8 @@ public class RolePreparation {
         private LocalDate completedDate;
         private LocalDate targetDate; // Target date for this skill from the plan
         private Integer score; // Test score (0-100) if test was taken
+        private String completedInRole; // Role name where this skill was originally completed (for auto-completed skills)
+        private String completedInRoleId; // Role preparation ID where this skill was originally completed
         
         public SkillProgress() {
             this.completed = false;

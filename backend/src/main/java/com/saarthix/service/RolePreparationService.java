@@ -56,14 +56,65 @@ public class RolePreparationService {
         // Initialize skill progress from role's skill requirements
         Map<String, RolePreparation.SkillProgress> skillProgress = new HashMap<>();
         
+        // Get all previous role preparations to check for already completed skills
+        List<RolePreparation> previousPreparations = rolePreparationRepository.findByStudentId(studentId);
+        Map<String, CompletedSkillInfo> completedSkillsMap = new HashMap<>();
+        
+        // Build a map of completed skills from previous preparations
+        for (RolePreparation prevPrep : previousPreparations) {
+            if (prevPrep.getSkillProgress() != null && !prevPrep.getRoleName().equals(roleName)) {
+                // Get the blueprint for the previous role to get skill difficulty
+                Optional<Blueprint> prevRoleOpt = blueprintRepository.findByNameAndType(prevPrep.getRoleName(), "role");
+                if (prevRoleOpt.isPresent()) {
+                    Blueprint prevRole = prevRoleOpt.get();
+                    if (prevRole.getSkillRequirements() != null) {
+                        for (Blueprint.SkillRequirement prevSkillReq : prevRole.getSkillRequirements()) {
+                            RolePreparation.SkillProgress prevProgress = prevPrep.getSkillProgress().get(prevSkillReq.getSkillName());
+                            if (prevProgress != null && prevProgress.isCompleted()) {
+                                String skillName = prevSkillReq.getSkillName();
+                                String difficulty = prevSkillReq.getDifficulty() != null ? prevSkillReq.getDifficulty().toLowerCase() : "beginner";
+                                
+                                // Check if we already have this skill with higher difficulty
+                                CompletedSkillInfo existingInfo = completedSkillsMap.get(skillName);
+                                if (existingInfo == null || isDifficultyHigherOrEqual(difficulty, existingInfo.difficulty)) {
+                                    completedSkillsMap.put(skillName, new CompletedSkillInfo(
+                                        prevPrep.getRoleName(),
+                                        prevPrep.getId(),
+                                        difficulty,
+                                        prevProgress.getCompletedDate(),
+                                        prevProgress.getScore()
+                                    ));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
         if (role.getSkillRequirements() != null) {
             for (Blueprint.SkillRequirement skillReq : role.getSkillRequirements()) {
                 RolePreparation.SkillProgress progress = new RolePreparation.SkillProgress();
-                progress.setCompleted(false);
+                String skillName = skillReq.getSkillName();
+                String currentDifficulty = skillReq.getDifficulty() != null ? skillReq.getDifficulty().toLowerCase() : "beginner";
+                
+                // Check if this skill was already completed in another role
+                CompletedSkillInfo completedInfo = completedSkillsMap.get(skillName);
+                if (completedInfo != null && isDifficultyHigherOrEqual(completedInfo.difficulty, currentDifficulty)) {
+                    // Skill already completed with equal or higher difficulty - mark as completed
+                    progress.setCompleted(true);
+                    progress.setCompletedDate(completedInfo.completedDate);
+                    progress.setScore(completedInfo.score);
+                    progress.setCompletedInRole(completedInfo.roleName);
+                    progress.setCompletedInRoleId(completedInfo.rolePreparationId);
+                } else {
+                    progress.setCompleted(false);
+                }
+                
                 // Calculate target date based on plan if available
                 LocalDate targetDate = calculateTargetDateForSkill(skillReq, role, LocalDate.now());
                 progress.setTargetDate(targetDate);
-                skillProgress.put(skillReq.getSkillName(), progress);
+                skillProgress.put(skillName, progress);
             }
         }
         
@@ -299,6 +350,49 @@ public class RolePreparationService {
             return startDate.plusMonths(maxMonths);
         }
         return startDate.plusMonths(6); // Default 6 months
+    }
+
+    /**
+     * Compares two difficulty levels. Returns true if difficulty1 is higher or equal to difficulty2.
+     * Difficulty order: beginner (1) < intermediate (2) < advanced (3)
+     */
+    private boolean isDifficultyHigherOrEqual(String difficulty1, String difficulty2) {
+        int level1 = getDifficultyLevel(difficulty1);
+        int level2 = getDifficultyLevel(difficulty2);
+        return level1 >= level2;
+    }
+
+    /**
+     * Gets numeric difficulty level: beginner=1, intermediate=2, advanced=3
+     */
+    private int getDifficultyLevel(String difficulty) {
+        if (difficulty == null) return 1; // Default to beginner
+        switch (difficulty.toLowerCase()) {
+            case "beginner": return 1;
+            case "intermediate": return 2;
+            case "advanced": return 3;
+            default: return 1; // Default to beginner
+        }
+    }
+
+    /**
+     * Helper class to store information about a completed skill from another role
+     */
+    private static class CompletedSkillInfo {
+        String roleName;
+        String rolePreparationId;
+        String difficulty;
+        LocalDate completedDate;
+        Integer score;
+
+        CompletedSkillInfo(String roleName, String rolePreparationId, String difficulty, 
+                          LocalDate completedDate, Integer score) {
+            this.roleName = roleName;
+            this.rolePreparationId = rolePreparationId;
+            this.difficulty = difficulty;
+            this.completedDate = completedDate;
+            this.score = score;
+        }
     }
 }
 

@@ -130,6 +130,39 @@ public class BlueprintController {
         Map<String, Object> mappings = blueprintService.getRoleMappings(roleName);
         return ResponseEntity.ok(mappings);
     }
+
+    @GetMapping("/role/{roleName}/skill/{skillName}/topics")
+    public ResponseEntity<Map<Integer, List<String>>> getSkillTopics(
+            @PathVariable String roleName,
+            @PathVariable String skillName,
+            @RequestParam int totalMonths,
+            @RequestParam int startMonth,
+            @RequestParam int endMonth) {
+        try {
+            Map<Integer, List<String>> topics = blueprintService.getSkillTopics(
+                    roleName, skillName, totalMonths, startMonth, endMonth);
+            return ResponseEntity.ok(topics);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @GetMapping("/skills")
+    public ResponseEntity<List<String>> getAllSkillNames(@RequestParam(required = false) String query) {
+        try {
+            List<String> skills;
+            if (query != null && !query.trim().isEmpty()) {
+                skills = blueprintService.searchSkillNames(query);
+            } else {
+                skills = blueprintService.getAllSkillNames();
+            }
+            return ResponseEntity.ok(skills);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.badRequest().build();
+        }
+    }
 }
 
 

@@ -1,7 +1,8 @@
-import React, { useMemo } from 'react';
-import { Layers, Timer, Target, Sparkles, Calendar } from 'lucide-react';
+import React, { useMemo, useState, useEffect } from 'react';
+import { Layers, Timer, Target, Sparkles, Calendar, BookOpen } from 'lucide-react';
+import axios from 'axios';
 
-const GanttChart = ({ data, totalMonths = 6 }) => {
+const GanttChart = ({ data, totalMonths = 6, roleName }) => {
 
   // Safely extract and normalize data
   const normalizedData = useMemo(() => {
@@ -103,6 +104,12 @@ const GanttChart = ({ data, totalMonths = 6 }) => {
     };
   };
 
+  // State for topics and hover
+  const [topicsCache, setTopicsCache] = useState({});
+  const [hoveredCell, setHoveredCell] = useState(null);
+  const [loadingTopics, setLoadingTopics] = useState({});
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+
   // Generate month-based skill plan
   const generateSkillPlan = useMemo(() => {
     const plan = [];
@@ -113,8 +120,9 @@ const GanttChart = ({ data, totalMonths = 6 }) => {
         id: task.id || index,
         skill: task.name || 'Unnamed Task',
         type: task.type === 'technical' ? 'Technical' : 
-              task.type === 'non-technical' ? 'Non-Technical' : 
+                     task.type === 'non-technical' ? 'Non-Technical' : 
               'Task',
+        task: task,
         months: Array.from({ length: totalMonths }, (_, i) => {
           const monthNum = i + 1;
           const isInRange = monthNum >= (task.start || 0) && monthNum <= (task.end || 0);
@@ -132,6 +140,102 @@ const GanttChart = ({ data, totalMonths = 6 }) => {
 
     return plan;
   }, [tasks, totalMonths]);
+
+  // Fetch topics for a skill
+  const fetchTopics = async (skillName, startMonth, endMonth) => {
+    if (!roleName || !skillName) return;
+
+    const cacheKey = `${skillName}_${startMonth}_${endMonth}`;
+    if (topicsCache[cacheKey]) {
+      return topicsCache[cacheKey];
+    }
+
+    if (loadingTopics[cacheKey]) {
+      return null;
+    }
+
+    setLoadingTopics(prev => ({ ...prev, [cacheKey]: true }));
+
+    try {
+      const response = await axios.get(
+        `http://localhost:8080/api/blueprint/role/${encodeURIComponent(roleName)}/skill/${encodeURIComponent(skillName)}/topics`,
+        {
+          params: {
+            totalMonths,
+            startMonth,
+            endMonth
+          }
+        }
+      );
+      
+      const topics = response.data || {};
+      setTopicsCache(prev => ({ ...prev, [cacheKey]: topics }));
+      return topics;
+    } catch (error) {
+      console.error('Error fetching topics:', error);
+      return null;
+    } finally {
+      setLoadingTopics(prev => {
+        const newState = { ...prev };
+        delete newState[cacheKey];
+        return newState;
+      });
+    }
+  };
+
+  // Fetch all topics for all skills on component mount
+  useEffect(() => {
+    const fetchAllTopics = async () => {
+      if (!roleName || tasks.length === 0) return;
+
+      const fetchPromises = tasks.map(async (task) => {
+        if (task.start && task.end) {
+          const cacheKey = `${task.name}_${task.start}_${task.end}`;
+          if (!topicsCache[cacheKey] && !loadingTopics[cacheKey]) {
+            await fetchTopics(task.name, task.start, task.end);
+          }
+        }
+      });
+
+      await Promise.all(fetchPromises);
+    };
+
+    fetchAllTopics();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roleName, tasks.length]);
+
+  // Handle cell hover
+  const handleCellMouseEnter = async (e, row, monthData) => {
+    if (!monthData.hasTask || !monthData.task) return;
+
+    // Set tooltip position immediately from mouse event
+    setTooltipPosition({
+      x: e.clientX,
+      y: e.clientY
+    });
+
+    setHoveredCell({ row, month: monthData.month, task: monthData.task });
+
+    // Fetch topics if not cached
+    const cacheKey = `${row.skill}_${monthData.task.start}_${monthData.task.end}`;
+    if (!topicsCache[cacheKey]) {
+      await fetchTopics(row.skill, monthData.task.start, monthData.task.end);
+    }
+  };
+
+  const handleCellMouseLeave = () => {
+    setHoveredCell(null);
+  };
+
+  const handleCellMouseMove = (e) => {
+    if (hoveredCell) {
+      // Update tooltip position to follow cursor
+      setTooltipPosition({
+        x: e.clientX,
+        y: e.clientY
+      });
+    }
+  };
 
   // Early returns after all hooks
   if (!data || tasks.length === 0) {
@@ -210,11 +314,21 @@ const GanttChart = ({ data, totalMonths = 6 }) => {
                     {row.months.map((monthData, monthIndex) => (
                       <td
                         key={monthIndex}
-                        className="px-4 py-4 text-center border-r border-slate-200/60 last:border-r-0 align-middle"
+                        className="px-4 py-4 text-center border-r border-slate-200/60 last:border-r-0 align-middle relative group"
+                        onMouseEnter={(e) => handleCellMouseEnter(e, row, monthData)}
+                        onMouseLeave={handleCellMouseLeave}
+                        onMouseMove={(e) => {
+                          // Always update position when mouse moves over cell
+                          setTooltipPosition({
+                            x: e.clientX,
+                            y: e.clientY
+                          });
+                          handleCellMouseMove(e);
+                        }}
                       >
                         {monthData.hasTask ? (
                           <div
-                            className="inline-flex items-center justify-center min-w-[60px] px-3 py-2 rounded-lg text-xs font-medium text-white shadow-sm"
+                            className="inline-flex items-center justify-center min-w-[60px] px-3 py-2 rounded-lg text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-110 cursor-pointer"
                             style={{ backgroundColor: taskColor }}
                           >
                             {monthData.isStart && monthData.isEnd
@@ -236,6 +350,95 @@ const GanttChart = ({ data, totalMonths = 6 }) => {
             </tbody>
           </table>
         </div>
+
+        {/* Topics Tooltip */}
+        {hoveredCell && hoveredCell.task && (() => {
+          const cacheKey = `${hoveredCell.row.skill}_${hoveredCell.task.start}_${hoveredCell.task.end}`;
+          const topics = topicsCache[cacheKey];
+          const monthTopics = topics && topics[hoveredCell.month] ? topics[hoveredCell.month] : [];
+          const isLoading = loadingTopics[cacheKey];
+
+          if (!monthTopics.length && !isLoading) return null;
+
+          // Get task color for the tooltip
+          const rowIndex = generateSkillPlan.findIndex(r => r.id === hoveredCell.row.id);
+          const taskColor = getTaskColor(
+            { type: hoveredCell.row.type.toLowerCase().replace(' ', '-') },
+            rowIndex >= 0 ? rowIndex : 0
+          );
+
+          const tooltipWidth = 320;
+          const tooltipHeight = 200;
+          const viewportWidth = window.innerWidth;
+          const viewportHeight = window.innerHeight;
+
+          // Position tooltip directly at cursor (1px offset to not block cursor)
+          let x = tooltipPosition.x + 1;
+          let y = tooltipPosition.y - 1;
+
+          // Adjust if tooltip would go off screen horizontally - flip to left side
+          if (x + tooltipWidth > viewportWidth - 10) {
+            x = tooltipPosition.x - tooltipWidth - 1;
+          }
+          if (x < 10) {
+            x = 10;
+          }
+
+          // Adjust if tooltip would go off screen vertically - flip below cursor
+          if (y - tooltipHeight < 10) {
+            y = tooltipPosition.y + 1;
+          }
+          if (y + tooltipHeight > viewportHeight - 10) {
+            y = viewportHeight - tooltipHeight - 10;
+          }
+
+          return (
+            <div
+              className="fixed z-50 rounded-lg border-2 shadow-2xl pointer-events-none"
+              style={{
+                left: `${x}px`,
+                top: `${y}px`,
+                width: `${tooltipWidth}px`,
+                opacity: 1,
+                backgroundColor: taskColor,
+                borderColor: taskColor,
+                filter: 'brightness(0.85)',
+                transform: 'none',
+                transition: 'none'
+              }}
+            >
+              <div className="p-4">
+                <div className="flex items-center gap-2 mb-3 pb-2 border-b border-white/30">
+                  <BookOpen className="h-4 w-4 text-white" />
+                  <h4 className="text-sm font-bold text-white">
+                    Topics for {hoveredCell.row.skill}
+                  </h4>
+                </div>
+                <div className="text-xs font-medium text-white/90 mb-3">
+                  Month {hoveredCell.month} ({getMonthInfo(labels[hoveredCell.month - 1] || `Month ${hoveredCell.month}`, hoveredCell.month - 1).name})
+                </div>
+                {isLoading ? (
+                  <div className="text-sm text-white/80 text-center py-4">
+                    Loading topics...
+                  </div>
+                ) : monthTopics.length > 0 ? (
+                  <ul className="space-y-2">
+                    {monthTopics.map((topic, idx) => (
+                      <li key={idx} className="flex items-start gap-2 text-sm text-white">
+                        <span className="text-white mt-1.5 font-bold">•</span>
+                        <span className="flex-1">{topic}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div className="text-sm text-white/80 text-center py-4">
+                    No topics available for this month
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Summary Info */}
         {summaryCards.length > 0 && (
@@ -260,6 +463,93 @@ const GanttChart = ({ data, totalMonths = 6 }) => {
             })}
           </div>
         )}
+
+        {/* Monthly Plan Section - Fixed View */}
+        <div className="mt-8 rounded-2xl border border-slate-200/70 bg-white/90 shadow-inner p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="rounded-xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-2 text-white shadow-md">
+              <BookOpen className="h-5 w-5" />
+            </div>
+            <h3 className="text-xl font-bold text-slate-900">Monthly Learning Plan</h3>
+              </div>
+          
+          <div className="space-y-6">
+            {generateSkillPlan.map((row, rowIndex) => {
+              const cacheKey = `${row.skill}_${row.task.start}_${row.task.end}`;
+              const topics = topicsCache[cacheKey];
+              const isLoading = loadingTopics[cacheKey];
+              const taskColor = getTaskColor(
+                { type: row.type.toLowerCase().replace(' ', '-') },
+                rowIndex
+              );
+
+              if (!topics && !isLoading) {
+                // Trigger fetch if not loading
+                if (row.task.start && row.task.end) {
+                  fetchTopics(row.skill, row.task.start, row.task.end);
+                }
+              }
+
+                  return (
+                <div key={row.id} className="rounded-xl border border-slate-200 bg-slate-50/50 p-5">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div
+                      className="h-4 w-4 rounded-full shadow-sm"
+                      style={{ backgroundColor: taskColor }}
+                    />
+                    <h4 className="text-base font-bold text-slate-900">{row.skill}</h4>
+                    <span className="text-xs font-medium text-slate-500 uppercase tracking-wide px-2 py-1 bg-slate-200 rounded">
+                      {row.type}
+                    </span>
+                    <span className="text-xs text-slate-600 ml-auto">
+                      Months {row.task.start} - {row.task.end}
+                    </span>
+                  </div>
+
+                  {isLoading ? (
+                    <div className="text-sm text-slate-500 text-center py-4">
+                      Loading topics...
+                    </div>
+                  ) : topics && Object.keys(topics).length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {Array.from({ length: totalMonths }, (_, i) => {
+                        const monthNum = i + 1;
+                        const monthTopics = topics[monthNum] || [];
+                        const isInRange = monthNum >= (row.task.start || 0) && monthNum <= (row.task.end || 0);
+                        const monthInfo = getMonthInfo(labels[i] || `Month ${monthNum}`, i);
+
+                        if (!isInRange || monthTopics.length === 0) return null;
+
+                        return (
+                          <div key={monthNum} className="rounded-lg border border-slate-200 bg-white p-4">
+                            <div className="flex items-center gap-2 mb-3 pb-2 border-b border-slate-200">
+                              <Calendar className="h-4 w-4 text-indigo-600" />
+                              <h5 className="text-sm font-semibold text-slate-900">
+                                {monthInfo.name} (M{monthNum})
+                              </h5>
+                            </div>
+                            <ul className="space-y-2">
+                              {monthTopics.map((topic, idx) => (
+                                <li key={idx} className="flex items-start gap-2 text-sm text-slate-700">
+                                  <span className="text-indigo-600 mt-1.5 flex-shrink-0">•</span>
+                                  <span className="flex-1">{topic}</span>
+                                </li>
+                              ))}
+                            </ul>
+                    </div>
+                  );
+                })}
+              </div>
+                  ) : (
+                    <div className="text-sm text-slate-500 text-center py-4">
+                      Topics will be loaded shortly...
+                </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
       </div>
     </div>
   );

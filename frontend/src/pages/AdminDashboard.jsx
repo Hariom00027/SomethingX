@@ -501,6 +501,13 @@ const AdminDashboard = () => {
         >
           Industry Training
         </Button>
+        <Button
+          onClick={() => navigate('/admin/expert-management')}
+          variant={activeSection === 'expert-management' ? 'default' : 'outline'}
+          className="text-lg px-6 py-3"
+        >
+          Expert Management
+        </Button>
       </div>
 
       {activeSection === 'blueprint' && (

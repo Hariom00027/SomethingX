@@ -39,6 +39,7 @@ import AiInterview from "./pages/industry/AiInterview";
 import AdminDashboard from "./pages/AdminDashboard";
 import ResumeReview from "./pages/admin/ResumeReview";
 import IndustryTrainingRequests from "./pages/admin/IndustryTrainingRequests";
+import ExpertManagement from "./pages/admin/ExpertManagement";
 
 function App() {
   return (
@@ -233,6 +234,11 @@ function App() {
           <Route path="/admin/industry-training" element={
             <ProtectedRoute requiredRole="ADMIN">
               <IndustryTrainingRequests />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/expert-management" element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <ExpertManagement />
             </ProtectedRoute>
           } />
         </Routes>

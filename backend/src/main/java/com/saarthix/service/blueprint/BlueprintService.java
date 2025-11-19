@@ -1,11 +1,19 @@
 package com.saarthix.service.blueprint;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.saarthix.model.blueprint.Blueprint;
 import com.saarthix.model.User;
 import com.saarthix.repository.blueprint.BlueprintRepository;
 import com.saarthix.repository.UserRepository;
+import com.theokanning.openai.completion.chat.ChatCompletionRequest;
+import com.theokanning.openai.completion.chat.ChatMessage;
+import com.theokanning.openai.completion.chat.ChatMessageRole;
+import com.theokanning.openai.service.OpenAiService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -15,10 +23,15 @@ public class BlueprintService {
 
     private final BlueprintRepository blueprintRepository;
     private final UserRepository userRepository;
+    private final ObjectMapper objectMapper;
 
-    public BlueprintService(BlueprintRepository blueprintRepository, UserRepository userRepository) {
+    @Value("${openai.api.key:}")
+    private String apiKey = "";
+
+    public BlueprintService(BlueprintRepository blueprintRepository, UserRepository userRepository, ObjectMapper objectMapper) {
         this.blueprintRepository = blueprintRepository;
         this.userRepository = userRepository;
+        this.objectMapper = objectMapper;
     }
 
     public List<Blueprint> getAllBlueprints() {
@@ -41,6 +54,43 @@ public class BlueprintService {
         return blueprintRepository.findByType("specialization").stream()
                 .map(Blueprint::getName)
                 .collect(Collectors.toList());
+    }
+
+    public List<String> getAllSkillNames() {
+        Set<String> skillNames = new HashSet<>();
+        List<Blueprint> allBlueprints = blueprintRepository.findAll();
+        for (Blueprint blueprint : allBlueprints) {
+            if (blueprint.getSkillRequirements() != null) {
+                for (Blueprint.SkillRequirement skillReq : blueprint.getSkillRequirements()) {
+                    if (skillReq.getSkillName() != null && !skillReq.getSkillName().trim().isEmpty()) {
+                        skillNames.add(skillReq.getSkillName().trim());
+                    }
+                }
+            }
+        }
+        return skillNames.stream().sorted().collect(Collectors.toList());
+    }
+
+    public List<String> searchSkillNames(String query) {
+        if (query == null || query.trim().isEmpty()) {
+            return getAllSkillNames();
+        }
+        String lowerQuery = query.toLowerCase().trim();
+        Set<String> skillNames = new HashSet<>();
+        List<Blueprint> allBlueprints = blueprintRepository.findAll();
+        for (Blueprint blueprint : allBlueprints) {
+            if (blueprint.getSkillRequirements() != null) {
+                for (Blueprint.SkillRequirement skillReq : blueprint.getSkillRequirements()) {
+                    if (skillReq.getSkillName() != null && !skillReq.getSkillName().trim().isEmpty()) {
+                        String skillName = skillReq.getSkillName().trim();
+                        if (skillName.toLowerCase().contains(lowerQuery)) {
+                            skillNames.add(skillName);
+                        }
+                    }
+                }
+            }
+        }
+        return skillNames.stream().sorted().collect(Collectors.toList());
     }
 
     public List<String> getRolesByIndustry(String industryName) {
@@ -1070,6 +1120,151 @@ public class BlueprintService {
         mappings.put("educations", educations);
         
         return mappings;
+    }
+
+    public Map<Integer, List<String>> getSkillTopics(String roleName, String skillName, int totalMonths, int startMonth, int endMonth) {
+        try {
+            // Get role blueprint
+            Optional<Blueprint> roleOpt = blueprintRepository.findByNameAndType(roleName, "role");
+            if (roleOpt.isEmpty()) {
+                return new HashMap<>();
+            }
+
+            Blueprint role = roleOpt.get();
+            
+            // Find the skill requirement
+            Blueprint.SkillRequirement skillReq = null;
+            if (role.getSkillRequirements() != null) {
+                for (Blueprint.SkillRequirement req : role.getSkillRequirements()) {
+                    if (skillName.equals(req.getSkillName())) {
+                        skillReq = req;
+                        break;
+                    }
+                }
+            }
+
+            if (skillReq == null) {
+                return new HashMap<>();
+            }
+
+            String difficulty = skillReq.getDifficulty() != null ? skillReq.getDifficulty() : "intermediate";
+            String importance = skillReq.getImportance() != null ? skillReq.getImportance() : "Important";
+            String skillDescription = skillReq.getDescription() != null ? skillReq.getDescription() : "";
+            int skillDuration = endMonth - startMonth + 1;
+
+            // Generate topics using AI
+            return generateTopicsWithAI(roleName, skillName, difficulty, importance, skillDescription, skillDuration, startMonth, endMonth);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new HashMap<>();
+        }
+    }
+
+    private Map<Integer, List<String>> generateTopicsWithAI(String roleName, String skillName, String difficulty, 
+                                                           String importance, String skillDescription, 
+                                                           int duration, int startMonth, int endMonth) {
+        if (apiKey == null || apiKey.trim().isEmpty() || apiKey.equals("your-openai-api-key-here")) {
+            // Return default topics if API key is not configured
+            return generateDefaultTopics(duration, startMonth);
+        }
+
+        try {
+            OpenAiService service = new OpenAiService(apiKey, Duration.ofSeconds(60));
+
+            String systemPrompt = "You are an expert career counselor and learning path designer. " +
+                    "Generate a monthly breakdown of topics to learn for a specific skill. " +
+                    "Return ONLY a valid JSON object with this exact structure: " +
+                    "{\"1\":[\"topic1\",\"topic2\",...],\"2\":[\"topic1\",\"topic2\",...],...} " +
+                    "where keys are month numbers (relative to skill start, starting from 1) and values are arrays of topic strings. " +
+                    "Do not include any explanations or markdown formatting, just the JSON object.";
+
+            String userPrompt = String.format(
+                    "Generate a monthly breakdown of learning topics for the skill '%s' in the role '%s'. " +
+                    "Difficulty level: %s. Importance: %s. " +
+                    "Skill description: %s. " +
+                    "The skill spans %d month(s) (from month %d to month %d). " +
+                    "Divide the topics evenly across the months. " +
+                    "Each month should have 3-5 specific, actionable topics that build upon previous months. " +
+                    "Topics should be practical and relevant to the role. " +
+                    "Return topics as a JSON object with month numbers (1, 2, 3, etc.) as keys and arrays of topic strings as values.",
+                    skillName, roleName, difficulty, importance, skillDescription, duration, startMonth, endMonth
+            );
+
+            List<ChatMessage> messages = new ArrayList<>();
+            messages.add(new ChatMessage(ChatMessageRole.SYSTEM.value(), systemPrompt));
+            messages.add(new ChatMessage(ChatMessageRole.USER.value(), userPrompt));
+
+            ChatCompletionRequest request = ChatCompletionRequest.builder()
+                    .model("gpt-3.5-turbo")
+                    .messages(messages)
+                    .maxTokens(2000)
+                    .temperature(0.7)
+                    .build();
+
+            String response = service.createChatCompletion(request)
+                    .getChoices()
+                    .get(0)
+                    .getMessage()
+                    .getContent();
+
+            // Parse JSON response
+            String jsonContent = extractJsonFromResponse(response);
+            Map<String, Object> topicsData = objectMapper.readValue(
+                    jsonContent,
+                    new TypeReference<Map<String, Object>>() {}
+            );
+
+            // Convert to Map<Integer, List<String>>
+            Map<Integer, List<String>> topicsByMonth = new HashMap<>();
+            for (Map.Entry<String, Object> entry : topicsData.entrySet()) {
+                try {
+                    int month = Integer.parseInt(entry.getKey());
+                    @SuppressWarnings("unchecked")
+                    List<String> topics = (List<String>) entry.getValue();
+                    // Map relative month to absolute month
+                    int absoluteMonth = startMonth + month - 1;
+                    topicsByMonth.put(absoluteMonth, topics);
+                } catch (Exception e) {
+                    // Skip invalid entries
+                }
+            }
+
+            return topicsByMonth;
+        } catch (Exception e) {
+            e.printStackTrace();
+            // Return default topics on error
+            return generateDefaultTopics(duration, startMonth);
+        }
+    }
+
+    private String extractJsonFromResponse(String response) {
+        // Remove markdown code blocks if present
+        response = response.trim();
+        if (response.startsWith("```json")) {
+            response = response.substring(7);
+        } else if (response.startsWith("```")) {
+            response = response.substring(3);
+        }
+        if (response.endsWith("```")) {
+            response = response.substring(0, response.length() - 3);
+        }
+        return response.trim();
+    }
+
+    private Map<Integer, List<String>> generateDefaultTopics(int duration, int startMonth) {
+        Map<Integer, List<String>> topics = new HashMap<>();
+        String[] defaultTopicSets = {
+            "Introduction and Fundamentals, Basic Concepts, Getting Started",
+            "Core Concepts, Practical Applications, Hands-on Practice",
+            "Advanced Topics, Real-world Projects, Best Practices"
+        };
+        
+        for (int i = 0; i < duration; i++) {
+            int month = startMonth + i;
+            int topicSetIndex = Math.min(i, defaultTopicSets.length - 1);
+            topics.put(month, Arrays.asList(defaultTopicSets[topicSetIndex].split(", ")));
+        }
+        return topics;
     }
 }
 

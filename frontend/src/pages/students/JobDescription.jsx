@@ -706,7 +706,11 @@ const JobDescription = () => {
                   </div>
                 )}
                 {jobDetails?.plan && (
-                  <GanttChart data={jobDetails.plan} totalMonths={totalMonths} />
+                  <GanttChart 
+                    data={jobDetails.plan} 
+                    totalMonths={totalMonths} 
+                    roleName={jobDetails?.name || jobDetails?.roleName || decodeURIComponent(roleName || '')}
+                  />
                 )}
                 {jobDetails?.plan?.hasSpareTime && jobDetails.plan.spareMonths > 0 && (
                   <div className="rounded-2xl border border-emerald-200 bg-gradient-to-r from-emerald-50 via-teal-50 to-cyan-50 px-6 py-5">
@@ -897,9 +901,29 @@ const JobDescription = () => {
                                         )}
                                       </div>
                                       {isCompleted && progress?.completedDate && (
-                                        <p className="text-xs text-green-700">
-                                          Completed on {new Date(progress.completedDate).toLocaleDateString()}
-                                        </p>
+                                        <div className="space-y-1">
+                                          <p className="text-xs text-green-700">
+                                            Completed on {new Date(progress.completedDate).toLocaleDateString()}
+                                            {progress?.score && (
+                                              <span className="ml-2">(Score: {progress.score}%)</span>
+                                            )}
+                                          </p>
+                                          {progress?.completedInRole && (
+                                            <p className="text-xs text-blue-700">
+                                              Auto-completed from:{' '}
+                                              <button
+                                                type="button"
+                                                className="underline hover:text-blue-900 font-medium text-left"
+                                                onClick={(e) => {
+                                                  e.preventDefault();
+                                                  navigate(`/students/career-blueprint/role/${encodeURIComponent(progress.completedInRole)}`);
+                                                }}
+                                              >
+                                                {progress.completedInRole}
+                                              </button>
+                                            </p>
+                                          )}
+                                        </div>
                                       )}
                                     </div>
                                     <button
@@ -971,9 +995,29 @@ const JobDescription = () => {
                                         )}
                                       </div>
                                       {isCompleted && progress?.completedDate && (
-                                        <p className="text-xs text-green-700">
-                                          Completed on {new Date(progress.completedDate).toLocaleDateString()}
-                                        </p>
+                                        <div className="space-y-1">
+                                          <p className="text-xs text-green-700">
+                                            Completed on {new Date(progress.completedDate).toLocaleDateString()}
+                                            {progress?.score && (
+                                              <span className="ml-2">(Score: {progress.score}%)</span>
+                                            )}
+                                          </p>
+                                          {progress?.completedInRole && (
+                                            <p className="text-xs text-blue-700">
+                                              Auto-completed from:{' '}
+                                              <button
+                                                type="button"
+                                                className="underline hover:text-blue-900 font-medium text-left"
+                                                onClick={(e) => {
+                                                  e.preventDefault();
+                                                  navigate(`/students/career-blueprint/role/${encodeURIComponent(progress.completedInRole)}`);
+                                                }}
+                                              >
+                                                {progress.completedInRole}
+                                              </button>
+                                            </p>
+                                          )}
+                                        </div>
                                       )}
                                     </div>
                                     <button

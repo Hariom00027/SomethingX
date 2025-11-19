@@ -1,10 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { Layers, Timer, Target, Sparkles, Calendar } from 'lucide-react';
 
 const GanttChart = ({ data, totalMonths = 6 }) => {
-  const [hoveredTask, setHoveredTask] = useState(null);
-  const [hoveredTaskInfo, setHoveredTaskInfo] = useState(null);
-  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
 
   // Safely extract and normalize data
   const normalizedData = useMemo(() => {
@@ -94,12 +91,6 @@ const GanttChart = ({ data, totalMonths = 6 }) => {
     return `hsl(${hue}, 65%, 50%)`;
   };
 
-  // Check if month is in task range
-  const isMonthInTask = (monthIndex, task) => {
-    const monthNum = monthIndex + 1;
-    return monthNum >= (task.start ?? 0) && monthNum <= (task.end ?? 0);
-  };
-
   // Get month info
   const getMonthInfo = (label, index) => {
     const monthNum = index + 1;
@@ -112,94 +103,35 @@ const GanttChart = ({ data, totalMonths = 6 }) => {
     };
   };
 
-  // Render task row
-  const renderTaskRow = (task, index) => {
-    if (!task || !task.start || !task.end) return null;
-    
-    const startPosition = ((task.start - 1) / totalMonths) * 100;
-    const taskWidth = ((task.end - task.start + 1) / totalMonths) * 100;
-    const taskColor = getTaskColor(task, index);
-    const isHovered = hoveredTask === task.id;
-    const typeLabel = task.type === 'technical' ? 'Technical' : 
-                     task.type === 'non-technical' ? 'Non-Technical' : 
-                     task.type || 'Task';
-    
-    return (
-      <div
-        key={task.id || index}
-        className="group relative flex items-stretch overflow-hidden rounded-xl border border-slate-200/70 bg-white/90 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-indigo-300 hover:shadow-lg"
-        onMouseEnter={() => setHoveredTask(task.id)}
-        onMouseLeave={() => setHoveredTask(null)}
-      >
-        <div className="w-56 flex-shrink-0 border-r border-slate-200/70 bg-white/95 px-4 py-4">
-          <div className="flex items-center gap-3">
-            <div
-              className="h-3.5 w-3.5 rounded-full shadow-md ring-2 ring-white transition-transform duration-300 group-hover:scale-125"
-              style={{ backgroundColor: taskColor }}
-            />
-            <div className="min-w-0 flex-1">
-              <span className="block truncate text-sm font-semibold text-slate-900">{task.name || 'Unnamed Task'}</span>
-              <span className="text-xs font-medium uppercase tracking-wide text-slate-500">{typeLabel}</span>
-            </div>
-          </div>
-        </div>
-        <div className="relative flex-1 min-w-0 py-6">
-          <div className="absolute inset-0 bg-gradient-to-r from-white/70 via-white/40 to-white/60" />
-          <div className="absolute inset-0 flex">
-            {labels.map((label, monthIndex) => {
-              const isInTask = isMonthInTask(monthIndex, task);
-              return (
-                <div
-                  key={monthIndex}
-                  className="relative flex-1 border-r border-slate-200/60"
-                  style={{ flexBasis: 0 }}
-                  onMouseEnter={(e) => {
-                    if (isInTask) {
-                      const monthInfo = getMonthInfo(label, monthIndex);
-                      setHoveredTaskInfo({ task, monthInfo });
-                      setTooltipPosition({ x: e.clientX, y: e.clientY });
-                    }
-                  }}
-                  onMouseMove={(e) => {
-                    if (isInTask) {
-                      setTooltipPosition({ x: e.clientX, y: e.clientY });
-                    }
-                  }}
-                  onMouseLeave={() => {
-                    if (isInTask) {
-                      setHoveredTaskInfo(null);
-                    }
-                  }}
-                >
-                  <div className="absolute inset-0 bg-gradient-to-b from-slate-50/40 via-white/10 to-transparent" />
-                  {isInTask && (
-                    <div
-                      className="absolute inset-[6px] rounded-lg"
-                      style={{ backgroundColor: taskColor, opacity: 0.18 }}
-                    />
-                  )}
-                </div>
-              );
-            })}
-          </div>
-          <div
-            className={`absolute top-1/2 flex h-12 -translate-y-1/2 items-center justify-center rounded-xl px-3 text-xs font-semibold uppercase tracking-wide text-white transition-all duration-300 ${
-              isHovered ? 'ring-2 ring-offset-1 ring-indigo-300 shadow-lg' : 'shadow-md'
-            }`}
-            style={{
-              left: `${startPosition}%`,
-              width: `${taskWidth}%`,
-              backgroundColor: taskColor,
-              zIndex: isHovered ? 20 : 1,
-              transform: isHovered ? 'translateY(-50%) scale(1.03)' : 'translateY(-50%)'
-            }}
-          >
-            {task.start}-{task.end}
-          </div>
-        </div>
-      </div>
-    );
-  };
+  // Generate month-based skill plan
+  const generateSkillPlan = useMemo(() => {
+    const plan = [];
+
+    // Create plan rows - one row per task
+    tasks.forEach((task, index) => {
+      const row = {
+        id: task.id || index,
+        skill: task.name || 'Unnamed Task',
+        type: task.type === 'technical' ? 'Technical' : 
+              task.type === 'non-technical' ? 'Non-Technical' : 
+              'Task',
+        months: Array.from({ length: totalMonths }, (_, i) => {
+          const monthNum = i + 1;
+          const isInRange = monthNum >= (task.start || 0) && monthNum <= (task.end || 0);
+          return {
+            month: monthNum,
+            hasTask: isInRange,
+            task: isInRange ? task : null,
+            isStart: monthNum === (task.start || 0),
+            isEnd: monthNum === (task.end || 0)
+          };
+        })
+      };
+      plan.push(row);
+    });
+
+    return plan;
+  }, [tasks, totalMonths]);
 
   // Early returns after all hooks
   if (!data || tasks.length === 0) {
@@ -225,10 +157,89 @@ const GanttChart = ({ data, totalMonths = 6 }) => {
   return (
     <div className="gantt-chart-container relative overflow-hidden rounded-3xl border border-slate-200/60 bg-white/80 p-6 shadow-xl backdrop-blur-xl md:p-8">
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-slate-100/70 via-sky-50/60 to-purple-50/50" />
-      <div className="relative z-10 space-y-8">
-        {/* Summary Cards */}
+      <div className="relative z-10">
+        {/* Skill Development Plan Table */}
+        <div className="overflow-x-auto rounded-2xl border border-slate-200/70 bg-white/90 shadow-inner">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="bg-gradient-to-r from-slate-100 via-indigo-50 to-white border-b border-slate-200/80">
+                <th className="px-6 py-4 text-left text-sm font-semibold uppercase tracking-wide text-slate-700 border-r border-slate-200/70">
+                  Skill
+                </th>
+                {labels.map((label, index) => {
+                  const monthInfo = getMonthInfo(label, index);
+                  return (
+                    <th
+                      key={index}
+                      className="px-4 py-4 text-center text-sm font-semibold text-slate-800 border-r border-slate-200/60 last:border-r-0"
+                    >
+                      <div>{monthInfo.name}</div>
+                      <div className="text-xs font-medium text-slate-500 mt-1">M{monthInfo.number}</div>
+                    </th>
+                  );
+                })}
+              </tr>
+            </thead>
+            <tbody>
+              {generateSkillPlan.map((row, rowIndex) => {
+                const taskColor = getTaskColor(
+                  { type: row.type.toLowerCase().replace(' ', '-') },
+                  rowIndex
+                );
+                const isTechnical = row.type === 'Technical';
+                
+                return (
+                  <tr
+                    key={row.id}
+                    className={`border-b border-slate-200/60 transition-colors hover:bg-slate-50/50 ${
+                      isTechnical ? 'bg-blue-50/30' : 'bg-emerald-50/30'
+                    }`}
+                  >
+                    <td className="px-6 py-4 border-r border-slate-200/70">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="h-3 w-3 rounded-full shadow-sm"
+                          style={{ backgroundColor: taskColor }}
+                        />
+                        <div>
+                          <div className="text-sm font-semibold text-slate-900">{row.skill}</div>
+                          <div className="text-xs font-medium text-slate-500 uppercase tracking-wide">{row.type}</div>
+                        </div>
+                      </div>
+                    </td>
+                    {row.months.map((monthData, monthIndex) => (
+                      <td
+                        key={monthIndex}
+                        className="px-4 py-4 text-center border-r border-slate-200/60 last:border-r-0 align-middle"
+                      >
+                        {monthData.hasTask ? (
+                          <div
+                            className="inline-flex items-center justify-center min-w-[60px] px-3 py-2 rounded-lg text-xs font-medium text-white shadow-sm"
+                            style={{ backgroundColor: taskColor }}
+                          >
+                            {monthData.isStart && monthData.isEnd
+                              ? '✓'
+                              : monthData.isStart
+                              ? 'Start'
+                              : monthData.isEnd
+                              ? 'End'
+                              : '●'}
+                          </div>
+                        ) : (
+                          <span className="text-slate-300">—</span>
+                        )}
+                      </td>
+                    ))}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Summary Info */}
         {summaryCards.length > 0 && (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
             {summaryCards.map((card, idx) => {
               const Icon = card.icon;
               return (
@@ -249,127 +260,7 @@ const GanttChart = ({ data, totalMonths = 6 }) => {
             })}
           </div>
         )}
-
-        {/* Gantt Chart */}
-        <div className="overflow-x-auto rounded-2xl border border-slate-200/70 bg-white/90 shadow-inner">
-          <div className="inline-block min-w-full align-top">
-            {/* Header */}
-            <div className="sticky top-0 z-10 flex rounded-t-2xl border-b border-slate-200/80 bg-gradient-to-r from-slate-100 via-indigo-50 to-white">
-              <div className="w-56 flex-shrink-0 border-r border-slate-200/70 px-4 py-4 text-sm font-semibold uppercase tracking-[0.28em] text-slate-700">
-                Skills & Milestones
-              </div>
-              <div className="flex flex-1">
-                {labels.map((label, index) => {
-                  const monthInfo = getMonthInfo(label, index);
-                  return (
-                    <div
-                      key={index}
-                      className="flex-1 border-r border-slate-200/60 px-3 py-3 text-center transition-all duration-200 hover:bg-indigo-50/60"
-                    >
-                      <div className="text-sm font-semibold text-slate-800">{monthInfo.name}</div>
-                      <div className="text-xs font-medium text-slate-500">M{monthInfo.number}</div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Technical Tasks */}
-            {technicalTasks.length > 0 && (
-              <>
-                <div className="bg-gradient-to-r from-blue-900/10 via-blue-50/60 to-white px-4 py-3 text-xs font-semibold uppercase tracking-[0.4em] text-blue-900">
-                  Technical Skills
-                </div>
-                <div className="space-y-3 px-4 py-4">
-                  {technicalTasks.map((task, index) => renderTaskRow(task, index))}
-                </div>
-              </>
-            )}
-
-            {/* Non-Technical Tasks */}
-            {nonTechnicalTasks.length > 0 && (
-              <>
-                <div className="bg-gradient-to-r from-emerald-900/10 via-emerald-50/60 to-white px-4 py-3 text-xs font-semibold uppercase tracking-[0.4em] text-emerald-900">
-                  Non-Technical Skills
-                </div>
-                <div className="space-y-3 px-4 py-4">
-                  {nonTechnicalTasks.map((task, index) => renderTaskRow(task, index))}
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Legend */}
-        <div className="rounded-2xl border border-slate-200/70 bg-white/90 p-6 shadow-inner">
-          <h3 className="mb-5 flex items-center gap-3 text-base font-bold text-slate-900">
-            <div className="h-5 w-1.5 rounded-full bg-gradient-to-b from-slate-500 to-slate-700" />
-            Task Legend
-          </h3>
-          <div className="flex flex-wrap gap-3">
-            {tasks.map((task, index) => {
-              const taskColor = getTaskColor(task, index);
-              const typeLabel = task.type === 'technical' ? 'Technical' : 
-                              task.type === 'non-technical' ? 'Non-Technical' : 
-                              task.type || 'Task';
-              return (
-                <div 
-                  key={task.id || index}
-                  className="flex items-center gap-3 rounded-2xl border border-slate-200/70 bg-gradient-to-r from-white via-slate-50 to-white px-4 py-2.5 shadow-sm transition-all duration-200 hover:border-indigo-300 hover:shadow-lg"
-                >
-                  <div 
-                    className="h-4 w-4 flex-shrink-0 rounded-full shadow-md ring-2 ring-white"
-                    style={{ backgroundColor: taskColor }}
-                  />
-                  <div className="flex flex-col">
-                    <span className="max-w-[200px] truncate text-sm font-semibold text-slate-900">{task.name || 'Unnamed Task'}</span>
-                    <span className="text-xs font-medium text-slate-500">{typeLabel}</span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
       </div>
-
-      {/* Tooltip */}
-      {hoveredTaskInfo && hoveredTaskInfo.task && (
-        <div
-          className="fixed z-50 w-[320px] max-w-[360px] rounded-2xl border border-white/10 bg-slate-950/95 px-6 py-4 text-sm text-white shadow-2xl backdrop-blur-lg"
-          style={{
-            left: `${tooltipPosition.x + 20}px`,
-            top: `${tooltipPosition.y - 15}px`,
-            transform: 'translateY(-100%)',
-            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-          }}
-        >
-          <div className="mb-3 text-base font-semibold">{hoveredTaskInfo.task.name}</div>
-          {hoveredTaskInfo.monthInfo && (
-            <div className="mb-3 border-b border-white/10 pb-3 text-sm text-white/80">
-              <span className="font-semibold text-white">Month:</span> {hoveredTaskInfo.monthInfo.fullLabel}
-            </div>
-          )}
-          <div className="mb-2 text-sm text-white/80">
-            <span className="font-semibold text-white">Duration:</span> Months {hoveredTaskInfo.task.start} - {hoveredTaskInfo.task.end} ({hoveredTaskInfo.task.end - hoveredTaskInfo.task.start + 1} months)
-          </div>
-          {hoveredTaskInfo.task.type && (
-            <div className="mb-2 text-sm text-white/70">
-              <span className="font-semibold text-white">Type:</span> <span className="font-medium capitalize text-white/80">{hoveredTaskInfo.task.type}</span>
-            </div>
-          )}
-          {hoveredTaskInfo.task.difficulty && (
-            <div className="mb-2 text-sm text-white/70">
-              <span className="font-semibold text-white">Difficulty:</span> <span className="font-medium capitalize text-white/80">{hoveredTaskInfo.task.difficulty}</span>
-            </div>
-          )}
-          {hoveredTaskInfo.task.description && (
-            <div className="mt-3 border-t border-white/10 pt-3 text-sm text-white/70">
-              {hoveredTaskInfo.task.description}
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 };

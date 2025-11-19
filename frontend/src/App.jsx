@@ -17,6 +17,7 @@ import SpecializationSelection from "./pages/students/education/SpecializationSe
 import RoleSelection from "./pages/students/RoleSelection";
 import JobDescription from "./pages/students/JobDescription";
 import PreparationAnalytics from "./pages/students/PreparationAnalytics";
+import SkillTest from "./pages/students/SkillTest";
 import ResumeBuilder from "./pages/students/ResumeBuilder";
 import CareerCounselling from "./pages/students/CareerCounselling";
 import ApplyJobs from "./pages/students/ApplyJobs";
@@ -118,6 +119,11 @@ function App() {
           <Route path="/students/preparation-analytics/:roleName" element={
             <ProtectedRoute requiredUserType="STUDENT">
               <PreparationAnalytics />
+            </ProtectedRoute>
+          } />
+          <Route path="/students/skill-test/:roleName/:skillName" element={
+            <ProtectedRoute requiredUserType="STUDENT">
+              <SkillTest />
             </ProtectedRoute>
           } />
           <Route path="/students/resume-builder" element={

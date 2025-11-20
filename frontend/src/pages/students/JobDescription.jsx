@@ -468,61 +468,51 @@ const JobDescription = () => {
 
         {/* Stats Card - Single Unified Card */}
         {planStats && (
-          <Card className="mb-12 overflow-hidden border border-slate-200 bg-white shadow-lg">
-            <CardContent className="p-0">
-              <div className="flex flex-col md:flex-row">
+          <Card className="mb-12 overflow-hidden border border-black bg-white shadow-lg">
+            <CardContent className="p-6">
+              <div className="space-y-4">
                 {[
                   { 
                     label: 'TOTAL SKILLS', 
-                    value: planStats.total, 
-                    icon: Target,
-                    color: 'text-slate-900'
+                    value: planStats.total,
+                    icon: Target
                   },
                   { 
                     label: 'TECHNICAL FOCUS', 
-                    value: planStats.technical, 
-                    icon: CheckCircle2,
-                    color: 'text-slate-900'
+                    value: planStats.technical,
+                    icon: CheckCircle2
                   },
                   { 
                     label: 'NON-TECHNICAL', 
-                    value: planStats.nonTechnical, 
-                    icon: Sparkles,
-                    color: 'text-slate-900'
+                    value: planStats.nonTechnical,
+                    icon: Sparkles
                   },
                   { 
                     label: 'PROJECT MILESTONES', 
-                    value: planStats.project, 
-                    icon: Briefcase,
-                    color: 'text-slate-900'
+                    value: planStats.project,
+                    icon: Briefcase
                   }
                 ].map((item, idx) => {
                   const Icon = item.icon;
-                  const isLast = idx === 3;
                   return (
-                    <React.Fragment key={idx}>
-                      <div className="flex-1 p-6 bg-white hover:bg-slate-50 transition-colors">
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <p className="text-xs font-semibold uppercase tracking-wider text-slate-600 mb-2">
-                              {item.label}
-                            </p>
-                            <p className={`text-4xl font-bold ${item.color}`}>
-                              {item.value}
-                            </p>
-                          </div>
-                          <div className="ml-4 flex-shrink-0">
-                            <Icon className="h-8 w-8 text-slate-700" />
-                          </div>
+                    <div 
+                      key={idx}
+                      className="rounded-lg bg-slate-100 p-6 border border-slate-300"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <p className="text-base font-semibold uppercase tracking-wide text-slate-700 mb-2">
+                            {item.label}
+                          </p>
+                          <p className="text-2xl font-bold text-slate-900">
+                            {item.value}
+                          </p>
+                        </div>
+                        <div className="ml-4 flex-shrink-0">
+                          <Icon className="h-8 w-8 text-slate-600" />
                         </div>
                       </div>
-                      {!isLast && (
-                        <div className="hidden md:block w-px bg-slate-200" />
-                      )}
-                      {!isLast && (
-                        <div className="md:hidden h-px bg-slate-200" />
-                      )}
-                    </React.Fragment>
+                    </div>
                   );
                 })}
               </div>

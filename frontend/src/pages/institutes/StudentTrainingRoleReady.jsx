@@ -6,7 +6,29 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import apiClient from "@/lib/apiClient";
-import { X } from "lucide-react";
+import { 
+  X, 
+  GraduationCap, 
+  MapPin, 
+  Clock, 
+  DollarSign, 
+  Users, 
+  Award, 
+  Building2, 
+  Sparkles,
+  Loader2,
+  BookOpen,
+  CheckCircle2,
+  Calendar,
+  Briefcase,
+  UserPlus,
+  ArrowRight,
+  ArrowLeft,
+  Save,
+  Plus,
+  Trash2,
+  TrendingUp
+} from "lucide-react";
 
 const EMPTY_INSTITUTE = {
   instituteName: "",
@@ -263,8 +285,15 @@ const StudentTrainingRoleReady = () => {
         event.preventDefault();
         proceedToStudentStep();
       }}
-      className="p-6 space-y-6"
+      className="p-6 space-y-6 bg-gray-50"
     >
+      <div className="bg-white p-6 rounded-xl border-2 border-green-200 shadow-lg bg-gradient-to-br from-green-50/50 to-white">
+        <div className="flex items-center gap-3 mb-6 pb-4 border-b-2 border-green-200">
+          <div className="p-3 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl shadow-md">
+            <Building2 className="h-6 w-6 text-white" />
+          </div>
+          <h3 className="text-2xl font-extrabold bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">Institute Information</h3>
+        </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="md:col-span-2">
           <label htmlFor="instituteName" className="block text-sm font-medium mb-1">
@@ -333,11 +362,18 @@ const StudentTrainingRoleReady = () => {
         </div>
       </div>
 
-      <div className="flex flex-wrap justify-end gap-3 border-t pt-4">
-        <Button type="button" variant="outline" onClick={closeEnrollment}>
+      </div>
+      <div className="flex flex-wrap justify-end gap-3 pt-6 bg-gradient-to-r from-green-50 to-teal-50 p-6 rounded-xl border-2 border-green-200 shadow-lg">
+        <Button type="button" variant="outline" onClick={closeEnrollment} className="px-8 border-2 border-gray-300 hover:border-gray-400 font-semibold">
           Cancel
         </Button>
-        <Button type="submit">Enroll</Button>
+        <Button 
+          type="submit" 
+          className="px-10 py-6 bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 hover:from-green-700 hover:via-emerald-700 hover:to-teal-700 text-white font-bold shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 rounded-xl"
+        >
+          Continue
+          <ArrowRight className="ml-2 h-5 w-5" />
+        </Button>
       </div>
     </form>
   );
@@ -348,8 +384,15 @@ const StudentTrainingRoleReady = () => {
         event.preventDefault();
         submitEnrollment({ addAnother: false });
       }}
-      className="p-6 space-y-6"
+      className="p-6 space-y-8 bg-gray-50"
     >
+      <div className="bg-white p-6 rounded-xl border-2 border-blue-200 shadow-lg bg-gradient-to-br from-blue-50/50 to-white">
+        <div className="flex items-center gap-3 mb-6 pb-4 border-b-2 border-blue-200">
+          <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-md">
+            <Users className="h-6 w-6 text-white" />
+          </div>
+          <h3 className="text-2xl font-extrabold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Student Information</h3>
+        </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label htmlFor="fullName" className="block text-sm font-medium mb-1">
@@ -426,8 +469,15 @@ const StudentTrainingRoleReady = () => {
         </div>
       </div>
 
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold">Address</h3>
+      </div>
+      <div className="bg-white p-6 rounded-xl border-2 border-green-200 shadow-lg bg-gradient-to-br from-green-50/50 to-white">
+        <div className="flex items-center gap-3 mb-6 pb-4 border-b-2 border-green-200">
+          <div className="p-3 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl shadow-md">
+            <MapPin className="h-6 w-6 text-white" />
+          </div>
+          <h3 className="text-2xl font-extrabold bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">Address</h3>
+        </div>
+        <div className="space-y-4">
         <div>
           <label htmlFor="addressLine1" className="block text-sm font-medium mb-1">
             Address Line 1 <span className="text-red-500">*</span>
@@ -494,8 +544,15 @@ const StudentTrainingRoleReady = () => {
         </div>
       </div>
 
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold">Education</h3>
+      </div>
+      <div className="bg-white p-6 rounded-xl border-2 border-purple-200 shadow-lg bg-gradient-to-br from-purple-50/50 to-white">
+        <div className="flex items-center gap-3 mb-6 pb-4 border-b-2 border-purple-200">
+          <div className="p-3 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl shadow-md">
+            <BookOpen className="h-6 w-6 text-white" />
+          </div>
+          <h3 className="text-2xl font-extrabold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Education</h3>
+        </div>
+        <div className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label htmlFor="highestQualification" className="block text-sm font-medium mb-1">
@@ -561,8 +618,15 @@ const StudentTrainingRoleReady = () => {
         </div>
       </div>
 
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold">Experience & Skills</h3>
+      </div>
+      <div className="bg-white p-6 rounded-xl border-2 border-orange-200 shadow-lg bg-gradient-to-br from-orange-50/50 to-white">
+        <div className="flex items-center gap-3 mb-6 pb-4 border-b-2 border-orange-200">
+          <div className="p-3 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl shadow-md">
+            <Briefcase className="h-6 w-6 text-white" />
+          </div>
+          <h3 className="text-2xl font-extrabold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">Experience & Skills</h3>
+        </div>
+        <div className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label htmlFor="yearsOfExperience" className="block text-sm font-medium mb-1">Years of Experience</label>
@@ -589,8 +653,15 @@ const StudentTrainingRoleReady = () => {
         </div>
       </div>
 
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold">Additional Information</h3>
+      </div>
+      <div className="bg-white p-6 rounded-xl border-2 border-pink-200 shadow-lg bg-gradient-to-br from-pink-50/50 to-white">
+        <div className="flex items-center gap-3 mb-6 pb-4 border-b-2 border-pink-200">
+          <div className="p-3 bg-gradient-to-br from-pink-500 to-rose-600 rounded-xl shadow-md">
+            <Sparkles className="h-6 w-6 text-white" />
+          </div>
+          <h3 className="text-2xl font-extrabold bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent">Additional Information</h3>
+        </div>
+        <div className="space-y-4">
         <div>
           <label htmlFor="resumeUrl" className="block text-sm font-medium mb-1">Resume URL (Optional)</label>
           <Input
@@ -615,33 +686,63 @@ const StudentTrainingRoleReady = () => {
         </div>
       </div>
 
-      <div className="flex flex-wrap justify-end gap-3 border-t pt-4">
+      </div>
+      <div className="flex flex-wrap justify-end gap-3 pt-6 bg-gradient-to-r from-green-50 to-teal-50 p-6 rounded-xl border-2 border-green-200 shadow-lg">
         <Button
           type="button"
           variant="outline"
           onClick={() => setFlow((prev) => ({ ...prev, step: "INSTITUTE", status: "", error: "" }))}
           disabled={flow.submitting}
+          className="px-8 border-2 border-gray-300 hover:border-gray-400 font-semibold"
         >
+          <ArrowLeft className="mr-2 h-4 w-4" />
           Back
-        </Button>
-        <Button type="submit" disabled={flow.submitting}>
-          {flow.submitting ? "Saving..." : "Save the data"}
-        </Button>
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={() => submitEnrollment({ addAnother: true })}
-          disabled={flow.submitting}
-        >
-          {flow.submitting ? "Saving..." : "Add new students"}
         </Button>
         <Button
           type="button"
           variant="outline"
           onClick={closeEnrollment}
           disabled={flow.submitting}
+          className="px-8 border-2 border-red-300 hover:border-red-400 text-red-600 hover:text-red-700 font-semibold"
         >
+          <Trash2 className="mr-2 h-4 w-4" />
           Discard
+        </Button>
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={() => submitEnrollment({ addAnother: true })}
+          disabled={flow.submitting}
+          className="px-8 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white font-bold shadow-lg"
+        >
+          {flow.submitting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Saving...
+            </>
+          ) : (
+            <>
+              <Plus className="mr-2 h-4 w-4" />
+              Add New Student
+            </>
+          )}
+        </Button>
+        <Button 
+          type="submit" 
+          disabled={flow.submitting}
+          className="px-10 py-6 bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 hover:from-green-700 hover:via-emerald-700 hover:to-teal-700 text-white font-bold shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 rounded-xl"
+        >
+          {flow.submitting ? (
+            <>
+              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+              Saving...
+            </>
+          ) : (
+            <>
+              <Save className="mr-2 h-5 w-5" />
+              Save Data
+            </>
+          )}
         </Button>
       </div>
     </form>
@@ -672,40 +773,63 @@ const StudentTrainingRoleReady = () => {
         }}
       >
         <div
-          className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl"
+          className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-200 animate-fade-in"
           style={{
             backgroundColor: 'white',
-            borderRadius: '8px',
+            borderRadius: '1rem',
             maxWidth: '56rem',
             width: '100%',
             maxHeight: '90vh'
           }}
           onClick={(event) => event.stopPropagation()}
         >
-          <div className="sticky top-0 bg-white border-b p-4 flex justify-between items-center z-10">
-            <div>
-              <h2 className="text-2xl font-bold">
-                {flow.step === "INSTITUTE"
-                  ? `Institute Enrollment for ${flow.training.roleName}`
-                  : `Enroll Students for ${flow.training.roleName}`}
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                Step {flow.step === "INSTITUTE" ? "1" : "2"} of 2
-              </p>
+          <div className="sticky top-0 bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 text-white p-6 flex justify-between items-start z-10 rounded-t-2xl shadow-xl">
+            <div className="absolute inset-0 bg-gradient-to-r from-green-600/90 via-emerald-600/90 to-teal-600/90 backdrop-blur-sm"></div>
+            <div className="relative flex-1">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-3 bg-white/30 backdrop-blur-md rounded-xl shadow-lg">
+                  {flow.step === "INSTITUTE" ? (
+                    <Building2 className="h-7 w-7" />
+                  ) : (
+                    <UserPlus className="h-7 w-7" />
+                  )}
+                </div>
+                <div>
+                  <h2 className="text-3xl font-extrabold drop-shadow-lg">
+                    {flow.step === "INSTITUTE"
+                      ? `Institute Enrollment for ${flow.training.roleName}`
+                      : `Enroll Students for ${flow.training.roleName}`}
+                  </h2>
+                  <div className="flex items-center gap-2 mt-2">
+                    <div className="px-3 py-1 bg-white/30 backdrop-blur-md rounded-lg text-xs font-bold shadow-md">
+                      Step {flow.step === "INSTITUTE" ? "1" : "2"} of 2
+                    </div>
+                  </div>
+                </div>
+              </div>
               {flow.status && flow.step === "STUDENT" && (
-                <p className="text-sm text-green-600 mt-1">{flow.status}</p>
+                <div className="mt-3 p-3 bg-green-500/30 backdrop-blur-md rounded-lg border border-white/20">
+                  <p className="text-sm text-white font-semibold flex items-center gap-2">
+                    <CheckCircle2 className="h-5 w-5" />
+                    {flow.status}
+                  </p>
+                </div>
               )}
-              {flow.error && <p className="text-sm text-red-600 mt-1">{flow.error}</p>}
+              {flow.error && (
+                <div className="mt-3 p-3 bg-red-500/30 backdrop-blur-md rounded-lg border border-white/20">
+                  <p className="text-sm text-white font-semibold">{flow.error}</p>
+                </div>
+              )}
             </div>
             <Button
               variant="ghost"
               size="icon"
               onClick={closeEnrollment}
-              className="h-8 w-8"
+              className="h-8 w-8 text-white hover:bg-white/20"
               type="button"
               disabled={flow.submitting}
             >
-              <X className="h-4 w-4" />
+              <X className="h-5 w-5" />
             </Button>
           </div>
 
@@ -721,8 +845,9 @@ const StudentTrainingRoleReady = () => {
   if (loading) {
     return (
       <DashboardLayout sidebar={<div>Sidebar</div>}>
-        <div className="flex items-center justify-center min-h-[400px]">
-          <p className="text-lg">Loading trainings...</p>
+        <div className="flex flex-col items-center justify-center min-h-[500px] space-y-4">
+          <Loader2 className="h-12 w-12 animate-spin text-primary" />
+          <p className="text-lg text-muted-foreground">Loading training programs...</p>
         </div>
       </DashboardLayout>
     );
@@ -732,94 +857,211 @@ const StudentTrainingRoleReady = () => {
     <>
       <DashboardLayout sidebar={<div>Sidebar</div>}>
         <div className="container mx-auto px-4 py-8 space-y-6">
-          <header className="space-y-2">
-            <h1 className="text-3xl font-bold">Student Training (Role Ready)</h1>
-            <p className="text-muted-foreground">
-              Enroll batches of students into industry-aligned Role Ready training programs.
-            </p>
-            {fetchError && <p className="text-sm text-red-600">{fetchError}</p>}
+          {/* Enhanced Header with Vibrant Colors */}
+          <header className="space-y-4">
+            <div className="relative overflow-hidden bg-gradient-to-r from-green-50 via-emerald-50 to-teal-50 rounded-2xl p-6 border-2 border-green-200/50">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-green-400/20 to-teal-400/20 rounded-full blur-3xl"></div>
+              <div className="relative flex items-center gap-4">
+                <div className="p-4 bg-gradient-to-br from-green-500 via-emerald-500 to-teal-500 rounded-2xl shadow-lg transform hover:scale-110 transition-transform">
+                  <Building2 className="h-10 w-10 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-5xl font-extrabold bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 bg-clip-text text-transparent drop-shadow-sm">
+                    Student Training (Role Ready)
+                  </h1>
+                  <p className="text-gray-700 mt-2 text-lg font-medium">
+                    Enroll batches of students into industry-aligned Role Ready training programs
+                  </p>
+                </div>
+              </div>
+            </div>
+            {fetchError && (
+              <div className="p-4 bg-gradient-to-r from-red-50 to-rose-50 border-2 border-red-300 rounded-lg shadow-md">
+                <p className="text-sm text-red-700 font-semibold">{fetchError}</p>
+              </div>
+            )}
+            {usableTrainings.length > 0 && (
+              <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-100 to-teal-100 rounded-lg border border-green-200 w-fit">
+                <Sparkles className="h-5 w-5 text-teal-600" />
+                <span className="text-sm font-semibold text-teal-700">
+                  {usableTrainings.length} training program{usableTrainings.length !== 1 ? 's' : ''} available
+                </span>
+              </div>
+            )}
           </header>
 
           {usableTrainings.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-lg text-muted-foreground">
-                No training programs available at the moment.
-              </p>
+            <div className="text-center py-16 space-y-4 bg-gradient-to-br from-green-50 to-teal-50 rounded-2xl border-2 border-dashed border-green-300">
+              <div className="mx-auto w-24 h-24 bg-gradient-to-br from-green-400 to-teal-400 rounded-full flex items-center justify-center shadow-lg">
+                <BookOpen className="h-12 w-12 text-white" />
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold mb-2 text-gray-800">No training programs available</h3>
+                <p className="text-gray-600">Check back soon for new opportunities!</p>
+              </div>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {usableTrainings.map((training) => (
-                <Card key={training.clientKey} className="flex flex-col hover:shadow-lg transition-shadow">
-                  <CardHeader>
-                    <CardTitle className="text-xl">{training.roleName}</CardTitle>
-                    <CardDescription className="line-clamp-2">
-                      {training.roleDescription}
-                    </CardDescription>
+              {usableTrainings.map((training, index) => {
+                const colorVariants = [
+                  'from-green-500 via-emerald-500 to-teal-500',
+                  'from-teal-500 via-cyan-500 to-blue-500',
+                  'from-emerald-500 via-green-500 to-lime-500',
+                  'from-cyan-500 via-teal-500 to-green-500',
+                  'from-lime-500 via-emerald-500 to-teal-500',
+                  'from-green-500 via-teal-500 to-cyan-500'
+                ];
+                const bgVariants = [
+                  'bg-gradient-to-br from-green-50 to-emerald-50',
+                  'bg-gradient-to-br from-teal-50 to-cyan-50',
+                  'bg-gradient-to-br from-emerald-50 to-green-50',
+                  'bg-gradient-to-br from-cyan-50 to-teal-50',
+                  'bg-gradient-to-br from-lime-50 to-emerald-50',
+                  'bg-gradient-to-br from-green-50 to-cyan-50'
+                ];
+                const borderVariants = [
+                  'border-green-200 hover:border-green-400',
+                  'border-teal-200 hover:border-teal-400',
+                  'border-emerald-200 hover:border-emerald-400',
+                  'border-cyan-200 hover:border-cyan-400',
+                  'border-lime-200 hover:border-lime-400',
+                  'border-green-200 hover:border-green-400'
+                ];
+                const variantIndex = index % colorVariants.length;
+                return (
+                <Card 
+                  key={training.clientKey} 
+                  className={`flex flex-col hover:shadow-2xl transition-all duration-300 border-2 ${borderVariants[variantIndex]} group overflow-hidden relative ${bgVariants[variantIndex]}`}
+                >
+                  {/* Vibrant Gradient Accent */}
+                  <div className={`absolute top-0 left-0 right-0 h-2 bg-gradient-to-r ${colorVariants[variantIndex]} shadow-lg`}></div>
+                  
+                  <CardHeader className="pb-4">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1">
+                        <CardTitle className="text-xl font-bold mb-2 bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent group-hover:from-green-600 group-hover:to-teal-600 transition-all">
+                          {training.roleName}
+                        </CardTitle>
+                        <CardDescription className="line-clamp-2 text-sm text-gray-600">
+                          {training.roleDescription}
+                        </CardDescription>
+                      </div>
+                      <div className={`p-3 bg-gradient-to-br ${colorVariants[variantIndex]} rounded-xl shadow-md transform group-hover:scale-110 transition-transform`}>
+                        <Briefcase className="h-5 w-5 text-white" />
+                      </div>
+                    </div>
                   </CardHeader>
-                  <CardContent className="flex-1 space-y-3 text-sm">
-                    <div>
-                      <span className="font-semibold">Industry:</span> {training.industry}
-                    </div>
-                    <div>
-                      <span className="font-semibold">Duration:</span> {training.trainingDuration}
-                    </div>
-                    <div>
-                      <span className="font-semibold">Student Fees:</span> ₹
-                      {Number(training.trainingFees ?? 0).toLocaleString()}
-                    </div>
-                    {typeof training.instituteTrainingFees === "number" && (
-                      <div>
-                        <span className="font-semibold">Institute Fees:</span> ₹
-                        {Number(training.instituteTrainingFees ?? 0).toLocaleString()}
+                  
+                  <CardContent className="flex-1 space-y-4 text-sm">
+                    {/* Key Info Grid */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="flex items-center gap-2">
+                        <Building2 className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">Industry</p>
+                          <p className="font-medium">{training.industry}</p>
+                        </div>
                       </div>
-                    )}
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">Duration</p>
+                          <p className="font-medium">{training.trainingDuration}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">Location</p>
+                          <p className="font-medium">{training.location}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">Mode</p>
+                          <p className="font-medium">{training.trainingMode}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Pricing & Benefits */}
+                    <div className="space-y-2 pt-3 border-t">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <DollarSign className="h-4 w-4 text-green-600" />
+                          <span className="font-semibold">Student Fees</span>
+                        </div>
+                        <span className="text-lg font-bold text-green-600">
+                          ₹{Number(training.trainingFees ?? 0).toLocaleString()}
+                        </span>
+                      </div>
+                      
+                      {typeof training.instituteTrainingFees === "number" && (
+                        <div className="flex items-center justify-between">
+                          <span className="font-semibold">Institute Fees</span>
+                          <span className="font-bold">₹{Number(training.instituteTrainingFees ?? 0).toLocaleString()}</span>
+                        </div>
+                      )}
+                      
+                      {training.stipendIncluded && (
+                        <div className="flex items-center gap-2 p-3 bg-gradient-to-r from-green-100 to-emerald-100 rounded-lg border border-green-200">
+                          <div className="p-1.5 bg-green-500 rounded-lg">
+                            <TrendingUp className="h-4 w-4 text-white" />
+                          </div>
+                          <span className="text-sm font-semibold text-green-700">
+                            <span>Stipend:</span> ₹{Number(training.stipendAmount ?? 0).toLocaleString()}/month
+                          </span>
+                        </div>
+                      )}
+                      
+                      {training.packageAfterTraining && (
+                        <div className="flex items-center gap-2 p-3 bg-gradient-to-r from-blue-100 to-indigo-100 rounded-lg border border-blue-200">
+                          <div className="p-1.5 bg-blue-500 rounded-lg">
+                            <Award className="h-4 w-4 text-white" />
+                          </div>
+                          <span className="text-sm font-semibold text-blue-700">
+                            <span>Package:</span> {training.packageAfterTraining}
+                          </span>
+                        </div>
+                      )}
+                      
+                      {training.certificationProvided && (
+                        <div className="flex items-center gap-2 text-sm p-2 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-200">
+                          <Award className="h-4 w-4 text-purple-600" />
+                          <span className="font-semibold text-purple-700">Certification: {training.certificationName}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Seats Info */}
                     {typeof training.totalStudentsAllowed === "number" && (
-                      <div>
-                        <span className="font-semibold">Total Seats:</span> {training.totalStudentsAllowed}
+                      <div className="flex items-center gap-2 text-muted-foreground pt-2 border-t">
+                        <Users className="h-4 w-4" />
+                        <span>{training.totalStudentsAllowed} seats available</span>
                       </div>
                     )}
-                    {training.stipendIncluded && (
-                      <div className="text-green-600">
-                        <span className="font-semibold">Stipend:</span> ₹
-                        {Number(training.stipendAmount ?? 0).toLocaleString()}/month
-                      </div>
-                    )}
-                    <div>
-                      <span className="font-semibold">Location:</span> {training.location}
-                    </div>
-                    <div>
-                      <span className="font-semibold">Mode:</span> {training.trainingMode}
-                    </div>
-                    <div>
-                      <span className="font-semibold">Placement Package:</span> {training.packageAfterTraining}
-                    </div>
-                    {training.certificationProvided && (
-                      <div className="text-purple-600">
-                        <span className="font-semibold">Certification:</span> {training.certificationName}
-                      </div>
-                    )}
-                    <div>
-                      <span className="font-semibold">Provider:</span> {training.trainingProvider}
-                    </div>
                   </CardContent>
-                  <CardFooter>
+                  
+                  <CardFooter className="pt-4">
                     <Button
                       type="button"
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        console.log("Enroll Students button clicked for training:", training);
                         startEnrollment(training);
                       }}
-                      className="w-full"
+                      className={`w-full bg-gradient-to-r ${colorVariants[variantIndex]} hover:shadow-2xl text-white font-bold shadow-lg hover:scale-105 transition-all duration-300 rounded-xl py-6`}
                       disabled={!training.apiId}
                       title={!training.apiId ? "Training identifier missing. Please refresh." : undefined}
                     >
+                      <UserPlus className="mr-2 h-5 w-5" />
                       Enroll Students
                     </Button>
                   </CardFooter>
                 </Card>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

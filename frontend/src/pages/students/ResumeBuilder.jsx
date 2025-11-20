@@ -2201,11 +2201,14 @@ const ResumeBuilder = () => {
 
     return (
       <div className="h-full overflow-y-auto">
-        <div className="mb-4">
-          <h2 className="text-lg font-semibold flex items-center gap-2 mb-3">
-            <Edit3 className="w-5 h-5 text-purple-600" />
+        <div className="mb-6 bg-gradient-to-br from-white via-indigo-50/40 to-purple-50/40 rounded-xl p-4 border border-indigo-100/50 shadow-md">
+          <h2 className="text-xl font-bold flex items-center gap-3 mb-2 bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+            <div className="p-1.5 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600">
+              <Edit3 className="w-5 h-5 text-white" />
+            </div>
             Section Editor
           </h2>
+          <p className="text-sm text-slate-600 font-medium">Customize your resume sections</p>
         </div>
 
         {/* Add Profile Image Button (for templates that support it) */}
@@ -2713,12 +2716,28 @@ const ResumeBuilder = () => {
 
   return (
     <DashboardLayout sidebar={renderSidebar()}>
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-          Resume Builder
-        </h1>
-        <p className="text-gray-600">Create a professional resume that stands out</p>
-      </div>
+      <div className="space-y-8 relative">
+        {/* Decorative background elements */}
+        <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-indigo-200/20 via-purple-200/20 to-pink-200/20 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-tr from-blue-200/20 via-cyan-200/20 to-teal-200/20 rounded-full blur-3xl"></div>
+        </div>
+
+        <header className="relative flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between bg-gradient-to-br from-white via-indigo-50/30 to-purple-50/30 rounded-2xl p-6 sm:p-8 border border-indigo-100/50 shadow-lg backdrop-blur-sm">
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg">
+                <FileText className="h-6 w-6 text-white" />
+              </div>
+              <h1 className="text-4xl font-bold tracking-tight text-black">
+                Resume Builder
+              </h1>
+            </div>
+            <p className="text-slate-700 text-base leading-relaxed max-w-2xl font-medium">
+              Create a professional resume that stands out. Choose from beautiful templates, customize every detail, and download your perfect resume.
+            </p>
+          </div>
+        </header>
 
       {/* Data Entry Mode Selection - shown after template selection */}
       {selectedTemplateId && !dataEntryMode && (
@@ -3045,23 +3064,23 @@ const ResumeBuilder = () => {
       {/* Editor */}
       {selectedTemplateId && resume && (
         <div className="space-y-6">
-          {/* Toolbar */}
-          <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+          {/* Enhanced Toolbar */}
+          <div className="bg-gradient-to-br from-white via-indigo-50/30 to-purple-50/30 rounded-xl border-2 border-indigo-100/50 p-5 shadow-lg backdrop-blur-sm">
             <div className="flex flex-wrap items-center gap-3">
               <Button 
                 onClick={handleChangeTemplate} 
                 variant="ghost" 
-                className="gap-2"
+                className="gap-2 border-2 border-slate-300 text-slate-700 hover:bg-slate-100 hover:border-slate-400 font-semibold"
                 disabled={saving}
               >
                 <ArrowLeft className="w-4 h-4" />
                 {saving ? "Saving..." : "Change Template"}
               </Button>
-              <div className="h-6 w-px bg-gray-300"></div>
+              <div className="h-6 w-px bg-slate-300"></div>
               <Button 
                 onClick={save} 
                 disabled={saving}
-                className="gap-2 bg-blue-600 hover:bg-blue-700"
+                className="gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all font-semibold"
               >
                 {saving ? (
                   <>
@@ -3078,7 +3097,11 @@ const ResumeBuilder = () => {
               <Button 
                 onClick={() => setIsEditing(!isEditing)} 
                 variant={isEditing ? "default" : "outline"}
-                className="gap-2"
+                className={`gap-2 font-semibold ${
+                  isEditing 
+                    ? "bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white shadow-lg" 
+                    : "border-2 border-blue-300 text-blue-700 hover:bg-blue-50"
+                }`}
               >
                 {isEditing ? (
                   <>
@@ -3092,12 +3115,12 @@ const ResumeBuilder = () => {
                   </>
                 )}
               </Button>
-              <div className="h-6 w-px bg-gray-300"></div>
+              <div className="h-6 w-px bg-slate-300"></div>
               <Button 
                 onClick={previewHtml} 
                 disabled={!resume?.id}
                 variant="outline"
-                className="gap-2"
+                className="gap-2 border-2 border-slate-300 text-slate-700 hover:bg-slate-100 font-semibold"
               >
                 <Eye className="w-4 h-4" />
                 Preview HTML
@@ -3105,18 +3128,17 @@ const ResumeBuilder = () => {
               <Button 
                 onClick={downloadPdf} 
                 disabled={!resume?.id}
-                variant="outline"
-                className="gap-2"
+                className="gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-lg hover:shadow-xl transition-all font-semibold"
               >
                 <Download className="w-4 h-4" />
                 Download PDF
               </Button>
-              <div className="h-6 w-px bg-gray-300"></div>
+              <div className="h-6 w-px bg-slate-300"></div>
               <Button 
                 onClick={() => requestReview("AI")} 
                 disabled={!resume?.id || loadingAiReview}
                 variant="outline"
-                className="gap-2 border-purple-200 text-purple-700 hover:bg-purple-50"
+                className="gap-2 border-2 border-purple-300 text-purple-700 hover:bg-purple-50 font-semibold"
               >
                 {loadingAiReview ? (
                   <>
@@ -3134,7 +3156,7 @@ const ResumeBuilder = () => {
                 onClick={() => requestReview("HUMAN")} 
                 disabled={!resume?.id}
                 variant="outline"
-                className="gap-2 border-green-200 text-green-700 hover:bg-green-50"
+                className="gap-2 border-2 border-green-300 text-green-700 hover:bg-green-50 font-semibold"
               >
                 <CheckCircle2 className="w-4 h-4" />
                 Mentor Review
@@ -3142,20 +3164,23 @@ const ResumeBuilder = () => {
             </div>
           </div>
 
-          {/* Resume Preview */}
+          {/* Enhanced Resume Preview */}
           <div className="space-y-4">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold flex items-center gap-2">
-                <FileText className="w-5 h-5 text-blue-600" />
+            <div className="flex items-center justify-between mb-4 bg-gradient-to-r from-white to-indigo-50/30 rounded-xl p-4 border border-indigo-100/50 shadow-md">
+              <h2 className="text-2xl font-bold flex items-center gap-3 text-slate-800">
+                <div className="p-2 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 shadow-md">
+                  <FileText className="w-5 h-5 text-white" />
+                </div>
                 Resume Preview (A4 Size)
               </h2>
               {isEditing && (
-                <span className="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-medium">
+                <span className="text-sm bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-4 py-2 rounded-full font-bold shadow-lg flex items-center gap-2">
+                  <Edit3 className="w-4 h-4" />
                   Edit Mode Active
                 </span>
               )}
             </div>
-            <div className="flex justify-center bg-gray-100 p-4 rounded-lg overflow-auto" style={{ maxHeight: 'calc(100vh - 200px)' }}>
+            <div className="flex justify-center bg-gradient-to-br from-slate-100 via-slate-50 to-indigo-50/20 p-6 rounded-xl border-2 border-slate-200 shadow-inner overflow-auto" style={{ maxHeight: 'calc(100vh - 200px)' }}>
               <div className="flex flex-col items-center">
                 <DndContext
                   sensors={sensors}
@@ -3195,29 +3220,33 @@ const ResumeBuilder = () => {
           </div>
 
           {feedback && (
-            <div className={`mt-4 p-4 rounded-lg border-2 shadow-sm ${
+            <div className={`mt-4 p-5 rounded-xl border-2 shadow-lg ${
               feedback.includes('Error') || feedback.includes('Failed') 
-                ? 'bg-red-50 border-red-200' 
-                : 'bg-green-50 border-green-200'
+                ? 'bg-gradient-to-r from-rose-50 via-pink-50 to-red-50 border-rose-300' 
+                : 'bg-gradient-to-r from-emerald-50 via-teal-50 to-green-50 border-emerald-300'
             }`}>
               <div className="flex items-start gap-3">
                 {feedback.includes('Error') || feedback.includes('Failed') ? (
-                  <X className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
+                  <div className="p-1.5 rounded-full bg-rose-500 mt-0.5 flex-shrink-0">
+                    <X className="w-5 h-5 text-white" />
+                  </div>
                 ) : (
-                  <CheckCircle2 className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+                  <div className="p-1.5 rounded-full bg-emerald-500 mt-0.5 flex-shrink-0">
+                    <CheckCircle2 className="w-5 h-5 text-white" />
+                  </div>
                 )}
                 <div>
-                  <h3 className={`font-semibold mb-1 ${
+                  <h3 className={`font-bold mb-1 text-base ${
                     feedback.includes('Error') || feedback.includes('Failed') 
-                      ? 'text-red-800' 
-                      : 'text-green-800'
+                      ? 'text-rose-900' 
+                      : 'text-emerald-900'
                   }`}>
                     {feedback.includes('Error') || feedback.includes('Failed') ? 'Error' : 'Success'}
                   </h3>
-                  <p className={`text-sm ${
+                  <p className={`text-sm font-medium ${
                     feedback.includes('Error') || feedback.includes('Failed') 
-                      ? 'text-red-700' 
-                      : 'text-green-700'
+                      ? 'text-rose-800' 
+                      : 'text-emerald-800'
                   }`}>
                     {feedback}
                   </p>
@@ -3227,6 +3256,7 @@ const ResumeBuilder = () => {
           )}
         </div>
       )}
+      </div>
 
       {/* AI Review Popup */}
       {showAiReviewPopup && aiReview && (

@@ -368,29 +368,47 @@ const GanttChart = ({ data, totalMonths = 6, roleName }) => {
           );
 
           const tooltipWidth = 320;
-          const tooltipHeight = 200;
           const viewportWidth = window.innerWidth;
           const viewportHeight = window.innerHeight;
+          const gap = 12; // Fixed small gap between cursor and tooltip (consistent for all roles)
 
-          // Position tooltip directly at cursor (1px offset to not block cursor)
-          let x = tooltipPosition.x + 1;
-          let y = tooltipPosition.y - 1;
+          // Always position tooltip relative to cursor using transform
+          // This ensures consistent positioning regardless of scroll or container position
+          let x = tooltipPosition.x;
+          let y = tooltipPosition.y;
+          
+          // Default: position above cursor, centered horizontally
+          let transformX = '-50%';
+          let transformY = `calc(-100% - ${gap}px)`;
 
-          // Adjust if tooltip would go off screen horizontally - flip to left side
-          if (x + tooltipWidth > viewportWidth - 10) {
-            x = tooltipPosition.x - tooltipWidth - 1;
-          }
-          if (x < 10) {
-            x = 10;
+          // Check horizontal boundaries
+          const halfWidth = tooltipWidth / 2;
+          const margin = 10;
+          
+          if (x - halfWidth < margin) {
+            // Too close to left edge - shift right
+            const shift = margin - (x - halfWidth);
+            x = x + shift;
+            transformX = `calc(-100% + ${shift}px)`;
+          } else if (x + halfWidth > viewportWidth - margin) {
+            // Too close to right edge - shift left
+            const shift = (x + halfWidth) - (viewportWidth - margin);
+            x = x - shift;
+            transformX = `calc(-100% - ${shift}px)`;
           }
 
-          // Adjust if tooltip would go off screen vertically - flip below cursor
-          if (y - tooltipHeight < 10) {
-            y = tooltipPosition.y + 1;
+          // Check vertical space (estimate tooltip height ~220px)
+          const estimatedHeight = 220;
+          if (y - estimatedHeight - gap < margin) {
+            // Not enough space above, show below cursor
+            transformY = `${gap}px`;
+            // Ensure it doesn't go off bottom
+            if (y + estimatedHeight + gap > viewportHeight - margin) {
+              y = viewportHeight - estimatedHeight - gap - margin;
+            }
           }
-          if (y + tooltipHeight > viewportHeight - 10) {
-            y = viewportHeight - tooltipHeight - 10;
-          }
+
+          const transform = `translate(${transformX}, ${transformY})`;
 
           return (
             <div
@@ -403,7 +421,7 @@ const GanttChart = ({ data, totalMonths = 6, roleName }) => {
                 backgroundColor: taskColor,
                 borderColor: taskColor,
                 filter: 'brightness(0.85)',
-                transform: 'none',
+                transform: transform,
                 transition: 'none'
               }}
             >

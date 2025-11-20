@@ -2768,20 +2768,20 @@ const ResumeBuilder = () => {
                 onClick={() => setDataEntryMode('manual')}
                 className="group relative cursor-pointer"
               >
-                <div className="relative bg-gradient-to-br from-blue-500 to-cyan-500 rounded-3xl shadow-2xl hover:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] transition-all duration-500 overflow-hidden border-4 border-blue-400 transform hover:-translate-y-4 hover:scale-105 p-8">
+                <div className="relative bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl shadow-xl hover:shadow-2xl transition-all duration-500 overflow-hidden border-2 border-blue-400 transform hover:-translate-y-1 hover:scale-105 p-4">
                   <div className="text-center">
-                    <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm mb-6">
-                      <Edit3 className="w-10 h-10 text-white" />
+                    <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm mb-3">
+                      <Edit3 className="w-6 h-6 text-white" />
                     </div>
-                    <h3 className="text-2xl font-extrabold text-white drop-shadow-lg mb-4">
+                    <h3 className="text-lg font-extrabold text-white drop-shadow-lg mb-2">
                       Manual Data Filling
                     </h3>
-                    <p className="text-white/90 text-base mb-6 font-medium">
+                    <p className="text-white/90 text-xs mb-3 font-medium leading-relaxed">
                       Fill in your resume information manually step by step. Perfect for creating a new resume from scratch.
                     </p>
-                    <div className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-white/20 backdrop-blur-md text-white shadow-xl group-hover:shadow-2xl transition-all duration-300 transform group-hover:scale-110">
-                      <span className="text-sm font-bold">Start Manual Entry</span>
-                      <svg className="w-5 h-5 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/20 backdrop-blur-md text-white shadow-lg group-hover:shadow-xl transition-all duration-300 transform group-hover:scale-105">
+                      <span className="text-[10px] font-bold">Start Manual Entry</span>
+                      <svg className="w-3.5 h-3.5 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
                       </svg>
                     </div>
@@ -2798,20 +2798,20 @@ const ResumeBuilder = () => {
                 onClick={() => setDataEntryMode('upload')}
                 className="group relative cursor-pointer"
               >
-                <div className="relative bg-gradient-to-br from-purple-500 to-pink-500 rounded-3xl shadow-2xl hover:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] transition-all duration-500 overflow-hidden border-4 border-purple-400 transform hover:-translate-y-4 hover:scale-105 p-8">
+                <div className="relative bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl shadow-xl hover:shadow-2xl transition-all duration-500 overflow-hidden border-2 border-purple-400 transform hover:-translate-y-1 hover:scale-105 p-4">
                   <div className="text-center">
-                    <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm mb-6">
-                      <Download className="w-10 h-10 text-white" />
+                    <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm mb-3">
+                      <Download className="w-6 h-6 text-white" />
                     </div>
-                    <h3 className="text-2xl font-extrabold text-white drop-shadow-lg mb-4">
+                    <h3 className="text-lg font-extrabold text-white drop-shadow-lg mb-2">
                       Upload Existing Resume
                     </h3>
-                    <p className="text-white/90 text-base mb-6 font-medium">
+                    <p className="text-white/90 text-xs mb-3 font-medium leading-relaxed">
                       Upload your existing resume (PDF or DOCX) and we'll automatically extract and fill in your information.
                     </p>
-                    <div className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-white/20 backdrop-blur-md text-white shadow-xl group-hover:shadow-2xl transition-all duration-300 transform group-hover:scale-110">
-                      <span className="text-sm font-bold">Upload Resume</span>
-                      <svg className="w-5 h-5 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/20 backdrop-blur-md text-white shadow-lg group-hover:shadow-xl transition-all duration-300 transform group-hover:scale-105">
+                      <span className="text-[10px] font-bold">Upload Resume</span>
+                      <svg className="w-3.5 h-3.5 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
                       </svg>
                     </div>

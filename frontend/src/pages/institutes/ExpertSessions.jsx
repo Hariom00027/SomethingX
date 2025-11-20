@@ -103,19 +103,20 @@ const ExpertSessions = () => {
       }
     >
       <div className="space-y-8 relative">
-        {/* Decorative background elements */}
+        {/* Vibrant decorative background elements */}
         <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-indigo-200/20 via-purple-200/20 to-pink-200/20 rounded-full blur-3xl"></div>
-          <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-tr from-blue-200/20 via-cyan-200/20 to-teal-200/20 rounded-full blur-3xl"></div>
+          <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-pink-300/30 via-purple-300/30 via-indigo-300/30 to-blue-300/30 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-tr from-cyan-300/30 via-teal-300/30 via-emerald-300/30 to-green-300/30 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-gradient-to-r from-yellow-300/20 via-orange-300/20 via-red-300/20 to-pink-300/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
         </div>
 
-        <header className="relative flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between bg-gradient-to-br from-white via-indigo-50/30 to-purple-50/30 rounded-2xl p-6 sm:p-8 border border-indigo-100/50 shadow-lg backdrop-blur-sm">
+        <header className="relative flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between bg-gradient-to-br from-pink-100/40 via-purple-100/40 via-indigo-100/40 to-blue-100/40 rounded-2xl p-6 sm:p-8 border-2 border-purple-200/50 shadow-xl backdrop-blur-sm">
           <div className="space-y-3">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg">
+              <div className="p-2.5 rounded-xl bg-gradient-to-br from-pink-500 via-purple-500 via-indigo-500 to-blue-500 shadow-xl animate-pulse">
                 <GraduationCap className="h-6 w-6 text-white" />
               </div>
-              <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+              <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-pink-600 via-purple-600 via-indigo-600 via-blue-600 to-cyan-600 bg-clip-text text-transparent animate-gradient">
                 Expert Session Service
               </h1>
             </div>
@@ -130,7 +131,7 @@ const ExpertSessions = () => {
             variant="outline" 
             onClick={handleRefresh} 
             disabled={refreshing}
-            className="border-2 border-indigo-300 text-indigo-700 bg-white/80 hover:bg-indigo-50 hover:border-indigo-400 shadow-md hover:shadow-lg transition-all font-semibold px-6 py-2.5"
+            className="border-2 border-purple-400 text-purple-700 bg-gradient-to-r from-pink-50 to-purple-50 hover:from-pink-100 hover:to-purple-100 hover:border-purple-500 shadow-lg hover:shadow-xl transition-all font-bold px-6 py-2.5"
           >
             {refreshing ? (
               <span className="flex items-center gap-2">
@@ -174,15 +175,15 @@ const ExpertSessions = () => {
         )}
 
         {loading ? (
-          <div className="flex h-80 items-center justify-center rounded-2xl border-2 border-dashed border-indigo-300 bg-gradient-to-br from-indigo-50 via-purple-50/50 to-pink-50/50 shadow-inner">
+          <div className="flex h-80 items-center justify-center rounded-2xl border-2 border-dashed border-purple-400 bg-gradient-to-br from-pink-100 via-purple-100 via-indigo-100 to-blue-100 shadow-inner">
             <div className="text-center space-y-4">
               <div className="relative">
-                <Loader2 className="h-12 w-12 animate-spin text-indigo-600 mx-auto" />
+                <Loader2 className="h-12 w-12 animate-spin text-purple-600 mx-auto" />
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="h-6 w-6 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500"></div>
+                  <div className="h-6 w-6 rounded-full bg-gradient-to-br from-pink-500 via-purple-500 to-indigo-500 animate-pulse"></div>
                 </div>
               </div>
-              <span className="flex items-center gap-2 text-indigo-700 font-semibold text-lg">
+              <span className="flex items-center gap-2 bg-gradient-to-r from-pink-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent font-bold text-lg">
                 Fetching curated experts for you...
               </span>
             </div>
@@ -212,12 +213,12 @@ const ExpertSessions = () => {
               ))}
             </section>
             {!experts.length && (
-              <div className="rounded-2xl border-2 border-dashed border-slate-300 bg-gradient-to-br from-slate-50 via-slate-100 to-slate-200 px-8 py-16 text-center shadow-inner">
+              <div className="rounded-2xl border-2 border-dashed border-purple-300 bg-gradient-to-br from-pink-50 via-purple-50 via-indigo-50 to-blue-50 px-8 py-16 text-center shadow-inner">
                 <div className="space-y-3">
-                  <div className="inline-flex p-4 rounded-full bg-slate-200">
-                    <Users className="h-8 w-8 text-slate-500" />
+                  <div className="inline-flex p-4 rounded-full bg-gradient-to-br from-pink-400 via-purple-400 to-indigo-400 shadow-lg">
+                    <Users className="h-8 w-8 text-white" />
                   </div>
-                  <p className="text-slate-700 font-semibold text-lg">
+                  <p className="bg-gradient-to-r from-pink-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent font-bold text-lg">
                     No expert sessions are available yet. Please check back soon.
                   </p>
                 </div>
@@ -234,12 +235,12 @@ const ExpertSessions = () => {
 const Sidebar = ({ expertCount, domainCount, notifications, onRefresh, refreshing }) => {
   return (
     <div className="space-y-8">
-      <div className="bg-gradient-to-br from-white via-indigo-50/40 to-purple-50/40 rounded-2xl p-6 border border-indigo-100/50 shadow-lg">
+      <div className="bg-gradient-to-br from-pink-50/60 via-purple-50/60 via-indigo-50/60 to-blue-50/60 rounded-2xl p-6 border-2 border-purple-200/50 shadow-xl">
         <div className="flex items-center gap-2 mb-3">
-          <div className="p-1.5 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600">
+          <div className="p-1.5 rounded-lg bg-gradient-to-br from-pink-500 via-purple-500 via-indigo-500 to-blue-500 shadow-lg">
             <Globe className="h-4 w-4 text-white" />
           </div>
-          <h2 className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+          <h2 className="text-xl font-bold bg-gradient-to-r from-pink-600 via-purple-600 via-indigo-600 to-blue-600 bg-clip-text text-transparent">
             Service Snapshot
           </h2>
         </div>
@@ -262,13 +263,13 @@ const Sidebar = ({ expertCount, domainCount, notifications, onRefresh, refreshin
         </div>
       </div>
 
-      <div className="bg-gradient-to-br from-white via-teal-50/30 to-emerald-50/30 rounded-2xl p-6 border border-teal-100/50 shadow-lg space-y-4">
+      <div className="bg-gradient-to-br from-cyan-50/50 via-teal-50/50 via-emerald-50/50 to-green-50/50 rounded-2xl p-6 border-2 border-teal-200/50 shadow-xl space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-gradient-to-br from-teal-500 to-emerald-600">
+            <div className="p-1.5 rounded-lg bg-gradient-to-br from-cyan-500 via-teal-500 via-emerald-500 to-green-500 shadow-lg">
               <Calendar className="h-4 w-4 text-white" />
             </div>
-            <h3 className="text-base font-bold text-slate-800">Recent enrollments</h3>
+            <h3 className="text-base font-bold bg-gradient-to-r from-cyan-600 via-teal-600 to-emerald-600 bg-clip-text text-transparent">Recent enrollments</h3>
           </div>
           <Button 
             type="button"
@@ -276,7 +277,7 @@ const Sidebar = ({ expertCount, domainCount, notifications, onRefresh, refreshin
             size="sm" 
             onClick={onRefresh} 
             disabled={refreshing}
-            className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50/80 font-semibold"
+            className="text-purple-600 hover:text-purple-700 hover:bg-purple-50/80 font-bold bg-gradient-to-r from-pink-50 to-purple-50"
           >
             {refreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : "Refresh"}
           </Button>
@@ -286,10 +287,10 @@ const Sidebar = ({ expertCount, domainCount, notifications, onRefresh, refreshin
             notifications.map((notification) => (
               <div 
                 key={notification.id} 
-                className="rounded-xl border-2 border-teal-200 bg-gradient-to-br from-teal-50/80 via-emerald-50/60 to-cyan-50/40 p-4 shadow-md hover:shadow-lg transition-all hover:border-teal-400 hover:scale-[1.02] cursor-pointer"
+                className="rounded-xl border-2 border-cyan-300 bg-gradient-to-br from-cyan-100/90 via-teal-100/80 via-emerald-100/70 to-green-100/60 p-4 shadow-lg hover:shadow-xl transition-all hover:border-cyan-400 hover:scale-[1.02] cursor-pointer"
               >
                 <div className="flex items-start gap-2 mb-2">
-                  <div className="p-1 rounded-md bg-teal-500 mt-0.5">
+                  <div className="p-1 rounded-md bg-gradient-to-br from-cyan-500 via-teal-500 to-emerald-500 shadow-md mt-0.5">
                     <Users className="h-3 w-3 text-white" />
                   </div>
                   <p className="text-sm font-bold leading-tight text-slate-800 flex-1">
@@ -328,19 +329,19 @@ const Sidebar = ({ expertCount, domainCount, notifications, onRefresh, refreshin
 
 const StatPill = ({ icon, label, value, color = "blue" }) => {
   const colorClasses = {
-    blue: "border-blue-300 bg-gradient-to-br from-blue-50 via-cyan-50 to-blue-100 text-blue-900 shadow-blue-200/50",
-    purple: "border-purple-300 bg-gradient-to-br from-purple-50 via-pink-50 to-purple-100 text-purple-900 shadow-purple-200/50",
+    blue: "border-blue-400 bg-gradient-to-br from-blue-100 via-cyan-100 via-sky-100 to-blue-100 text-blue-900 shadow-blue-300/60 border-2",
+    purple: "border-purple-400 bg-gradient-to-br from-purple-100 via-pink-100 via-fuchsia-100 to-purple-100 text-purple-900 shadow-purple-300/60 border-2",
   };
   
   return (
-    <div className={`flex items-center justify-between rounded-xl border-2 px-4 py-3.5 shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] ${colorClasses[color] || colorClasses.blue}`}>
+    <div className={`flex items-center justify-between rounded-xl px-4 py-3.5 shadow-xl hover:shadow-2xl transition-all hover:scale-[1.02] ${colorClasses[color] || colorClasses.blue}`}>
       <div className="flex items-center gap-3 text-sm font-bold">
-        <div className="p-1.5 rounded-lg bg-white/80 shadow-sm">
+        <div className="p-1.5 rounded-lg bg-white/90 shadow-md">
           {icon}
         </div>
         <span>{label}</span>
       </div>
-      <span className="text-2xl font-extrabold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
+      <span className="text-2xl font-extrabold bg-gradient-to-r from-pink-600 via-purple-600 via-indigo-600 to-blue-600 bg-clip-text text-transparent">
         {value}
       </span>
     </div>
@@ -348,10 +349,21 @@ const StatPill = ({ icon, label, value, color = "blue" }) => {
 };
 
 const ExpertCard = ({ expert, onViewDetails, onEnroll, formatCurrency }) => {
+  // Generate a vibrant color scheme for each card
+  const colorSchemes = [
+    { bg: 'from-pink-300 via-purple-300 to-indigo-300', border: 'border-pink-400', badge: 'bg-pink-500', text: 'text-pink-700', hover: 'hover:bg-pink-50/30' },
+    { bg: 'from-blue-300 via-cyan-300 to-teal-300', border: 'border-blue-400', badge: 'bg-blue-500', text: 'text-blue-700', hover: 'hover:bg-blue-50/30' },
+    { bg: 'from-purple-300 via-pink-300 to-rose-300', border: 'border-purple-400', badge: 'bg-purple-500', text: 'text-purple-700', hover: 'hover:bg-purple-50/30' },
+    { bg: 'from-indigo-300 via-blue-300 to-cyan-300', border: 'border-indigo-400', badge: 'bg-indigo-500', text: 'text-indigo-700', hover: 'hover:bg-indigo-50/30' },
+    { bg: 'from-emerald-300 via-teal-300 to-cyan-300', border: 'border-emerald-400', badge: 'bg-emerald-500', text: 'text-emerald-700', hover: 'hover:bg-emerald-50/30' },
+    { bg: 'from-orange-300 via-pink-300 to-purple-300', border: 'border-orange-400', badge: 'bg-orange-500', text: 'text-orange-700', hover: 'hover:bg-orange-50/30' },
+  ];
+  const colorScheme = colorSchemes[expert.id % colorSchemes.length] || colorSchemes[0];
+  
   return (
-    <Card className="flex flex-col overflow-hidden hover:shadow-2xl transition-all duration-300 h-full border-2 border-slate-200 hover:border-indigo-400 group bg-white hover:bg-gradient-to-b hover:from-white hover:to-indigo-50/20">
+    <Card className={`flex flex-col overflow-hidden hover:shadow-2xl transition-all duration-300 h-full border-2 ${colorScheme.border} group bg-white ${colorScheme.hover}`}>
       {/* Image Section with Overlay */}
-      <div className="relative h-32 w-full overflow-hidden bg-gradient-to-br from-indigo-200 via-purple-200 to-pink-200">
+      <div className={`relative h-32 w-full overflow-hidden bg-gradient-to-br ${colorScheme.bg}`}>
         <img
           src={expert.photoUrl}
           alt={expert.fullName}
@@ -361,15 +373,15 @@ const ExpertCard = ({ expert, onViewDetails, onEnroll, formatCurrency }) => {
         <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
         {/* Badge overlay */}
         <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-          <div className="px-2 py-1 rounded-full bg-white/90 backdrop-blur-sm shadow-lg">
-            <span className="text-[8px] font-bold text-indigo-700">EXPERT</span>
+          <div className={`px-2 py-1 rounded-full ${colorScheme.badge} backdrop-blur-sm shadow-xl`}>
+            <span className="text-[8px] font-bold text-white">EXPERT</span>
           </div>
         </div>
       </div>
 
       {/* Header Section */}
       <CardHeader className="pb-2 pt-3 px-3 bg-gradient-to-b from-white to-slate-50/30">
-        <CardTitle className="text-sm leading-tight line-clamp-1 font-bold text-slate-800 group-hover:text-indigo-700 transition-colors">
+        <CardTitle className={`text-sm leading-tight line-clamp-1 font-bold text-slate-800 group-hover:${colorScheme.text.replace('text-', 'text-')} transition-colors`} style={{ '--hover-color': colorScheme.text }}>
           {expert.fullName}
         </CardTitle>
         <p className="text-[10px] text-slate-600 line-clamp-1 mt-1 font-semibold">{expert.designation}</p>
@@ -382,32 +394,36 @@ const ExpertCard = ({ expert, onViewDetails, onEnroll, formatCurrency }) => {
       <CardContent className="flex-1 space-y-2 px-3 pb-3">
         {/* Domain Tags */}
         <div className="flex flex-wrap gap-1.5">
-          {(expert.expertiseDomains || []).slice(0, 2).map((domain, idx) => (
-            <span
-              key={domain}
-              className={`rounded-full px-2 py-0.5 text-[9px] font-bold line-clamp-1 max-w-full shadow-sm ${
-                idx === 0 
-                  ? "bg-gradient-to-r from-indigo-100 to-indigo-200 text-indigo-800 border border-indigo-300" 
-                  : "bg-gradient-to-r from-purple-100 to-purple-200 text-purple-800 border border-purple-300"
-              }`}
-            >
-              {domain.length > 12 ? `${domain.slice(0, 12)}...` : domain}
-            </span>
-          ))}
+          {(expert.expertiseDomains || []).slice(0, 2).map((domain, idx) => {
+            const tagColors = [
+              "bg-gradient-to-r from-pink-200 via-purple-200 to-indigo-200 text-pink-800 border-pink-300",
+              "bg-gradient-to-r from-blue-200 via-cyan-200 to-teal-200 text-blue-800 border-blue-300",
+              "bg-gradient-to-r from-purple-200 via-pink-200 to-rose-200 text-purple-800 border-purple-300",
+              "bg-gradient-to-r from-emerald-200 via-teal-200 to-cyan-200 text-emerald-800 border-emerald-300",
+            ];
+            return (
+              <span
+                key={domain}
+                className={`rounded-full px-2 py-0.5 text-[9px] font-bold line-clamp-1 max-w-full shadow-md border ${tagColors[idx % tagColors.length]}`}
+              >
+                {domain.length > 12 ? `${domain.slice(0, 12)}...` : domain}
+              </span>
+            );
+          })}
           {(expert.expertiseDomains || []).length > 2 && (
-            <span className="rounded-full bg-gradient-to-r from-slate-100 to-slate-200 text-slate-700 border border-slate-300 px-2 py-0.5 text-[9px] font-bold shadow-sm">
+            <span className="rounded-full bg-gradient-to-r from-yellow-200 via-orange-200 to-pink-200 text-orange-800 border border-orange-300 px-2 py-0.5 text-[9px] font-bold shadow-md">
               +{(expert.expertiseDomains || []).length - 2}
             </span>
           )}
         </div>
 
         {/* Pricing Section */}
-        <div className="grid grid-cols-2 gap-2 rounded-xl border-2 border-slate-200 bg-gradient-to-br from-slate-50 via-indigo-50/40 to-purple-50/30 p-2 shadow-inner">
+        <div className="grid grid-cols-2 gap-2 rounded-xl border-2 border-cyan-200 bg-gradient-to-br from-cyan-50 via-blue-50 via-indigo-50 to-purple-50 p-2 shadow-inner">
           <div className="text-center">
             <p className="text-slate-700 flex items-center justify-center gap-1 font-bold text-[9px] mb-1">
               <Video className="h-3 w-3 text-blue-600" /> Online
             </p>
-            <p className="font-extrabold text-[11px] leading-tight text-emerald-700 bg-white/60 rounded px-1 py-0.5">
+            <p className="font-extrabold text-[11px] leading-tight bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent bg-white/80 rounded px-1 py-0.5">
               {formatCurrency(expert.pricingPerHourOnline)}
             </p>
           </div>
@@ -415,7 +431,7 @@ const ExpertCard = ({ expert, onViewDetails, onEnroll, formatCurrency }) => {
             <p className="text-slate-700 flex items-center justify-center gap-1 font-bold text-[9px] mb-1">
               <MapPin className="h-3 w-3 text-rose-600" /> Offline
             </p>
-            <p className="font-extrabold text-[11px] leading-tight text-emerald-700 bg-white/60 rounded px-1 py-0.5">
+            <p className="font-extrabold text-[11px] leading-tight bg-gradient-to-r from-rose-600 to-pink-600 bg-clip-text text-transparent bg-white/80 rounded px-1 py-0.5">
               {formatCurrency(expert.pricingPerHourOffline)}
             </p>
           </div>
@@ -441,7 +457,7 @@ const ExpertCard = ({ expert, onViewDetails, onEnroll, formatCurrency }) => {
         <Button 
           type="button"
           size="sm"
-          className="flex-1 text-[10px] h-8 px-2 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-700 hover:via-purple-700 hover:to-pink-700 text-white shadow-lg hover:shadow-xl transition-all font-bold hover:scale-105" 
+          className="flex-1 text-[10px] h-8 px-2 bg-gradient-to-r from-pink-500 via-purple-500 via-indigo-500 to-blue-500 hover:from-pink-600 hover:via-purple-600 hover:via-indigo-600 hover:to-blue-600 text-white shadow-xl hover:shadow-2xl transition-all font-bold hover:scale-105" 
           onClick={onEnroll}
         >
           Enroll
@@ -460,10 +476,10 @@ const DetailList = ({ title, items, icon: Icon }) => {
         {items.map((item) => (
           <span
             key={item}
-            className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-indigo-50 via-purple-50 to-pink-50 border-2 border-indigo-300 px-3 py-1.5 text-xs font-bold text-slate-800 shadow-md hover:shadow-lg hover:scale-105 transition-all cursor-pointer"
+            className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-pink-100 via-purple-100 via-indigo-100 to-blue-100 border-2 border-purple-400 px-3 py-1.5 text-xs font-bold shadow-lg hover:shadow-xl hover:scale-110 transition-all cursor-pointer"
           >
-            {Icon && <Icon className="h-4 w-4 text-indigo-600" />}
-            {item}
+            {Icon && <Icon className="h-4 w-4 text-purple-600" />}
+            <span className="bg-gradient-to-r from-pink-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">{item}</span>
           </span>
         ))}
       </div>

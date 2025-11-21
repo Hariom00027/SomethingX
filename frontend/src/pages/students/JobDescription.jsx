@@ -373,10 +373,12 @@ const JobDescription = () => {
     const projectCount = tasks.length - technicalCount - nonTechnicalCount;
 
     // Calculate duration stats
+    // tasks have start and end as month numbers (e.g., 1, 6)
     const durations = tasks.map(t => {
-      const start = new Date(t.start);
-      const end = new Date(t.end);
-      return (end - start) / (1000 * 60 * 60 * 24 * 30); // Duration in months
+      const start = t.start || 0;
+      const end = t.end || 0;
+      // Duration is inclusive: end - start + 1
+      return Math.max(1, end - start + 1);
     });
 
     const avgDuration = durations.length > 0
@@ -741,132 +743,217 @@ const JobDescription = () => {
         {/* Gantt Chart Section */}
         <Card className="mb-16 overflow-hidden border border-slate-200 bg-white shadow-lg">
           <div className="h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
-          <CardHeader className="bg-white border-b border-slate-100 pb-8">
-            <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
-              <div className="flex items-center gap-3">
-                <div className="rounded-xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-3 text-white shadow-lg">
-                  <Sparkles className="h-6 w-6" />
+          <CardHeader style={{ backgroundColor: 'white', borderBottom: '1px solid #f1f5f9', paddingBottom: '0' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '16px', marginBottom: '32px', padding: '32px 32px 0 32px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <div style={{
+                  borderRadius: '16px',
+                  background: 'linear-gradient(135deg, #4f46e5, #7c3aed, #db2777)',
+                  padding: '14px',
+                  color: 'white',
+                  boxShadow: '0 10px 15px -3px rgba(79, 70, 229, 0.3)'
+                }}>
+                  <Sparkles className="h-7 w-7" />
                 </div>
-                <CardTitle className="text-2xl font-bold text-slate-900">
-                  {isGanttChart ? `${totalMonths}-Month Skill Development Atlas` : '6-Month Plan'}
-                </CardTitle>
+                <div>
+                  <CardTitle style={{ fontSize: '30px', fontWeight: '800', color: '#1e293b', letterSpacing: '-0.025em', margin: '0' }}>
+                    {isGanttChart ? (
+                      <span style={{
+                        background: 'linear-gradient(to right, #0f172a, #334155)',
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
+                        backgroundClip: 'text',
+                        color: '#0f172a' // Fallback
+                      }}>
+                        {totalMonths}-Month Skill Development Atlas
+                      </span>
+                    ) : (
+                      '6-Month Plan'
+                    )}
+                  </CardTitle>
+                  <p style={{ fontSize: '14px', fontWeight: '500', color: '#64748b', marginTop: '4px' }}>Your comprehensive roadmap to success</p>
+                </div>
               </div>
               {isGanttChart && (
                 <button
                   onClick={() => setShowDurationModal(true)}
-                  className="rounded-xl bg-white border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition-all duration-300 hover:bg-slate-50 hover:border-slate-300"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    borderRadius: '12px',
+                    backgroundColor: 'white',
+                    border: '1px solid #e2e8f0',
+                    padding: '10px 20px',
+                    fontSize: '14px',
+                    fontWeight: '700',
+                    color: '#334155',
+                    boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseOver={(e) => { e.currentTarget.style.borderColor = '#a5b4fc'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                  onMouseOut={(e) => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.transform = 'translateY(0)'; }}
                 >
-                  Customize Duration
+                  <Clock className="h-4 w-4" style={{ color: '#94a3b8' }} />
+                  <span>Customize Duration</span>
                 </button>
               )}
             </div>
 
-            {getPersonalizedMessage() && (
-              <div className="mb-8 rounded-2xl border border-indigo-100 bg-indigo-50/30 px-6 py-5">
-                <div className="flex items-start gap-3">
-                  <div className="mt-1 flex h-6 w-6 items-center justify-center rounded-full bg-indigo-100 text-indigo-600">
-                    <Target className="h-4 w-4" />
+            <div style={{ padding: '0 32px', marginBottom: '32px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              {getPersonalizedMessage() && (
+                <div style={{
+                  position: 'relative',
+                  overflow: 'hidden',
+                  borderRadius: '16px',
+                  border: '1px solid #e0e7ff',
+                  backgroundColor: '#ffffff',
+                  padding: '24px',
+                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)'
+                }}>
+                  <div style={{ position: 'absolute', left: '0', top: '0', bottom: '0', width: '6px', background: 'linear-gradient(to bottom, #6366f1, #8b5cf6)' }} />
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
+                    <div style={{
+                      marginTop: '4px',
+                      flexShrink: '0',
+                      height: '40px',
+                      width: '40px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderRadius: '50%',
+                      backgroundColor: '#eef2ff',
+                      color: '#4f46e5'
+                    }}>
+                      <Target className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h4 style={{ fontSize: '14px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#312e81', marginBottom: '4px' }}>Personalized Roadmap</h4>
+                      <p style={{ lineHeight: '1.6', color: '#475569', fontWeight: '500', fontSize: '16px', margin: '0' }}>{getPersonalizedMessage()}</p>
+                    </div>
                   </div>
-                  <p className="leading-relaxed text-slate-700 font-medium">{getPersonalizedMessage()}</p>
                 </div>
-              </div>
-            )}
+              )}
 
-            {jobDetails?.plan?.warnings && Array.isArray(jobDetails.plan.warnings) && jobDetails.plan.warnings.length > 0 && (
-              <div className="mb-8 rounded-2xl border border-amber-200 bg-amber-50/50 px-6 py-5">
-                <div className="flex items-start gap-3">
-                  <div className="mt-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-amber-100 text-amber-600">
-                    <AlertCircle className="h-4 w-4" />
-                  </div>
-                  <div className="space-y-1">
-                    <h4 className="text-sm font-bold uppercase tracking-wide text-amber-900">Important Notice</h4>
-                    {jobDetails.plan.warnings.map((warning, index) => (
-                      <p key={index} className="text-sm text-amber-800 font-medium">{warning}</p>
-                    ))}
+              {jobDetails?.plan?.warnings && Array.isArray(jobDetails.plan.warnings) && jobDetails.plan.warnings.length > 0 && (
+                <div style={{
+                  position: 'relative',
+                  overflow: 'hidden',
+                  borderRadius: '16px',
+                  border: '1px solid #fef3c7',
+                  backgroundColor: '#ffffff',
+                  padding: '24px',
+                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)'
+                }}>
+                  <div style={{ position: 'absolute', left: '0', top: '0', bottom: '0', width: '6px', background: 'linear-gradient(to bottom, #f59e0b, #f97316)' }} />
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
+                    <div style={{
+                      marginTop: '4px',
+                      flexShrink: '0',
+                      height: '40px',
+                      width: '40px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderRadius: '50%',
+                      backgroundColor: '#fffbeb',
+                      color: '#d97706'
+                    }}>
+                      <AlertCircle className="h-5 w-5" />
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <h4 style={{ fontSize: '14px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#78350f', marginBottom: '4px' }}>Important Notice</h4>
+                      {jobDetails.plan.warnings.map((warning, index) => (
+                        <p key={index} style={{ lineHeight: '1.6', color: '#475569', fontWeight: '500', fontSize: '16px', margin: '0' }}>{warning}</p>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
 
             {/* New Stats Section */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0', borderTop: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0', borderTop: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
 
               {/* Total Items */}
-              <div style={{ padding: '24px', borderRight: '1px solid #e2e8f0', position: 'relative' }}>
-                <h3 style={{ fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748b', marginBottom: '12px' }}>
+              <div style={{ padding: '32px 24px', borderRight: '1px solid #e2e8f0', position: 'relative' }}>
+                <h3 style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#64748b', marginBottom: '16px' }}>
                   TOTAL ITEMS
                 </h3>
-                <div style={{ fontSize: '32px', fontWeight: '800', color: '#1e293b', marginBottom: '8px' }}>
+                <div style={{ fontSize: '36px', fontWeight: '800', color: '#0f172a', marginBottom: '8px', lineHeight: '1' }}>
                   {planStats?.total || 0}
                 </div>
-                <div style={{ fontSize: '14px', color: '#64748b', fontWeight: '500' }}>
+                <div style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>
                   {planStats?.technical || 0} technical • {planStats?.nonTechnical || 0} non-technical
                 </div>
-                <div style={{ position: 'absolute', top: '24px', right: '24px', color: '#cbd5e1' }}>
-                  <Layers className="h-6 w-6" />
+                <div style={{ position: 'absolute', top: '32px', right: '24px', color: '#cbd5e1', opacity: '0.5' }}>
+                  <Layers className="h-8 w-8" />
                 </div>
               </div>
 
               {/* Avg Duration */}
-              <div style={{ padding: '24px', borderRight: '1px solid #e2e8f0', position: 'relative' }}>
-                <h3 style={{ fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748b', marginBottom: '12px' }}>
+              <div style={{ padding: '32px 24px', borderRight: '1px solid #e2e8f0', position: 'relative' }}>
+                <h3 style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#64748b', marginBottom: '16px' }}>
                   AVG DURATION
                 </h3>
-                <div style={{ fontSize: '32px', fontWeight: '800', color: '#1e293b', marginBottom: '8px' }}>
-                  {planStats?.avgDuration || 0} mo
+                <div style={{ fontSize: '36px', fontWeight: '800', color: '#0f172a', marginBottom: '8px', lineHeight: '1' }}>
+                  {planStats?.avgDuration || 0} <span style={{ fontSize: '20px', color: '#64748b', fontWeight: '600' }}>mo</span>
                 </div>
-                <div style={{ fontSize: '14px', color: '#64748b', fontWeight: '500' }}>
+                <div style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>
                   per milestone
                 </div>
-                <div style={{ position: 'absolute', top: '24px', right: '24px', color: '#cbd5e1' }}>
-                  <Clock className="h-6 w-6" />
+                <div style={{ position: 'absolute', top: '32px', right: '24px', color: '#cbd5e1', opacity: '0.5' }}>
+                  <Clock className="h-8 w-8" />
                 </div>
               </div>
 
               {/* Longest Sprint */}
-              <div style={{ padding: '24px', borderRight: '1px solid #e2e8f0', position: 'relative' }}>
-                <h3 style={{ fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748b', marginBottom: '12px' }}>
+              <div style={{ padding: '32px 24px', borderRight: '1px solid #e2e8f0', position: 'relative' }}>
+                <h3 style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#64748b', marginBottom: '16px' }}>
                   LONGEST SPRINT
                 </h3>
-                <div style={{ fontSize: '32px', fontWeight: '800', color: '#1e293b', marginBottom: '8px' }}>
-                  {planStats?.longestSprint || 0} mo
+                <div style={{ fontSize: '36px', fontWeight: '800', color: '#0f172a', marginBottom: '8px', lineHeight: '1' }}>
+                  {planStats?.longestSprint || 0} <span style={{ fontSize: '20px', color: '#64748b', fontWeight: '600' }}>mo</span>
                 </div>
-                <div style={{ fontSize: '14px', color: '#64748b', fontWeight: '500' }}>
+                <div style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>
                   Kaam kal karunga
                 </div>
-                <div style={{ position: 'absolute', top: '24px', right: '24px', color: '#cbd5e1' }}>
-                  <Target className="h-6 w-6" />
+                <div style={{ position: 'absolute', top: '32px', right: '24px', color: '#cbd5e1', opacity: '0.5' }}>
+                  <Target className="h-8 w-8" />
                 </div>
               </div>
 
               {/* Timeline */}
-              <div style={{ padding: '24px', position: 'relative' }}>
-                <h3 style={{ fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748b', marginBottom: '12px' }}>
+              <div style={{ padding: '32px 24px', position: 'relative' }}>
+                <h3 style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#64748b', marginBottom: '16px' }}>
                   TIMELINE
                 </h3>
-                <div style={{ fontSize: '32px', fontWeight: '800', color: '#1e293b', marginBottom: '8px' }}>
-                  {totalMonths} mo
+                <div style={{ fontSize: '36px', fontWeight: '800', color: '#0f172a', marginBottom: '8px', lineHeight: '1' }}>
+                  {totalMonths} <span style={{ fontSize: '20px', color: '#64748b', fontWeight: '600' }}>mo</span>
                 </div>
-                <div style={{ fontSize: '14px', color: '#64748b', fontWeight: '500' }}>
+                <div style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>
                   Month 1 → Month {totalMonths}
                 </div>
-                <div style={{ position: 'absolute', top: '24px', right: '24px', color: '#cbd5e1' }}>
-                  <Sparkles className="h-6 w-6" />
+                <div style={{ position: 'absolute', top: '32px', right: '24px', color: '#cbd5e1', opacity: '0.5' }}>
+                  <Sparkles className="h-8 w-8" />
                 </div>
               </div>
 
             </div>
 
           </CardHeader>
-          <CardContent className="space-y-8 pt-8">
+          <CardContent className="space-y-8 pt-16 pb-12">
             {isGanttChart ? (
               <>
                 {jobDetails?.plan && (
-                  <GanttChart
-                    data={jobDetails.plan}
-                    totalMonths={totalMonths}
-                    roleName={jobDetails?.name || jobDetails?.roleName || decodeURIComponent(roleName || '')}
-                  />
+                  <div className="mb-16">
+                    <GanttChart
+                      data={jobDetails.plan}
+                      totalMonths={totalMonths}
+                      roleName={jobDetails?.name || jobDetails?.roleName || decodeURIComponent(roleName || '')}
+                    />
+                  </div>
                 )}
                 {jobDetails?.plan?.hasSpareTime && jobDetails.plan.spareMonths > 0 && (
                   <div className="rounded-2xl border border-emerald-200 bg-gradient-to-r from-emerald-50 via-teal-50 to-cyan-50 px-6 py-5">

@@ -943,11 +943,11 @@ const JobDescription = () => {
             </div>
 
           </CardHeader>
-          <CardContent className="space-y-8 pt-16 pb-12">
+          <CardContent style={{ paddingTop: '64px', paddingBottom: '48px', display: 'flex', flexDirection: 'column', gap: '32px' }}>
             {isGanttChart ? (
               <>
                 {jobDetails?.plan && (
-                  <div className="mb-16">
+                  <div style={{ marginBottom: '64px' }}>
                     <GanttChart
                       data={jobDetails.plan}
                       totalMonths={totalMonths}

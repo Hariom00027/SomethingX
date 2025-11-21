@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import axios from 'axios';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import GanttChart from '../../components/ui/gantt-chart';
-import { Briefcase, Loader2, AlertCircle, Calendar, Target, Sparkles, CheckCircle2, Play, BarChart3, ToggleLeft, ToggleRight, Clock, TrendingUp } from 'lucide-react';
+import { Briefcase, Loader2, AlertCircle, Calendar, Target, Sparkles, CheckCircle2, Play, BarChart3, ToggleLeft, ToggleRight, Clock, TrendingUp, Layers } from 'lucide-react';
 
 const normalizePreparation = (prep) => {
   if (!prep) return null;
@@ -22,22 +22,22 @@ const SkillBadge = ({ skill, variant, type }) => {
     const tooltipWidth = 288; // w-72 = 18rem = 288px
     const tooltipHeight = 200; // approximate height
     const viewportWidth = window.innerWidth;
-    
+
     let x = rect.left + rect.width / 2;
     let y = rect.top - 10;
-    
+
     // Adjust if tooltip would go off screen horizontally
     if (x - tooltipWidth / 2 < 10) {
       x = tooltipWidth / 2 + 10;
     } else if (x + tooltipWidth / 2 > viewportWidth - 10) {
       x = viewportWidth - tooltipWidth / 2 - 10;
     }
-    
+
     // Adjust if tooltip would go off screen vertically
     if (y - tooltipHeight < 10) {
       y = rect.bottom + 10;
     }
-    
+
     setTooltipPosition({ x, y });
     setShowTooltip(true);
   };
@@ -47,14 +47,16 @@ const SkillBadge = ({ skill, variant, type }) => {
   };
 
   const getBadgeClasses = () => {
+    const baseClasses = "px-3 py-1.5 text-sm font-medium rounded-lg border transition-all duration-200 cursor-pointer hover:scale-105";
+
     if (type === 'technical') {
       return variant === 'essential'
-        ? 'px-4 py-2 text-sm font-medium bg-blue-100 text-blue-800 rounded-lg border border-blue-200 hover:bg-blue-200 transition-colors cursor-pointer'
-        : 'px-4 py-2 text-sm font-medium bg-indigo-100 text-indigo-800 rounded-lg border border-indigo-200 hover:bg-indigo-200 transition-colors cursor-pointer';
+        ? `${baseClasses} bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 hover:border-blue-300`
+        : `${baseClasses} bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100 hover:border-slate-300`;
     } else {
       return variant === 'essential'
-        ? 'px-4 py-2 text-sm font-medium bg-emerald-100 text-emerald-800 rounded-lg border border-emerald-200 hover:bg-emerald-200 transition-colors cursor-pointer'
-        : 'px-4 py-2 text-sm font-medium bg-teal-100 text-teal-800 rounded-lg border border-teal-200 hover:bg-teal-200 transition-colors cursor-pointer';
+        ? `${baseClasses} bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100 hover:border-purple-300`
+        : `${baseClasses} bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100 hover:border-slate-300`;
     }
   };
 
@@ -76,15 +78,15 @@ const SkillBadge = ({ skill, variant, type }) => {
       >
         {skill?.skillName || 'Unknown Skill'}
       </span>
-      
+
       {showTooltip && (
         <div
           className="fixed z-50 w-72 rounded-lg border border-slate-200 bg-white shadow-2xl p-4 pointer-events-none"
           style={{
             left: `${tooltipPosition.x}px`,
             top: `${tooltipPosition.y}px`,
-            transform: tooltipPosition.y > window.innerHeight / 2 
-              ? 'translate(-50%, 0)' 
+            transform: tooltipPosition.y > window.innerHeight / 2
+              ? 'translate(-50%, 0)'
               : 'translate(-50%, -100%)',
             marginTop: tooltipPosition.y > window.innerHeight / 2 ? '8px' : '-8px'
           }}
@@ -96,7 +98,7 @@ const SkillBadge = ({ skill, variant, type }) => {
                 {type === 'technical' ? 'Technical Skill' : 'Soft Skill'}
               </p>
             </div>
-            
+
             <div className="space-y-2 text-sm">
               {skill?.importance && (
                 <div className="flex items-center gap-2">
@@ -105,7 +107,7 @@ const SkillBadge = ({ skill, variant, type }) => {
                   <span className="font-semibold text-slate-900">{skill.importance}</span>
                 </div>
               )}
-              
+
               {skill?.difficulty && (
                 <div className="flex items-center gap-2">
                   <Target className="h-4 w-4 text-slate-500" />
@@ -115,7 +117,7 @@ const SkillBadge = ({ skill, variant, type }) => {
                   </span>
                 </div>
               )}
-              
+
               {skill?.timeRequiredMonths !== undefined && skill?.timeRequiredMonths !== null && (
                 <div className="flex items-center gap-2">
                   <Clock className="h-4 w-4 text-slate-500" />
@@ -125,13 +127,13 @@ const SkillBadge = ({ skill, variant, type }) => {
                   </span>
                 </div>
               )}
-              
+
               {skill?.description && (
                 <div className="pt-2 border-t border-slate-100">
                   <p className="text-slate-700 leading-relaxed">{skill.description}</p>
                 </div>
               )}
-              
+
               {skill?.prerequisites && Array.isArray(skill.prerequisites) && skill.prerequisites.length > 0 && (
                 <div className="pt-2 border-t border-slate-100">
                   <p className="text-xs font-semibold text-slate-600 mb-1">Prerequisites:</p>
@@ -144,16 +146,15 @@ const SkillBadge = ({ skill, variant, type }) => {
               )}
             </div>
           </div>
-          
+
           {/* Tooltip arrow */}
           <div
-            className={`absolute left-1/2 w-3 h-3 bg-white border-r border-b border-slate-200 transform -translate-x-1/2 rotate-45 ${
-              tooltipPosition.y > window.innerHeight / 2 
-                ? 'top-0 -translate-y-1/2' 
-                : 'bottom-0 translate-y-1/2'
-            }`}
-            style={tooltipPosition.y > window.innerHeight / 2 
-              ? { marginTop: '-6px' } 
+            className={`absolute left-1/2 w-3 h-3 bg-white border-r border-b border-slate-200 transform -translate-x-1/2 rotate-45 ${tooltipPosition.y > window.innerHeight / 2
+              ? 'top-0 -translate-y-1/2'
+              : 'bottom-0 translate-y-1/2'
+              }`}
+            style={tooltipPosition.y > window.innerHeight / 2
+              ? { marginTop: '-6px' }
               : { marginBottom: '-6px' }
             }
           />
@@ -179,7 +180,7 @@ const JobDescription = () => {
     if (authLoading) return;
 
     const decodedRoleName = decodeURIComponent(roleName || '');
-    
+
     if (!decodedRoleName || decodedRoleName === 'undefined') {
       setError('Role name is required');
       setLoading(false);
@@ -192,11 +193,11 @@ const JobDescription = () => {
     const fetchData = async () => {
       try {
         let response;
-        
+
         if (user?.id) {
           const durationParam = customDuration ? `&duration=${customDuration}` : '';
           const ganttUrl = `http://localhost:8080/api/blueprint/role/${encodeURIComponent(decodedRoleName)}/gantt?userId=${user.id}${durationParam}`;
-          
+
           try {
             response = await axios.get(ganttUrl);
           } catch {
@@ -208,7 +209,7 @@ const JobDescription = () => {
           const basicUrl = `http://localhost:8080/api/blueprint/role/${encodeURIComponent(decodedRoleName)}`;
           response = await axios.get(basicUrl);
         }
-        
+
         setJobDetails(response.data);
         setLoading(false);
       } catch (err) {
@@ -269,10 +270,10 @@ const JobDescription = () => {
       console.log('Decoded role name:', decodedRoleName);
       const url = `http://localhost:8080/api/role-preparation/start/${encodeURIComponent(decodedRoleName)}?studentId=${user.id}`;
       console.log('Request URL:', url);
-      
+
       const response = await axios.post(url);
       console.log('Response received:', response);
-      
+
       if (response.data) {
         console.log('Preparation data:', response.data);
         const normalized = normalizePreparation(response.data);
@@ -308,7 +309,7 @@ const JobDescription = () => {
       event.preventDefault();
       event.stopPropagation();
     }
-    
+
     if (!user?.id || !preparation) return;
 
     // If trying to mark as completed, navigate to test page
@@ -332,16 +333,16 @@ const JobDescription = () => {
     } catch (err) {
       console.error('Error updating skill:', err);
       const errorMessage = err.response?.data?.error || err.response?.data?.message || err.message || 'Failed to update skill. Please try again.';
-      
+
       // If it's the test requirement error, navigate to test page instead
-      if (err.response?.data?.code === 'SKILL_COMPLETION_REQUIRES_TEST' || 
-          errorMessage.includes('test') || 
-          errorMessage.includes('Cannot mark skill as completed directly')) {
+      if (err.response?.data?.code === 'SKILL_COMPLETION_REQUIRES_TEST' ||
+        errorMessage.includes('test') ||
+        errorMessage.includes('Cannot mark skill as completed directly')) {
         const decodedRoleName = decodeURIComponent(roleName || '');
         navigate(`/students/skill-test/${encodeURIComponent(decodedRoleName)}/${encodeURIComponent(skillName)}`);
         return;
       }
-      
+
       alert(errorMessage);
     }
   };
@@ -353,12 +354,12 @@ const JobDescription = () => {
 
   const getPersonalizedMessage = () => {
     if (!user || !jobDetails) return '';
-    
+
     const userName = user.name || user.firstName || 'Student';
     const semester = user.semester || 'Unknown';
     const year = user.year || 'Unknown';
     const totalMonths = jobDetails.plan?.totalMonths || 6;
-    
+
     return `Dear ${userName}, since you are in ${semester} of ${year}, the time remaining for you to graduate is ${totalMonths} months. This is also the time remaining for you to be role ready.`;
   };
 
@@ -370,11 +371,29 @@ const JobDescription = () => {
     const technicalCount = tasks.filter(task => task.type === 'technical').length;
     const nonTechnicalCount = tasks.filter(task => task.type === 'non-technical').length;
     const projectCount = tasks.length - technicalCount - nonTechnicalCount;
+
+    // Calculate duration stats
+    const durations = tasks.map(t => {
+      const start = new Date(t.start);
+      const end = new Date(t.end);
+      return (end - start) / (1000 * 60 * 60 * 24 * 30); // Duration in months
+    });
+
+    const avgDuration = durations.length > 0
+      ? (durations.reduce((a, b) => a + b, 0) / durations.length).toFixed(1)
+      : 0;
+
+    const longestSprint = durations.length > 0
+      ? Math.max(...durations).toFixed(0)
+      : 0;
+
     return {
       total: tasks.length,
       technical: technicalCount,
       nonTechnical: nonTechnicalCount,
-      project: projectCount > 0 ? projectCount : 0
+      project: projectCount > 0 ? projectCount : 0,
+      avgDuration,
+      longestSprint
     };
   }, [jobDetails?.plan?.tasks]);
 
@@ -383,19 +402,19 @@ const JobDescription = () => {
       return null;
     }
 
-    const technicalSkills = (jobDetails.skillRequirements || []).filter(skill => 
+    const technicalSkills = (jobDetails.skillRequirements || []).filter(skill =>
       skill?.skillType === 'technical' || skill?.skillType === 'Technical'
     );
-    
+
     if (technicalSkills.length === 0) {
       return null;
     }
 
-    const essentialSkills = technicalSkills.filter(skill => 
+    const essentialSkills = technicalSkills.filter(skill =>
       skill?.importance?.toLowerCase() === 'essential' || skill?.importance?.toLowerCase() === 'required'
     );
-    const importantSkills = technicalSkills.filter(skill => 
-      skill?.importance?.toLowerCase() === 'important' || 
+    const importantSkills = technicalSkills.filter(skill =>
+      skill?.importance?.toLowerCase() === 'important' ||
       (skill?.importance?.toLowerCase() !== 'essential' && skill?.importance?.toLowerCase() !== 'required')
     );
 
@@ -410,19 +429,19 @@ const JobDescription = () => {
       return null;
     }
 
-    const softSkills = (jobDetails.skillRequirements || []).filter(skill => 
+    const softSkills = (jobDetails.skillRequirements || []).filter(skill =>
       skill?.skillType !== 'technical' && skill?.skillType !== 'Technical'
     );
-    
+
     if (softSkills.length === 0) {
       return null;
     }
 
-    const essentialSkills = softSkills.filter(skill => 
+    const essentialSkills = softSkills.filter(skill =>
       skill?.importance?.toLowerCase() === 'essential' || skill?.importance?.toLowerCase() === 'required'
     );
-    const importantSkills = softSkills.filter(skill => 
-      skill?.importance?.toLowerCase() === 'important' || 
+    const importantSkills = softSkills.filter(skill =>
+      skill?.importance?.toLowerCase() === 'important' ||
       (skill?.importance?.toLowerCase() !== 'essential' && skill?.importance?.toLowerCase() !== 'required')
     );
 
@@ -482,286 +501,248 @@ const JobDescription = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/40 to-purple-50/40 animate-fade-in">
+    <div className="min-h-screen bg-slate-50 font-sans selection:bg-indigo-100 selection:text-indigo-900">
       {/* Background decorations */}
       <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-        <div className="absolute left-1/2 top-[-120px] h-[420px] w-[420px] -translate-x-1/2 rounded-full bg-indigo-200/40 blur-[140px]" />
-        <div className="absolute bottom-[-180px] right-[-160px] h-[480px] w-[480px] rounded-full bg-pink-200/35 blur-[160px]" />
-        <div className="absolute bottom-12 left-[-180px] h-[360px] w-[360px] rounded-full bg-sky-200/35 blur-[150px]" />
+        <div className="absolute top-0 left-0 w-full h-[600px] bg-gradient-to-b from-indigo-50/80 via-purple-50/50 to-transparent" />
+        <div className="absolute -top-[20%] -right-[10%] w-[800px] h-[800px] rounded-full bg-indigo-100/40 blur-3xl opacity-60 mix-blend-multiply animate-blob" />
+        <div className="absolute top-[10%] -left-[10%] w-[600px] h-[600px] rounded-full bg-purple-100/40 blur-3xl opacity-60 mix-blend-multiply animate-blob animation-delay-2000" />
+        <div className="absolute top-[40%] right-[20%] w-[500px] h-[500px] rounded-full bg-pink-100/40 blur-3xl opacity-60 mix-blend-multiply animate-blob animation-delay-4000" />
       </div>
 
-      <div className="relative z-10 mx-auto max-w-6xl px-4 py-12">
+      <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
         {/* Header */}
-        <div className="relative mx-auto mb-12 max-w-3xl overflow-hidden rounded-3xl border border-slate-200 bg-white p-10 text-center shadow-lg">
-          <div className="relative">
-            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 shadow-lg">
-              <Briefcase className="h-10 w-10 text-white" />
-            </div>
-            <h1 className="text-4xl font-bold leading-tight text-slate-900 md:text-5xl mb-4">
-              Career Blueprint for{' '}
-              <span className="text-indigo-700 font-extrabold">
-                {jobDetails?.name || jobDetails?.roleName || decodeURIComponent(roleName || 'Unknown Role')}
-              </span>
-            </h1>
-            <div className="flex items-center justify-center gap-2 text-slate-600">
-              <Target className="h-5 w-5 text-indigo-500" />
-              <span className="text-lg font-medium">Your personalized career development plan</span>
+        <div className="relative mx-auto mb-16 text-center max-w-4xl">
+          <div className="inline-flex items-center justify-center p-2 mb-6 rounded-2xl bg-white shadow-xl shadow-indigo-100/50 ring-1 ring-slate-100">
+            <div className="flex items-center justify-center h-16 w-16 rounded-xl bg-gradient-to-br from-indigo-600 via-violet-600 to-purple-600 shadow-inner">
+              <Briefcase className="h-8 w-8 text-white" />
             </div>
           </div>
+          <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight text-slate-900 mb-6">
+            Career Blueprint for{' '}
+            <span className="text-indigo-600">
+              {jobDetails?.name || jobDetails?.roleName || decodeURIComponent(roleName || 'Unknown Role')}
+            </span>
+          </h1>
+          <p className="text-lg md:text-xl text-slate-600 max-w-2xl mx-auto leading-relaxed">
+            Your personalized roadmap to mastering the skills required for this role.
+          </p>
         </div>
 
-        {/* Stats Card - Vertical Stack */}
+        {/* Stats Grid */}
         {planStats && (
-          <div className="mx-auto mb-12 w-full max-w-2xl rounded-2xl border border-black bg-white shadow-lg overflow-hidden">
-            {/* Header with curved top edges - fills whole width */}
-            <div className="w-full bg-[#E5EBF4] px-4 py-3 rounded-t-2xl">
-              <p className="text-center text-sm font-bold uppercase tracking-wider text-slate-800">
-                SKILL SNAPSHOT
-              </p>
-            </div>
-
-            {/* Body with smaller sub-boxes */}
-            <div className="bg-white p-2">
-              <div className="grid grid-cols-4 divide-x divide-black">
-                {[
-                  {
-                    label: 'TOTAL SKILLS',
-                    value: planStats.total,
-                    icon: Target,
-                  },
-                  {
-                    label: 'TECHNICAL FOCUS',
-                    value: planStats.technical,
-                    icon: CheckCircle2,
-                  },
-                  {
-                    label: 'NON-TECHNICAL',
-                    value: planStats.nonTechnical,
-                    icon: Sparkles,
-                  },
-                  {
-                    label: 'PROJECT MILESTONES',
-                    value: planStats.project,
-                    icon: Briefcase,
-                  },
-                ].map((item, idx) => {
-                  const Icon = item.icon;
-                  return (
-                    <div key={idx} className="flex flex-col items-center justify-center px-1.5 py-2 bg-blue-50">
-                      <Icon className="h-4 w-4 text-slate-800 mb-1" />
-                      <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-800 mb-0.5 text-center leading-tight">
-                        {item.label}
-                      </p>
-                      <p className="text-sm font-bold text-slate-900">{item.value}</p>
+          <div className="bg-white rounded-3xl shadow-xl border border-slate-100 p-4 md:p-6 max-w-5xl mx-auto mb-16">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {[
+                {
+                  label: 'Total Skills',
+                  value: planStats.total,
+                  icon: Target,
+                  color: 'text-indigo-700',
+                  bgColor: '#c7d2fe', // indigo-200
+                  borderColor: '#a5b4fc', // indigo-300
+                },
+                {
+                  label: 'Technical',
+                  value: planStats.technical,
+                  icon: CheckCircle2,
+                  color: 'text-emerald-700',
+                  bgColor: '#a7f3d0', // emerald-200
+                  borderColor: '#6ee7b7', // emerald-300
+                },
+                {
+                  label: 'Soft Skills',
+                  value: planStats.nonTechnical,
+                  icon: Sparkles,
+                  color: 'text-purple-700',
+                  bgColor: '#e9d5ff', // purple-200
+                  borderColor: '#d8b4fe', // purple-300
+                },
+                {
+                  label: 'Projects',
+                  value: planStats.project,
+                  icon: Briefcase,
+                  color: 'text-blue-700',
+                  bgColor: '#bfdbfe', // blue-200
+                  borderColor: '#93c5fd', // blue-300
+                },
+              ].map((item, idx) => {
+                const Icon = item.icon;
+                return (
+                  <div
+                    key={idx}
+                    className="relative group p-6 rounded-2xl border-2 transition-all duration-300 hover:scale-[1.02] hover:shadow-md"
+                    style={{
+                      backgroundColor: item.bgColor,
+                      borderColor: item.borderColor
+                    }}
+                  >
+                    <div className="flex flex-col items-center text-center">
+                      <div className={`inline-flex p-3 rounded-xl bg-white/80 shadow-sm ${item.color} mb-3`}>
+                        <Icon className="h-6 w-6" />
+                      </div>
+                      <p className="text-3xl font-bold text-slate-900 mb-1">{item.value}</p>
+                      <p className="text-sm font-bold text-slate-700 uppercase tracking-wider">{item.label}</p>
                     </div>
-                  );
-                })}
-              </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
 
-        {/* Job Description Section */}
-        <div className="mb-12 bg-white rounded-lg border border-slate-200 shadow-lg p-8">
-          <div className="flex items-center gap-3 mb-6">
-            <Briefcase className="h-6 w-6 text-indigo-600" />
-            <h2 className="text-2xl font-bold text-slate-900">Job Description</h2>
-          </div>
-          
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8" style={{ display: 'grid', gap: '2rem' }}>
-            {/* Left Column - Job Description */}
-            <div className="space-y-6" style={{ minWidth: '300px' }}>
-              <div>
-                <h3 className="text-lg font-bold text-slate-900 mb-3" style={{ fontSize: '1.125rem', fontWeight: 'bold', color: '#0f172a', marginBottom: '0.75rem' }}>Job Description</h3>
-                <p className="leading-relaxed text-slate-700 text-base" style={{ lineHeight: '1.75', color: '#334155', fontSize: '1rem' }}>
-                  {jobDetails?.jobDescription?.description || jobDetails?.description || ''}
-                </p>
-              </div>
+        {/* Main Content Grid */}
+        {/* Main Content Grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '32px', marginBottom: '64px', marginTop: '64px' }}>
 
-              {/* Key Responsibilities */}
-              {jobDetails?.jobDescription?.keyResponsibilities && Array.isArray(jobDetails.jobDescription.keyResponsibilities) && jobDetails.jobDescription.keyResponsibilities.length > 0 && (
-                <div>
-                  <h4 className="text-base font-semibold text-slate-800 mb-3" style={{ fontSize: '1rem', fontWeight: '600', color: '#1e293b', marginBottom: '0.75rem' }}>Key Responsibilities:</h4>
-                  <ul className="space-y-2" style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                    {jobDetails.jobDescription.keyResponsibilities.map((responsibility, index) => (
-                      <li key={index} className="flex items-start gap-2 leading-relaxed text-slate-700" style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', lineHeight: '1.75', color: '#334155', marginBottom: '0.5rem' }}>
-                        <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" style={{ width: '1.25rem', height: '1.25rem', color: '#16a34a', flexShrink: 0, marginTop: '0.125rem' }} />
-                        <span>{responsibility}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+          {/* Column 1: Job Description */}
+          <div style={{ backgroundColor: 'white', borderRadius: '24px', padding: '32px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' }}>
+            <h2 style={{ fontSize: '24px', fontWeight: '700', color: '#1e293b', marginBottom: '24px' }}>Job Description</h2>
+
+            <div style={{ marginBottom: '32px' }}>
+              <p style={{ fontSize: '16px', lineHeight: '1.6', color: '#475569' }}>
+                {jobDetails?.jobDescription?.description || jobDetails?.description || ''}
+              </p>
             </div>
 
-            {/* Right Column - All Skills */}
-            <div className="space-y-6" style={{ minWidth: '300px' }}>
-              {/* Technical Skills Required */}
+            {jobDetails?.jobDescription?.keyResponsibilities && Array.isArray(jobDetails.jobDescription.keyResponsibilities) && jobDetails.jobDescription.keyResponsibilities.length > 0 && (
               <div>
-                <h3 className="text-lg font-bold text-slate-900 mb-4" style={{ fontSize: '1.125rem', fontWeight: 'bold', color: '#0f172a', marginBottom: '1rem' }}>Technical Skills Required</h3>
-                <div className="space-y-3" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  {technicalSkillsData?.essentialSkills?.map((skill, index) => (
-                    <div key={index} className="bg-white border-2 border-blue-200 rounded-lg p-4 shadow-md" style={{ backgroundColor: '#ffffff', border: '2px solid #bfdbfe', borderRadius: '0.5rem', padding: '1rem', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' }}>
-                      <div className="flex items-start justify-between mb-2" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                        <h4 className="text-base font-semibold text-slate-900" style={{ fontSize: '1rem', fontWeight: '600', color: '#0f172a' }}>
-                          {skill?.skillName || 'Unknown Skill'}
-                        </h4>
-                        <span className="px-3 py-1 text-xs font-bold bg-blue-500 text-white rounded uppercase ml-2 flex-shrink-0" style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem', fontWeight: 'bold', backgroundColor: '#3b82f6', color: '#ffffff', borderRadius: '0.25rem', marginLeft: '0.5rem', flexShrink: 0, textTransform: 'uppercase' }}>
-                          ESSENTIAL
-                        </span>
+                <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#334155', marginBottom: '16px' }}>Key Responsibilities:</h3>
+                <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                  {jobDetails.jobDescription.keyResponsibilities.map((responsibility, index) => (
+                    <li key={index} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '16px' }}>
+                      <div style={{ flexShrink: 0, marginTop: '4px' }}>
+                        <CheckCircle2 style={{ width: '16px', height: '16px', color: '#22c55e' }} />
                       </div>
-                      <div className="flex flex-wrap gap-2 items-center text-sm text-slate-600 mt-2" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', alignItems: 'center', fontSize: '0.875rem', color: '#475569', marginTop: '0.5rem' }}>
-                        {skill?.timeRequiredMonths !== undefined && skill?.timeRequiredMonths !== null && (
-                          <span className="font-medium" style={{ fontWeight: '500' }}>Time: {skill.timeRequiredMonths} {skill.timeRequiredMonths === 1 ? 'month' : 'months'}</span>
-                        )}
-                        {skill?.difficulty && (
-                          <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                            skill.difficulty.toLowerCase() === 'beginner' 
-                              ? 'bg-green-100 text-green-700 border border-green-300' 
-                              : skill.difficulty.toLowerCase() === 'intermediate'
-                              ? 'bg-yellow-100 text-yellow-700 border border-yellow-300'
-                              : 'bg-red-100 text-red-700 border border-red-300'
-                          }`} style={{
-                            padding: '0.25rem 0.5rem',
-                            borderRadius: '0.25rem',
-                            fontSize: '0.75rem',
-                            fontWeight: '600',
-                            backgroundColor: skill.difficulty.toLowerCase() === 'beginner' ? '#dcfce7' : skill.difficulty.toLowerCase() === 'intermediate' ? '#fef9c3' : '#fee2e2',
-                            color: skill.difficulty.toLowerCase() === 'beginner' ? '#15803d' : skill.difficulty.toLowerCase() === 'intermediate' ? '#a16207' : '#991b1b',
-                            border: skill.difficulty.toLowerCase() === 'beginner' ? '1px solid #86efac' : skill.difficulty.toLowerCase() === 'intermediate' ? '1px solid #fde047' : '1px solid #fca5a5'
-                          }}>
-                            {skill.difficulty.charAt(0).toUpperCase() + skill.difficulty.slice(1).toLowerCase()}
-                          </span>
-                        )}
-                      </div>
-                    </div>
+                      <span style={{ fontSize: '15px', color: '#475569', lineHeight: '1.5' }}>{responsibility}</span>
+                    </li>
                   ))}
-                  {technicalSkillsData?.importantSkills?.map((skill, index) => (
-                    <div key={`important-${index}`} className="bg-white border-2 border-blue-200 rounded-lg p-4 shadow-md" style={{ backgroundColor: '#ffffff', border: '2px solid #bfdbfe', borderRadius: '0.5rem', padding: '1rem', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' }}>
-                      <div className="flex items-start justify-between mb-2" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                        <h4 className="text-base font-semibold text-slate-900" style={{ fontSize: '1rem', fontWeight: '600', color: '#0f172a' }}>
-                          {skill?.skillName || 'Unknown Skill'}
-                        </h4>
-                        <span className="px-3 py-1 text-xs font-bold bg-blue-400 text-white rounded uppercase ml-2 flex-shrink-0" style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem', fontWeight: 'bold', backgroundColor: '#60a5fa', color: '#ffffff', borderRadius: '0.25rem', marginLeft: '0.5rem', flexShrink: 0, textTransform: 'uppercase' }}>
-                          IMPORTANT
-                        </span>
-                      </div>
-                      <div className="flex flex-wrap gap-2 items-center text-sm text-slate-600 mt-2" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', alignItems: 'center', fontSize: '0.875rem', color: '#475569', marginTop: '0.5rem' }}>
-                        {skill?.timeRequiredMonths !== undefined && skill?.timeRequiredMonths !== null && (
-                          <span className="font-medium" style={{ fontWeight: '500' }}>Time: {skill.timeRequiredMonths} {skill.timeRequiredMonths === 1 ? 'month' : 'months'}</span>
-                        )}
-                        {skill?.difficulty && (
-                          <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                            skill.difficulty.toLowerCase() === 'beginner' 
-                              ? 'bg-green-100 text-green-700 border border-green-300' 
-                              : skill.difficulty.toLowerCase() === 'intermediate'
-                              ? 'bg-yellow-100 text-yellow-700 border border-yellow-300'
-                              : 'bg-red-100 text-red-700 border border-red-300'
-                          }`} style={{
-                            padding: '0.25rem 0.5rem',
-                            borderRadius: '0.25rem',
-                            fontSize: '0.75rem',
-                            fontWeight: '600',
-                            backgroundColor: skill.difficulty.toLowerCase() === 'beginner' ? '#dcfce7' : skill.difficulty.toLowerCase() === 'intermediate' ? '#fef9c3' : '#fee2e2',
-                            color: skill.difficulty.toLowerCase() === 'beginner' ? '#15803d' : skill.difficulty.toLowerCase() === 'intermediate' ? '#a16207' : '#991b1b',
-                            border: skill.difficulty.toLowerCase() === 'beginner' ? '1px solid #86efac' : skill.difficulty.toLowerCase() === 'intermediate' ? '1px solid #fde047' : '1px solid #fca5a5'
-                          }}>
-                            {skill.difficulty.charAt(0).toUpperCase() + skill.difficulty.slice(1).toLowerCase()}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                </ul>
               </div>
+            )}
+          </div>
 
-              {/* Soft Skills Required */}
-              <div>
-                <h3 className="text-lg font-bold text-slate-900 mb-4" style={{ fontSize: '1.125rem', fontWeight: 'bold', color: '#0f172a', marginBottom: '1rem' }}>Soft Skills Required</h3>
-                <div className="space-y-3" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  {softSkillsData?.essentialSkills?.map((skill, index) => (
-                    <div key={index} className="bg-white border-2 border-blue-200 rounded-lg p-4 shadow-md" style={{ backgroundColor: '#ffffff', border: '2px solid #bfdbfe', borderRadius: '0.5rem', padding: '1rem', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' }}>
-                      <div className="flex items-start justify-between mb-2" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                        <h4 className="text-base font-semibold text-slate-900" style={{ fontSize: '1rem', fontWeight: '600', color: '#0f172a' }}>
-                          {skill?.skillName || 'Unknown Skill'}
-                        </h4>
-                        <span className="px-3 py-1 text-xs font-bold bg-blue-500 text-white rounded uppercase ml-2 flex-shrink-0" style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem', fontWeight: 'bold', backgroundColor: '#3b82f6', color: '#ffffff', borderRadius: '0.25rem', marginLeft: '0.5rem', flexShrink: 0, textTransform: 'uppercase' }}>
-                          ESSENTIAL
-                        </span>
-                      </div>
-                      <div className="flex flex-wrap gap-2 items-center text-sm text-slate-600 mt-2" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', alignItems: 'center', fontSize: '0.875rem', color: '#475569', marginTop: '0.5rem' }}>
-                        {skill?.timeRequiredMonths !== undefined && skill?.timeRequiredMonths !== null && (
-                          <span className="font-medium" style={{ fontWeight: '500' }}>Time: {skill.timeRequiredMonths} {skill.timeRequiredMonths === 1 ? 'month' : 'months'}</span>
-                        )}
-                        {skill?.difficulty && (
-                          <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                            skill.difficulty.toLowerCase() === 'beginner' 
-                              ? 'bg-green-100 text-green-700 border border-green-300' 
-                              : skill.difficulty.toLowerCase() === 'intermediate'
-                              ? 'bg-yellow-100 text-yellow-700 border border-yellow-300'
-                              : 'bg-red-100 text-red-700 border border-red-300'
-                          }`} style={{
-                            padding: '0.25rem 0.5rem',
-                            borderRadius: '0.25rem',
-                            fontSize: '0.75rem',
-                            fontWeight: '600',
-                            backgroundColor: skill.difficulty.toLowerCase() === 'beginner' ? '#dcfce7' : skill.difficulty.toLowerCase() === 'intermediate' ? '#fef9c3' : '#fee2e2',
-                            color: skill.difficulty.toLowerCase() === 'beginner' ? '#15803d' : skill.difficulty.toLowerCase() === 'intermediate' ? '#a16207' : '#991b1b',
-                            border: skill.difficulty.toLowerCase() === 'beginner' ? '1px solid #86efac' : skill.difficulty.toLowerCase() === 'intermediate' ? '1px solid #fde047' : '1px solid #fca5a5'
-                          }}>
-                            {skill.difficulty.charAt(0).toUpperCase() + skill.difficulty.slice(1).toLowerCase()}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                  {softSkillsData?.importantSkills?.map((skill, index) => (
-                    <div key={`important-${index}`} className="bg-white border-2 border-blue-200 rounded-lg p-4 shadow-md" style={{ backgroundColor: '#ffffff', border: '2px solid #bfdbfe', borderRadius: '0.5rem', padding: '1rem', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' }}>
-                      <div className="flex items-start justify-between mb-2" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                        <h4 className="text-base font-semibold text-slate-900" style={{ fontSize: '1rem', fontWeight: '600', color: '#0f172a' }}>
-                          {skill?.skillName || 'Unknown Skill'}
-                        </h4>
-                        <span className="px-3 py-1 text-xs font-bold bg-blue-400 text-white rounded uppercase ml-2 flex-shrink-0" style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem', fontWeight: 'bold', backgroundColor: '#60a5fa', color: '#ffffff', borderRadius: '0.25rem', marginLeft: '0.5rem', flexShrink: 0, textTransform: 'uppercase' }}>
-                          IMPORTANT
-                        </span>
-                      </div>
-                      <div className="flex flex-wrap gap-2 items-center text-sm text-slate-600 mt-2" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', alignItems: 'center', fontSize: '0.875rem', color: '#475569', marginTop: '0.5rem' }}>
-                        {skill?.timeRequiredMonths !== undefined && skill?.timeRequiredMonths !== null && (
-                          <span className="font-medium" style={{ fontWeight: '500' }}>Time: {skill.timeRequiredMonths} {skill.timeRequiredMonths === 1 ? 'month' : 'months'}</span>
-                        )}
-                        {skill?.difficulty && (
-                          <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                            skill.difficulty.toLowerCase() === 'beginner' 
-                              ? 'bg-green-100 text-green-700 border border-green-300' 
-                              : skill.difficulty.toLowerCase() === 'intermediate'
-                              ? 'bg-yellow-100 text-yellow-700 border border-yellow-300'
-                              : 'bg-red-100 text-red-700 border border-red-300'
-                          }`} style={{
-                            padding: '0.25rem 0.5rem',
-                            borderRadius: '0.25rem',
-                            fontSize: '0.75rem',
-                            fontWeight: '600',
-                            backgroundColor: skill.difficulty.toLowerCase() === 'beginner' ? '#dcfce7' : skill.difficulty.toLowerCase() === 'intermediate' ? '#fef9c3' : '#fee2e2',
-                            color: skill.difficulty.toLowerCase() === 'beginner' ? '#15803d' : skill.difficulty.toLowerCase() === 'intermediate' ? '#a16207' : '#991b1b',
-                            border: skill.difficulty.toLowerCase() === 'beginner' ? '1px solid #86efac' : skill.difficulty.toLowerCase() === 'intermediate' ? '1px solid #fde047' : '1px solid #fca5a5'
-                          }}>
-                            {skill.difficulty.charAt(0).toUpperCase() + skill.difficulty.slice(1).toLowerCase()}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+          {/* Column 2: Technical Skills */}
+          <div style={{ backgroundColor: 'white', borderRadius: '24px', padding: '32px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' }}>
+            <h2 style={{ fontSize: '24px', fontWeight: '700', color: '#1e293b', marginBottom: '24px' }}>Technical Skills Required</h2>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {technicalSkillsData?.essentialSkills?.map((skill, index) => (
+                <div key={`tech-essential-${index}`} style={{ padding: '16px', backgroundColor: '#f8fafc', borderRadius: '12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                    <span style={{ fontSize: '15px', fontWeight: '600', color: '#334155' }}>
+                      {typeof skill === 'object' ? skill.skillName : skill}
+                    </span>
+                    <span style={{ backgroundColor: '#dbeafe', color: '#2563eb', padding: '4px 12px', borderRadius: '9999px', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      Essential
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '12px', fontSize: '13px', color: '#64748b' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#94a3b8' }}></span>
+                      <span style={{ textTransform: 'capitalize' }}>
+                        {typeof skill === 'object' && skill.difficulty ? skill.difficulty : 'Intermediate'}
+                      </span>
+                    </span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#94a3b8' }}></span>
+                      {typeof skill === 'object' && skill.timeRequiredMonths ? `${skill.timeRequiredMonths} Month${skill.timeRequiredMonths !== 1 ? 's' : ''}` : '1 Month'}
+                    </span>
+                  </div>
                 </div>
-              </div>
+              ))}
+
+              {technicalSkillsData?.importantSkills?.map((skill, index) => (
+                <div key={`tech-important-${index}`} style={{ padding: '16px', backgroundColor: '#f8fafc', borderRadius: '12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                    <span style={{ fontSize: '15px', fontWeight: '600', color: '#334155' }}>
+                      {typeof skill === 'object' ? skill.skillName : skill}
+                    </span>
+                    <span style={{ backgroundColor: '#dcfce7', color: '#16a34a', padding: '4px 12px', borderRadius: '9999px', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      Important
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '12px', fontSize: '13px', color: '#64748b' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#94a3b8' }}></span>
+                      <span style={{ textTransform: 'capitalize' }}>
+                        {typeof skill === 'object' && skill.difficulty ? skill.difficulty : 'Beginner'}
+                      </span>
+                    </span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#94a3b8' }}></span>
+                      {typeof skill === 'object' && skill.timeRequiredMonths ? `${skill.timeRequiredMonths} Month${skill.timeRequiredMonths !== 1 ? 's' : ''}` : '1 Month'}
+                    </span>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
+
+          {/* Column 3: Soft Skills */}
+          <div style={{ backgroundColor: 'white', borderRadius: '24px', padding: '32px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' }}>
+            <h2 style={{ fontSize: '24px', fontWeight: '700', color: '#1e293b', marginBottom: '24px' }}>Soft Skills Required</h2>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {softSkillsData?.essentialSkills?.map((skill, index) => (
+                <div key={`soft-essential-${index}`} style={{ padding: '16px', backgroundColor: '#f8fafc', borderRadius: '12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                    <span style={{ fontSize: '15px', fontWeight: '600', color: '#334155' }}>
+                      {typeof skill === 'object' ? skill.skillName : skill}
+                    </span>
+                    <span style={{ backgroundColor: '#dbeafe', color: '#2563eb', padding: '4px 12px', borderRadius: '9999px', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      Essential
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '12px', fontSize: '13px', color: '#64748b' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#94a3b8' }}></span>
+                      <span style={{ textTransform: 'capitalize' }}>
+                        {typeof skill === 'object' && skill.difficulty ? skill.difficulty : 'Intermediate'}
+                      </span>
+                    </span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#94a3b8' }}></span>
+                      {typeof skill === 'object' && skill.timeRequiredMonths ? `${skill.timeRequiredMonths} Month${skill.timeRequiredMonths !== 1 ? 's' : ''}` : '1 Month'}
+                    </span>
+                  </div>
+                </div>
+              ))}
+
+              {softSkillsData?.importantSkills?.map((skill, index) => (
+                <div key={`soft-important-${index}`} style={{ padding: '16px', backgroundColor: '#f8fafc', borderRadius: '12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                    <span style={{ fontSize: '15px', fontWeight: '600', color: '#334155' }}>
+                      {typeof skill === 'object' ? skill.skillName : skill}
+                    </span>
+                    <span style={{ backgroundColor: '#dcfce7', color: '#16a34a', padding: '4px 12px', borderRadius: '9999px', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      Important
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '12px', fontSize: '13px', color: '#64748b' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#94a3b8' }}></span>
+                      <span style={{ textTransform: 'capitalize' }}>
+                        {typeof skill === 'object' && skill.difficulty ? skill.difficulty : 'Beginner'}
+                      </span>
+                    </span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#94a3b8' }}></span>
+                      {typeof skill === 'object' && skill.timeRequiredMonths ? `${skill.timeRequiredMonths} Month${skill.timeRequiredMonths !== 1 ? 's' : ''}` : '1 Month'}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
         </div>
 
         {/* Gantt Chart Section */}
         <Card className="mb-16 overflow-hidden border border-slate-200 bg-white shadow-lg">
           <div className="h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
-          <CardHeader className="bg-gradient-to-br from-slate-50 to-white">
-            <div className="flex flex-wrap items-center justify-between gap-4">
+          <CardHeader className="bg-white border-b border-slate-100 pb-8">
+            <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
               <div className="flex items-center gap-3">
                 <div className="rounded-xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-3 text-white shadow-lg">
                   <Sparkles className="h-6 w-6" />
@@ -773,45 +754,117 @@ const JobDescription = () => {
               {isGanttChart && (
                 <button
                   onClick={() => setShowDurationModal(true)}
-                  className="rounded-xl bg-gradient-to-r from-indigo-500 via-violet-500 to-pink-500 px-6 py-2 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl"
+                  className="rounded-xl bg-white border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition-all duration-300 hover:bg-slate-50 hover:border-slate-300"
                 >
                   Customize Duration
                 </button>
               )}
             </div>
+
+            {getPersonalizedMessage() && (
+              <div className="mb-8 rounded-2xl border border-indigo-100 bg-indigo-50/30 px-6 py-5">
+                <div className="flex items-start gap-3">
+                  <div className="mt-1 flex h-6 w-6 items-center justify-center rounded-full bg-indigo-100 text-indigo-600">
+                    <Target className="h-4 w-4" />
+                  </div>
+                  <p className="leading-relaxed text-slate-700 font-medium">{getPersonalizedMessage()}</p>
+                </div>
+              </div>
+            )}
+
+            {jobDetails?.plan?.warnings && Array.isArray(jobDetails.plan.warnings) && jobDetails.plan.warnings.length > 0 && (
+              <div className="mb-8 rounded-2xl border border-amber-200 bg-amber-50/50 px-6 py-5">
+                <div className="flex items-start gap-3">
+                  <div className="mt-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-amber-100 text-amber-600">
+                    <AlertCircle className="h-4 w-4" />
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="text-sm font-bold uppercase tracking-wide text-amber-900">Important Notice</h4>
+                    {jobDetails.plan.warnings.map((warning, index) => (
+                      <p key={index} className="text-sm text-amber-800 font-medium">{warning}</p>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* New Stats Section */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0', borderTop: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0' }}>
+
+              {/* Total Items */}
+              <div style={{ padding: '24px', borderRight: '1px solid #e2e8f0', position: 'relative' }}>
+                <h3 style={{ fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748b', marginBottom: '12px' }}>
+                  TOTAL ITEMS
+                </h3>
+                <div style={{ fontSize: '32px', fontWeight: '800', color: '#1e293b', marginBottom: '8px' }}>
+                  {planStats?.total || 0}
+                </div>
+                <div style={{ fontSize: '14px', color: '#64748b', fontWeight: '500' }}>
+                  {planStats?.technical || 0} technical • {planStats?.nonTechnical || 0} non-technical
+                </div>
+                <div style={{ position: 'absolute', top: '24px', right: '24px', color: '#cbd5e1' }}>
+                  <Layers className="h-6 w-6" />
+                </div>
+              </div>
+
+              {/* Avg Duration */}
+              <div style={{ padding: '24px', borderRight: '1px solid #e2e8f0', position: 'relative' }}>
+                <h3 style={{ fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748b', marginBottom: '12px' }}>
+                  AVG DURATION
+                </h3>
+                <div style={{ fontSize: '32px', fontWeight: '800', color: '#1e293b', marginBottom: '8px' }}>
+                  {planStats?.avgDuration || 0} mo
+                </div>
+                <div style={{ fontSize: '14px', color: '#64748b', fontWeight: '500' }}>
+                  per milestone
+                </div>
+                <div style={{ position: 'absolute', top: '24px', right: '24px', color: '#cbd5e1' }}>
+                  <Clock className="h-6 w-6" />
+                </div>
+              </div>
+
+              {/* Longest Sprint */}
+              <div style={{ padding: '24px', borderRight: '1px solid #e2e8f0', position: 'relative' }}>
+                <h3 style={{ fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748b', marginBottom: '12px' }}>
+                  LONGEST SPRINT
+                </h3>
+                <div style={{ fontSize: '32px', fontWeight: '800', color: '#1e293b', marginBottom: '8px' }}>
+                  {planStats?.longestSprint || 0} mo
+                </div>
+                <div style={{ fontSize: '14px', color: '#64748b', fontWeight: '500' }}>
+                  Kaam kal karunga
+                </div>
+                <div style={{ position: 'absolute', top: '24px', right: '24px', color: '#cbd5e1' }}>
+                  <Target className="h-6 w-6" />
+                </div>
+              </div>
+
+              {/* Timeline */}
+              <div style={{ padding: '24px', position: 'relative' }}>
+                <h3 style={{ fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748b', marginBottom: '12px' }}>
+                  TIMELINE
+                </h3>
+                <div style={{ fontSize: '32px', fontWeight: '800', color: '#1e293b', marginBottom: '8px' }}>
+                  {totalMonths} mo
+                </div>
+                <div style={{ fontSize: '14px', color: '#64748b', fontWeight: '500' }}>
+                  Month 1 → Month {totalMonths}
+                </div>
+                <div style={{ position: 'absolute', top: '24px', right: '24px', color: '#cbd5e1' }}>
+                  <Sparkles className="h-6 w-6" />
+                </div>
+              </div>
+
+            </div>
+
           </CardHeader>
           <CardContent className="space-y-8 pt-8">
             {isGanttChart ? (
               <>
-                {getPersonalizedMessage() && (
-                  <div className="rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50 via-blue-50 to-purple-50 px-6 py-5">
-                    <div className="flex items-start gap-3">
-                      <div className="mt-1 flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-white shadow-lg">
-                        <Target className="h-4 w-4" />
-                      </div>
-                      <p className="leading-relaxed text-slate-700">{getPersonalizedMessage()}</p>
-                    </div>
-                  </div>
-                )}
-                {jobDetails?.plan?.warnings && Array.isArray(jobDetails.plan.warnings) && jobDetails.plan.warnings.length > 0 && (
-                  <div className="rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 via-yellow-50 to-white px-6 py-5">
-                    <div className="flex items-start gap-3">
-                      <div className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-full bg-amber-500/90 text-white shadow-md">
-                        <AlertCircle className="h-4 w-4" />
-                      </div>
-                      <div className="space-y-2">
-                        <h4 className="text-sm font-semibold uppercase tracking-wide text-amber-800">Important Notice</h4>
-                        {jobDetails.plan.warnings.map((warning, index) => (
-                          <p key={index} className="text-sm text-amber-700">{warning}</p>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
                 {jobDetails?.plan && (
-                  <GanttChart 
-                    data={jobDetails.plan} 
-                    totalMonths={totalMonths} 
+                  <GanttChart
+                    data={jobDetails.plan}
+                    totalMonths={totalMonths}
                     roleName={jobDetails?.name || jobDetails?.roleName || decodeURIComponent(roleName || '')}
                   />
                 )}
@@ -942,209 +995,205 @@ const JobDescription = () => {
 
               {/* Skills List with Toggles */}
               {jobDetails?.skillRequirements && jobDetails.skillRequirements.length > 0 ? (
-              <div className="space-y-6">
-                {(() => {
-                  const technicalSkills = (jobDetails.skillRequirements || []).filter(skill => 
-                    skill?.skillType === 'technical' || skill?.skillType === 'Technical'
-                  );
-                  const nonTechnicalSkills = (jobDetails.skillRequirements || []).filter(skill => 
-                    skill?.skillType !== 'technical' && skill?.skillType !== 'Technical'
-                  );
-                  
-                  return (
-                    <>
-                      {technicalSkills.length > 0 && (
-                        <div className="rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-6">
-                          <h3 className="text-lg font-bold text-blue-900 mb-4">Technical Skills</h3>
-                          <div className="space-y-3">
-                            {technicalSkills.map((skill, index) => {
-                              const progress = preparation.skillProgress?.[skill.skillName];
-                              const isCompleted = progress?.completed || false;
-                              const isOverdue = progress?.targetDate && !isCompleted && new Date(progress.targetDate) < new Date();
-                              
-                              return (
-                                <div 
-                                  key={index} 
-                                  className={`rounded-xl border p-4 transition-all ${
-                                    isCompleted 
-                                      ? 'border-green-300 bg-green-50/50' 
+                <div className="space-y-6">
+                  {(() => {
+                    const technicalSkills = (jobDetails.skillRequirements || []).filter(skill =>
+                      skill?.skillType === 'technical' || skill?.skillType === 'Technical'
+                    );
+                    const nonTechnicalSkills = (jobDetails.skillRequirements || []).filter(skill =>
+                      skill?.skillType !== 'technical' && skill?.skillType !== 'Technical'
+                    );
+
+                    return (
+                      <>
+                        {technicalSkills.length > 0 && (
+                          <div className="rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-6">
+                            <h3 className="text-lg font-bold text-blue-900 mb-4">Technical Skills</h3>
+                            <div className="space-y-3">
+                              {technicalSkills.map((skill, index) => {
+                                const progress = preparation.skillProgress?.[skill.skillName];
+                                const isCompleted = progress?.completed || false;
+                                const isOverdue = progress?.targetDate && !isCompleted && new Date(progress.targetDate) < new Date();
+
+                                return (
+                                  <div
+                                    key={index}
+                                    className={`rounded-xl border p-4 transition-all ${isCompleted
+                                      ? 'border-green-300 bg-green-50/50'
                                       : isOverdue
-                                      ? 'border-red-300 bg-red-50/50'
-                                      : 'border-blue-200 bg-white/90'
-                                  }`}
-                                >
-                                  <div className="flex items-start justify-between gap-4">
-                                    <div className="flex-1">
-                                      <div className="flex items-center gap-2 mb-1">
-                                        <h4 className="font-semibold text-slate-900">{skill.skillName}</h4>
-                                        {isCompleted && (
-                                          <CheckCircle2 className="h-5 w-5 text-green-600" />
-                                        )}
-                                        {isOverdue && (
-                                          <AlertCircle className="h-5 w-5 text-red-600" />
-                                        )}
-                                      </div>
-                                      {skill.description && (
-                                        <p className="text-sm text-slate-600 mb-2">{skill.description}</p>
-                                      )}
-                                      <div className="flex flex-wrap gap-2 mb-2">
-                                        <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded">Technical</span>
-                                        {skill.importance && (
-                                          <span className="px-2 py-1 text-xs font-medium bg-purple-100 text-purple-700 rounded">{skill.importance}</span>
-                                        )}
-                                        {skill.difficulty && (
-                                          <span className="px-2 py-1 text-xs font-medium bg-amber-100 text-amber-700 rounded capitalize">{skill.difficulty}</span>
-                                        )}
-                                        {progress?.targetDate && (
-                                          <span className={`px-2 py-1 text-xs font-medium rounded ${
-                                            isOverdue ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'
-                                          }`}>
-                                            Target: {new Date(progress.targetDate).toLocaleDateString()}
-                                          </span>
-                                        )}
-                                      </div>
-                                      {isCompleted && progress?.completedDate && (
-                                        <div className="space-y-1">
-                                          <p className="text-xs text-green-700">
-                                            Completed on {new Date(progress.completedDate).toLocaleDateString()}
-                                            {progress?.score && (
-                                              <span className="ml-2">(Score: {progress.score}%)</span>
-                                            )}
-                                          </p>
-                                          {progress?.completedInRole && (
-                                            <p className="text-xs text-blue-700">
-                                              Auto-completed from:{' '}
-                                              <button
-                                                type="button"
-                                                className="underline hover:text-blue-900 font-medium text-left"
-                                                onClick={(e) => {
-                                                  e.preventDefault();
-                                                  navigate(`/students/career-blueprint/role/${encodeURIComponent(progress.completedInRole)}`);
-                                                }}
-                                              >
-                                                {progress.completedInRole}
-                                              </button>
-                                            </p>
+                                        ? 'border-red-300 bg-red-50/50'
+                                        : 'border-blue-200 bg-white/90'
+                                      }`}
+                                  >
+                                    <div className="flex items-start justify-between gap-4">
+                                      <div className="flex-1">
+                                        <div className="flex items-center gap-2 mb-1">
+                                          <h4 className="font-semibold text-slate-900">{skill.skillName}</h4>
+                                          {isCompleted && (
+                                            <CheckCircle2 className="h-5 w-5 text-green-600" />
+                                          )}
+                                          {isOverdue && (
+                                            <AlertCircle className="h-5 w-5 text-red-600" />
                                           )}
                                         </div>
-                                      )}
-                                    </div>
-                                    <button
-                                      onClick={(e) => handleToggleSkill(skill.skillName, isCompleted, e)}
-                                      className="flex-shrink-0"
-                                      type="button"
-                                    >
-                                      {isCompleted ? (
-                                        <ToggleRight className="h-8 w-8 text-green-600" />
-                                      ) : (
-                                        <ToggleLeft className="h-8 w-8 text-gray-400" />
-                                      )}
-                                    </button>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-                      {nonTechnicalSkills.length > 0 && (
-                        <div className="rounded-2xl border border-emerald-100 bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 p-6">
-                          <h3 className="text-lg font-bold text-emerald-900 mb-4">Non-Technical Skills</h3>
-                          <div className="space-y-3">
-                            {nonTechnicalSkills.map((skill, index) => {
-                              const progress = preparation.skillProgress?.[skill.skillName];
-                              const isCompleted = progress?.completed || false;
-                              const isOverdue = progress?.targetDate && !isCompleted && new Date(progress.targetDate) < new Date();
-                              
-                              return (
-                                <div 
-                                  key={index} 
-                                  className={`rounded-xl border p-4 transition-all ${
-                                    isCompleted 
-                                      ? 'border-green-300 bg-green-50/50' 
-                                      : isOverdue
-                                      ? 'border-red-300 bg-red-50/50'
-                                      : 'border-emerald-200 bg-white/90'
-                                  }`}
-                                >
-                                  <div className="flex items-start justify-between gap-4">
-                                    <div className="flex-1">
-                                      <div className="flex items-center gap-2 mb-1">
-                                        <h4 className="font-semibold text-slate-900">{skill.skillName}</h4>
-                                        {isCompleted && (
-                                          <CheckCircle2 className="h-5 w-5 text-green-600" />
+                                        {skill.description && (
+                                          <p className="text-sm text-slate-600 mb-2">{skill.description}</p>
                                         )}
-                                        {isOverdue && (
-                                          <AlertCircle className="h-5 w-5 text-red-600" />
-                                        )}
-                                      </div>
-                                      {skill.description && (
-                                        <p className="text-sm text-slate-600 mb-2">{skill.description}</p>
-                                      )}
-                                      <div className="flex flex-wrap gap-2 mb-2">
-                                        <span className="px-2 py-1 text-xs font-medium bg-emerald-100 text-emerald-700 rounded">Non-Technical</span>
-                                        {skill.importance && (
-                                          <span className="px-2 py-1 text-xs font-medium bg-purple-100 text-purple-700 rounded">{skill.importance}</span>
-                                        )}
-                                        {skill.difficulty && (
-                                          <span className="px-2 py-1 text-xs font-medium bg-amber-100 text-amber-700 rounded capitalize">{skill.difficulty}</span>
-                                        )}
-                                        {progress?.targetDate && (
-                                          <span className={`px-2 py-1 text-xs font-medium rounded ${
-                                            isOverdue ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'
-                                          }`}>
-                                            Target: {new Date(progress.targetDate).toLocaleDateString()}
-                                          </span>
-                                        )}
-                                      </div>
-                                      {isCompleted && progress?.completedDate && (
-                                        <div className="space-y-1">
-                                          <p className="text-xs text-green-700">
-                                            Completed on {new Date(progress.completedDate).toLocaleDateString()}
-                                            {progress?.score && (
-                                              <span className="ml-2">(Score: {progress.score}%)</span>
-                                            )}
-                                          </p>
-                                          {progress?.completedInRole && (
-                                            <p className="text-xs text-blue-700">
-                                              Auto-completed from:{' '}
-                                              <button
-                                                type="button"
-                                                className="underline hover:text-blue-900 font-medium text-left"
-                                                onClick={(e) => {
-                                                  e.preventDefault();
-                                                  navigate(`/students/career-blueprint/role/${encodeURIComponent(progress.completedInRole)}`);
-                                                }}
-                                              >
-                                                {progress.completedInRole}
-                                              </button>
-                                            </p>
+                                        <div className="flex flex-wrap gap-2 mb-2">
+                                          <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded">Technical</span>
+                                          {skill.importance && (
+                                            <span className="px-2 py-1 text-xs font-medium bg-purple-100 text-purple-700 rounded">{skill.importance}</span>
+                                          )}
+                                          {skill.difficulty && (
+                                            <span className="px-2 py-1 text-xs font-medium bg-amber-100 text-amber-700 rounded capitalize">{skill.difficulty}</span>
+                                          )}
+                                          {progress?.targetDate && (
+                                            <span className={`px-2 py-1 text-xs font-medium rounded ${isOverdue ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'
+                                              }`}>
+                                              Target: {new Date(progress.targetDate).toLocaleDateString()}
+                                            </span>
                                           )}
                                         </div>
-                                      )}
+                                        {isCompleted && progress?.completedDate && (
+                                          <div className="space-y-1">
+                                            <p className="text-xs text-green-700">
+                                              Completed on {new Date(progress.completedDate).toLocaleDateString()}
+                                              {progress?.score && (
+                                                <span className="ml-2">(Score: {progress.score}%)</span>
+                                              )}
+                                            </p>
+                                            {progress?.completedInRole && (
+                                              <p className="text-xs text-blue-700">
+                                                Auto-completed from:{' '}
+                                                <button
+                                                  type="button"
+                                                  className="underline hover:text-blue-900 font-medium text-left"
+                                                  onClick={(e) => {
+                                                    e.preventDefault();
+                                                    navigate(`/students/career-blueprint/role/${encodeURIComponent(progress.completedInRole)}`);
+                                                  }}
+                                                >
+                                                  {progress.completedInRole}
+                                                </button>
+                                              </p>
+                                            )}
+                                          </div>
+                                        )}
+                                      </div>
+                                      <button
+                                        onClick={(e) => handleToggleSkill(skill.skillName, isCompleted, e)}
+                                        className="flex-shrink-0"
+                                        type="button"
+                                      >
+                                        {isCompleted ? (
+                                          <ToggleRight className="h-8 w-8 text-green-600" />
+                                        ) : (
+                                          <ToggleLeft className="h-8 w-8 text-gray-400" />
+                                        )}
+                                      </button>
                                     </div>
-                                    <button
-                                      onClick={(e) => handleToggleSkill(skill.skillName, isCompleted, e)}
-                                      className="flex-shrink-0"
-                                      type="button"
-                                    >
-                                      {isCompleted ? (
-                                        <ToggleRight className="h-8 w-8 text-green-600" />
-                                      ) : (
-                                        <ToggleLeft className="h-8 w-8 text-gray-400" />
-                                      )}
-                                    </button>
                                   </div>
-                                </div>
-                              );
-                            })}
+                                );
+                              })}
+                            </div>
                           </div>
-                        </div>
-                      )}
-                    </>
-                  );
-                })()}
-              </div>
+                        )}
+                        {nonTechnicalSkills.length > 0 && (
+                          <div className="rounded-2xl border border-emerald-100 bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 p-6">
+                            <h3 className="text-lg font-bold text-emerald-900 mb-4">Non-Technical Skills</h3>
+                            <div className="space-y-3">
+                              {nonTechnicalSkills.map((skill, index) => {
+                                const progress = preparation.skillProgress?.[skill.skillName];
+                                const isCompleted = progress?.completed || false;
+                                const isOverdue = progress?.targetDate && !isCompleted && new Date(progress.targetDate) < new Date();
+
+                                return (
+                                  <div
+                                    key={index}
+                                    className={`rounded-xl border p-4 transition-all ${isCompleted
+                                      ? 'border-green-300 bg-green-50/50'
+                                      : isOverdue
+                                        ? 'border-red-300 bg-red-50/50'
+                                        : 'border-emerald-200 bg-white/90'
+                                      }`}
+                                  >
+                                    <div className="flex items-start justify-between gap-4">
+                                      <div className="flex-1">
+                                        <div className="flex items-center gap-2 mb-1">
+                                          <h4 className="font-semibold text-slate-900">{skill.skillName}</h4>
+                                          {isCompleted && (
+                                            <CheckCircle2 className="h-5 w-5 text-green-600" />
+                                          )}
+                                          {isOverdue && (
+                                            <AlertCircle className="h-5 w-5 text-red-600" />
+                                          )}
+                                        </div>
+                                        {skill.description && (
+                                          <p className="text-sm text-slate-600 mb-2">{skill.description}</p>
+                                        )}
+                                        <div className="flex flex-wrap gap-2 mb-2">
+                                          <span className="px-2 py-1 text-xs font-medium bg-emerald-100 text-emerald-700 rounded">Non-Technical</span>
+                                          {skill.importance && (
+                                            <span className="px-2 py-1 text-xs font-medium bg-purple-100 text-purple-700 rounded">{skill.importance}</span>
+                                          )}
+                                          {skill.difficulty && (
+                                            <span className="px-2 py-1 text-xs font-medium bg-amber-100 text-amber-700 rounded capitalize">{skill.difficulty}</span>
+                                          )}
+                                          {progress?.targetDate && (
+                                            <span className={`px-2 py-1 text-xs font-medium rounded ${isOverdue ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'
+                                              }`}>
+                                              Target: {new Date(progress.targetDate).toLocaleDateString()}
+                                            </span>
+                                          )}
+                                        </div>
+                                        {isCompleted && progress?.completedDate && (
+                                          <div className="space-y-1">
+                                            <p className="text-xs text-green-700">
+                                              Completed on {new Date(progress.completedDate).toLocaleDateString()}
+                                              {progress?.score && (
+                                                <span className="ml-2">(Score: {progress.score}%)</span>
+                                              )}
+                                            </p>
+                                            {progress?.completedInRole && (
+                                              <p className="text-xs text-blue-700">
+                                                Auto-completed from:{' '}
+                                                <button
+                                                  type="button"
+                                                  className="underline hover:text-blue-900 font-medium text-left"
+                                                  onClick={(e) => {
+                                                    e.preventDefault();
+                                                    navigate(`/students/career-blueprint/role/${encodeURIComponent(progress.completedInRole)}`);
+                                                  }}
+                                                >
+                                                  {progress.completedInRole}
+                                                </button>
+                                              </p>
+                                            )}
+                                          </div>
+                                        )}
+                                      </div>
+                                      <button
+                                        onClick={(e) => handleToggleSkill(skill.skillName, isCompleted, e)}
+                                        className="flex-shrink-0"
+                                        type="button"
+                                      >
+                                        {isCompleted ? (
+                                          <ToggleRight className="h-8 w-8 text-green-600" />
+                                        ) : (
+                                          <ToggleLeft className="h-8 w-8 text-gray-400" />
+                                        )}
+                                      </button>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
+                </div>
               ) : (
                 <div className="text-center py-8 text-gray-500">
                   <p>Loading skill requirements...</p>
